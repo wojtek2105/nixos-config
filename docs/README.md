@@ -9,7 +9,7 @@ Ten katalog opisuje stan konfiguracji, sposób jej obsługi oraz plan rozbudowy.
 - [Pulpit](desktop.md) — Hyprland, aplikacje, dark mode i usługi sesji.
 - [Skróty klawiszowe](keybindings.md) — kompletna mapa skrótów.
 - [Replay](replay.md) — konfiguracja bufora GPU Screen Recorder.
-- [Hosty](hosts.md) — ROG, profil `simple` i dodawanie kolejnych komputerów.
+- [Host](hosts.md) — konfiguracja laptopa ROG.
 - [Plan rozbudowy](roadmap.md) — kolejne etapy rozwoju konfiguracji.
 - [Źródła](sources.md) — upstreamy i dokumentacja techniczna.
 

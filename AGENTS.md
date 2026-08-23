@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This repository defines NixOS systems through a flake. `flake.nix` declares each machine under `nixosConfigurations`, while `flake.lock` pins the `nixpkgs` revision. Put machine-specific settings in `hosts/<name>/configuration.nix`; generated hardware settings belong in `hosts/<name>/hardware-configuration.nix`. Reusable concerns live in `modules/`: `common.nix` provides baseline packages and locale settings, while `desktop.nix`, `development.nix`, and `gaming.nix` group optional capabilities. The checked-in hardware host is currently `rog-polamaniec`; `hosts/simple` is a reusable base for future hosts. Keep secrets and machine credentials out of Nix files and Git.
+This repository defines one NixOS system through a flake. `flake.nix` declares `rog-polamaniec` under `nixosConfigurations`, while `flake.lock` pins the `nixpkgs` revision. Machine-specific settings live in `hosts/rog-polamaniec/configuration.nix`; generated hardware settings belong in `hosts/rog-polamaniec/hardware-configuration.nix`. Reusable concerns live in `modules/`: `common.nix` provides baseline packages and locale settings, while `desktop.nix`, `development.nix`, and `gaming.nix` group optional capabilities. Keep secrets and machine credentials out of Nix files and Git.
 
 ## Build, Test, and Development Commands
 
@@ -12,11 +12,11 @@ This repository defines NixOS systems through a flake. `flake.nix` declares each
 - `sudo nixos-rebuild switch --flake .#rog-polamaniec` installs and activates a configuration after validation.
 - `nix flake update` refreshes locked inputs; review `flake.lock` changes carefully.
 
-Run commands from the repository root. Replace `rog-polamaniec` with the relevant flake output when adding another host.
+Run commands from the repository root.
 
 ## Coding Style & Naming Conventions
 
-Use two-space indentation and conventional Nix formatting. Prefer small, declarative modules over duplicating options in host files. Name modules and host directories with lowercase, descriptive words. Format function arguments and attribute sets consistently, and group package lists with `with pkgs; [ ... ]`. No formatter is configured, so avoid unrelated formatting churn; use `nixfmt` if available.
+Use two-space indentation and conventional Nix formatting. Prefer small, declarative modules over duplicating options in the host file. Name modules with lowercase, descriptive words. Format function arguments and attribute sets consistently, and group package lists with `with pkgs; [ ... ]`. No formatter is configured, so avoid unrelated formatting churn; use `nixfmt` if available.
 
 ## Testing Guidelines
 

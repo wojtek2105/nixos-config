@@ -10,6 +10,11 @@
 .env.*
 !.env.example
 
+# Host configurations explicitly approved for versioning
+/hosts/*/
+!/hosts/rog-polamaniec/
+!/hosts/rog-polamaniec/**
+
 # Large local machine and installation images
 *.img
 *.iso

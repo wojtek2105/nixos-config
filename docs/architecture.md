@@ -9,8 +9,7 @@ sprzętowy:
 nixosConfigurations.rog-polamaniec
 ```
 
-`nixosModules.simple` udostępnia lekką bazę przyszłych hostów, a domyślny
-`devShell` zapewnia Codex, Git i Neovim do ich przygotowania.
+Domyślny `devShell` zapewnia Codex, Git i Neovim do pracy nad konfiguracją.
 
 Pulpit korzysta wyłącznie z Ironbara. Kod Waybara i Noctalii został usunięty,
 natomiast ich historyczne benchmarki pozostają zapisane w dokumentacji.
@@ -34,9 +33,6 @@ zestawu pakietów.
 │   ├── rog-polamaniec/
 │   │   ├── configuration.nix
 │   │   └── hardware-configuration.nix
-│   └── simple/
-│       ├── configuration.nix
-│       └── README.md
 ├── modules/
 │   ├── common.nix
 │   ├── desktop.nix
@@ -63,7 +59,7 @@ zestawu pakietów.
 
 ## Odpowiedzialność warstw
 
-- `hosts/<nazwa>/` zawiera sprzęt i parametry konkretnej maszyny.
+- `hosts/rog-polamaniec/` zawiera sprzęt i parametry laptopa.
 - `modules/` zawiera współdzielone funkcje systemowe.
 - `home/wojtek/` zawiera przenośne ustawienia sesji użytkownika.
 - `docs/` dokumentuje zachowanie, obsługę i plan rozwoju.
