@@ -52,6 +52,12 @@
         videoBitrate = 25000;
         audioCodec = "opus";
       };
+      hostDirectories =
+        nixpkgs.lib.filterAttrs
+          (name: type:
+            type == "directory"
+            && builtins.pathExists (./hosts + "/${name}/default.nix"))
+          (builtins.readDir ./hosts);
       mkHost =
         {
           configuration,
@@ -80,19 +86,10 @@
         };
     in
     {
-      nixosConfigurations = {
-        rog-polamaniec = mkHost {
-          configuration = ./hosts/rog-polamaniec/configuration.nix;
-          desktopFeatures = {
-            amdGpu = true;
-            docker = true;
-            gaming = true;
-            laptop = true;
-            personalApps = true;
-          };
-          replayConfig.captureSource = "eDP-2";
-        };
-      };
+      nixosConfigurations =
+        nixpkgs.lib.mapAttrs
+          (name: _: mkHost (import (./hosts + "/${name}")))
+          hostDirectories;
 
       devShells.${system}.default = pkgs.mkShellNoCC {
         packages = with pkgs; [

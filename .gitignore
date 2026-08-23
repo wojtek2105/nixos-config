@@ -15,6 +15,11 @@
 !/hosts/rog-polamaniec/
 !/hosts/rog-polamaniec/**
 
+# User home configurations explicitly approved for versioning
+/home/*/
+!/home/wojtek/
+!/home/wojtek/**
+
 # Large local machine and installation images
 *.img
 *.iso
