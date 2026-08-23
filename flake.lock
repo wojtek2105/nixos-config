@@ -91,7 +91,28 @@
         "biscuit-nvim": "biscuit-nvim",
         "home-manager": "home-manager",
         "nixpkgs": "nixpkgs",
+        "wlctl": "wlctl",
         "zen-browser": "zen-browser"
+      }
+    },
+    "wlctl": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1787245917,
+        "narHash": "sha256-ecjh4pYRLb0Ic/gWmfvEakzeQXhTfBe+zCFtqCsGeKw=",
+        "owner": "aashish-thapa",
+        "repo": "wlctl",
+        "rev": "d08033112918388fab1c44ac54fcf5b53cfcc504",
+        "type": "github"
+      },
+      "original": {
+        "owner": "aashish-thapa",
+        "repo": "wlctl",
+        "type": "github"
       }
     },
     "zen-browser": {

@@ -21,12 +21,13 @@ in
       control-center-margin-top = 40;
       control-center-margin-bottom = 10;
       control-center-margin-right = 6;
-      notification-window-width = 380;
-      control-center-width = 380;
-      fit-to-screen = true;
+      notification-window-width = 360;
+      control-center-width = 360;
+      control-center-height = -1;
+      fit-to-screen = false;
       hide-on-clear = true;
       hide-on-action = true;
-      relative-timestamps = false;
+      relative-timestamps = true;
       notification-grouping = true;
       image-visibility = "when-available";
       image-size = 72;
@@ -50,11 +51,11 @@ in
 
     style = ''
       :root {
-        --notification-icon-size: 46px;
+        --notification-icon-size: 42px;
         --notification-app-icon-size: 18px;
         --notification-group-icon-size: 22px;
-        --font-size-summary: 13px;
-        --font-size-body: 11.5px;
+        --font-size-summary: 12.5px;
+        --font-size-body: 11px;
       }
 
       * {
@@ -76,20 +77,32 @@ in
 
       .control-center {
         background: alpha(#${c.background}, 0.98);
-        border: 1px solid alpha(#${c.accent}, 0.68);
-        border-radius: 18px;
-        padding: 8px;
+        border: 1px solid alpha(#${c.accent}, 0.76);
+        border-radius: 20px;
+        padding: 10px;
         box-shadow: 0 10px 32px alpha(#${c.background}, 0.76);
       }
 
-      .notification-row {
+      .control-center .control-center-list,
+      .control-center .widget-notifications,
+      .notification-group,
+      .notification-group:focus,
+      .notification-row,
+      .notification-row:focus {
+        background: transparent;
         outline: none;
+      }
+
+      .control-center .widget-notifications {
+        margin: 0 2px 4px 2px;
+        padding: 0;
+        border-radius: 0;
       }
 
       .notification-row .notification-background {
         background: transparent;
         border: none;
-        margin: 4px 2px;
+        margin: 5px 2px;
         padding: 0;
       }
 
@@ -99,33 +112,34 @@ in
 
       .notification-row .notification-background .notification {
         background: alpha(#${c.surface}, 0.985);
-        border: 1px solid alpha(#${c.muted}, 0.68);
-        border-left: 3px solid #${c.accent};
-        border-radius: 14px;
+        border: 1px solid alpha(#${c.accent}, 0.62);
+        border-radius: 16px;
         padding: 0;
         box-shadow: 0 6px 20px alpha(#${c.background}, 0.68);
       }
 
       .notification-row .notification-background .notification.low {
-        border-left-color: #${c.green};
+        border-color: alpha(#${c.green}, 0.72);
       }
 
       .notification-row .notification-background .notification.critical {
-        border-color: alpha(#${c.red}, 0.78);
-        border-left: 3px solid #${c.red};
+        border-color: alpha(#${c.red}, 0.88);
       }
 
       .notification-row .notification-background .notification:hover {
         background: #${c.selection};
         border-color: alpha(#${c.yellow}, 0.62);
-        border-left-color: #${c.yellow};
+      }
+
+      .notification-group.collapsed .notification-row .notification {
+        background: alpha(#${c.surface}, 0.985);
       }
 
       .notification-row .notification-background .notification .notification-default-action {
         color: #${c.foreground};
         background: transparent;
         border: none;
-        border-radius: 14px;
+        border-radius: 15px;
         padding: 0;
       }
 
@@ -135,12 +149,12 @@ in
 
       .notification-row .notification-background .notification .notification-default-action .notification-content {
         background: transparent;
-        padding: 11px 12px;
+        padding: 12px 13px;
       }
 
       .notification-row .notification-background .notification .notification-default-action .notification-content .image {
-        margin: 1px 11px 1px 0;
-        border-radius: 10px;
+        margin: 1px 12px 1px 0;
+        border-radius: 12px;
       }
 
       .notification-row .notification-background .notification .notification-default-action .notification-content .app-icon {
@@ -149,22 +163,22 @@ in
 
       .notification-row .notification-background .notification .notification-default-action .notification-content .text-box .summary {
         color: #${c.bright};
-        font-size: 13px;
+        font-size: 12.5px;
         font-weight: 700;
       }
 
       .notification-row .notification-background .notification .notification-default-action .notification-content .text-box .time {
         color: #${c.subtle};
         font-family: "${theme.fonts.monospace}";
-        font-size: 9px;
+        font-size: 9.5px;
         font-weight: 600;
         margin-left: 8px;
-        margin-right: 25px;
+        margin-right: 23px;
       }
 
       .notification-row .notification-background .notification .notification-default-action .notification-content .text-box .body {
         color: #${c.foreground};
-        font-size: 11.5px;
+        font-size: 11px;
         font-weight: 500;
         margin-top: 3px;
       }
@@ -201,14 +215,14 @@ in
       }
 
       .widget-title {
-        margin: 2px 4px 7px 4px;
-        padding: 8px 7px;
+        margin: 0 2px 8px 2px;
+        padding: 7px 8px;
         background: transparent;
       }
 
       .widget-title > label {
         color: #${c.bright};
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 700;
       }
 
@@ -216,8 +230,10 @@ in
         color: #${c.foreground};
         background: alpha(#${c.selection}, 0.88);
         border: 1px solid alpha(#${c.muted}, 0.58);
-        border-radius: 10px;
-        padding: 6px 9px;
+        border-radius: 11px;
+        padding: 6px 10px;
+        font-size: 10.5px;
+        font-weight: 600;
       }
 
       .widget-title > button:hover {

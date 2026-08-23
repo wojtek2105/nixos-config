@@ -41,8 +41,6 @@
   services = {
     gvfs.enable = true;
     tumbler.enable = true;
-    upower.enable = true;
-    power-profiles-daemon.enable = true;
 
     pipewire = {
       enable = true;

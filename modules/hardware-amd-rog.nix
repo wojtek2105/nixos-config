@@ -1,6 +1,11 @@
 { pkgs, ... }:
 
 {
+  # asus-armoury entered mainline after the default 6.18 kernel. It exposes
+  # firmware attributes used by current asusctl releases on this GA402RK.
+  boot.kernelPackages = pkgs.linuxPackages_latest;
+  boot.kernelModules = [ "asus-armoury" ];
+
   # Ensure the real KMS driver is ready before greetd starts Hyprland.
   boot.initrd.kernelModules = [ "amdgpu" ];
 
@@ -10,6 +15,8 @@
   };
 
   services.asusd.enable = true;
+  services.upower.enable = true;
+  services.power-profiles-daemon.enable = true;
 
   programs.rog-control-center = {
     enable = true;

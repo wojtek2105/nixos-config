@@ -37,6 +37,8 @@ Preferowane są oficjalne repozytoria GitHub i dokumentacja pierwotna.
 - [tmux/tmux](https://github.com/tmux/tmux) — multiplekser i trwałe sesje terminalowe.
 - [Pakiet Foot w nixpkgs](https://github.com/NixOS/nixpkgs/blob/master/pkgs/by-name/fo/foot/package.nix) — deklaratywny pakiet lekkiego terminala Wayland.
 - [Wiremix](https://github.com/tsowell/wiremix) — interfejs TUI do urządzeń i strumieni PipeWire.
+- [wlctl](https://github.com/aashish-thapa/wlctl) — lekki interfejs TUI w Rust
+  do Wi-Fi zarządzanego przez NetworkManager.
 - [Lazygit](https://github.com/jesseduffield/lazygit) — interfejs TUI do Git.
 - [Lazydocker](https://github.com/jesseduffield/lazydocker) — interfejs TUI do kontenerów Docker.
 - [LazySSH](https://github.com/Adembc/lazyssh) — interfejs TUI do zapisanych hostów SSH.

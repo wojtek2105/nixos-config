@@ -47,7 +47,7 @@ Pliki są zapisywane w `~/Videos/Replays`.
 ## Implementacja deklaratywna
 
 - pakiet: `modules/gaming.nix`,
-- profil laptopa: `hosts/laptop/configuration.nix`,
+- profil laptopa: `hosts/rog-polamaniec/configuration.nix`,
 - autostart i skróty: `home/wojtek/hyprland.nix`,
 - konfiguracja nakładki: `home/wojtek/default.nix`.
 

@@ -13,7 +13,7 @@ nix flake check path:.
 Pełny build laptopa bez aktywowania:
 
 ```bash
-nix build path:.#nixosConfigurations.laptop.config.system.build.toplevel
+nix build path:.#nixosConfigurations.rog-polamaniec.config.system.build.toplevel
 ```
 
 Użycie `path:.` uwzględnia wszystkie pliki robocze i działa również bez metadanych
@@ -24,13 +24,13 @@ Git. W zwykłym checkoutcie można używać także `.#...`.
 Preferowana pierwsza próba, ważna do restartu:
 
 ```bash
-sudo nixos-rebuild test --flake path:.#laptop
+sudo nixos-rebuild test --flake path:.#rog-polamaniec
 ```
 
 Po ręcznym sprawdzeniu pulpitu, sieci, dźwięku i nagrywania:
 
 ```bash
-sudo nixos-rebuild switch --flake path:.#laptop
+sudo nixos-rebuild switch --flake path:.#rog-polamaniec
 ```
 
 ## Generacje i garbage collection
@@ -59,7 +59,7 @@ rollbacku.
 ```bash
 nix flake update
 nix flake check path:.
-nix build path:.#nixosConfigurations.laptop.config.system.build.toplevel
+nix build path:.#nixosConfigurations.rog-polamaniec.config.system.build.toplevel
 ```
 
 Zmiany `flake.lock` należy przejrzeć przed aktywacją.

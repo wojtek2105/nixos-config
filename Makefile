@@ -1,4 +1,4 @@
-HOST ?= laptop
+HOST ?= rog-polamaniec
 FLAKE ?= path:.
 KEEP ?= 4
 SYSTEM_PROFILE ?= /nix/var/nix/profiles/system
@@ -25,6 +25,9 @@ build:
 
 test:
 	sudo nixos-rebuild test --flake $(FLAKE)\#$(HOST)
+	ironbar --config "$(HOME)/.config/ironbar/config.json" --theme "$(HOME)/.config/ironbar/style.css" --validate-config
+	systemctl --user daemon-reload
+	systemctl --user restart ironbar.service
 
 benchmark:
 	desktop-benchmark $(or $(SECONDS),120)

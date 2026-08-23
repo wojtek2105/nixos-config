@@ -1,22 +1,26 @@
-{ inputs, pkgs, ... }:
+{ desktopFeatures, inputs, lib, pkgs, ... }:
 
 let
   theme = import ./theme.nix { inherit inputs; };
   c = theme.colors;
+  s = theme.semantic;
   ironbarMetric = import ./ironbar-metric.nix { inherit inputs pkgs; };
+  amdGpuEnabled = desktopFeatures.amdGpu or false;
+  dockerEnabled = desktopFeatures.docker or false;
+  laptopEnabled = desktopFeatures.laptop or false;
 
   metric = {
     component,
     icon,
     interval,
+    last ? false,
     width,
   }: {
     type = "custom";
     name = "metric-${component}";
-    class = "island metric metric-${component}";
-    tooltip = "#metric_${component}_tooltip";
-    on_mouse_enter =
-      ''${pkgs.ironbar}/bin/ironbar var set metric_${component}_tooltip "$(${ironbarMetric}/bin/ironbar-metric ${component} tooltip)"'';
+    class = "island metric metric-${component}${lib.optionalString last " metric-last"}";
+    disable_popup = true;
+    tooltip = "{{poll:10000:${ironbarMetric}/bin/ironbar-metric ${component} tooltip_plain}}";
     on_click_left = "desktop-panel metrics";
     bar = [
       {
@@ -29,20 +33,13 @@ let
         path = "/home/wojtek/.config/ironbar/${component}.lua";
         frequency = interval;
         inherit width;
-        height = 20;
+        height = 23;
       }
     ];
   };
 
   ironbarConfig = {
     name = "main";
-    ironvar_defaults = {
-      metric_cpu_tooltip = "  PROCESOR\nNajedź, aby pobrać szczegóły";
-      metric_memory_tooltip = "  PAMIĘĆ\nNajedź, aby pobrać szczegóły";
-      metric_network_tooltip = "󰓅  SIEĆ\nNajedź, aby pobrać szczegóły";
-      metric_disk_tooltip = "󰋊  DYSK\nNajedź, aby pobrać szczegóły";
-      metric_gpu_tooltip = "󰢮  GRAFIKA\nNajedź, aby pobrać szczegóły";
-    };
     position = "top";
     anchor_to_edges = true;
     height = 30;
@@ -61,47 +58,43 @@ let
         type = "workspaces";
         name = "workspace-island";
         class = "island";
-        favorites = [ "1" "2" "3" "4" "5" ];
-        all_monitors = false;
+        all_monitors = true;
         sort = "index";
-        name_map = {
-          "1" = "●";
-          "2" = "●";
-          "3" = "●";
-          "4" = "●";
-          "5" = "●";
-        };
+        format = "{label}";
       }
       (metric {
         component = "cpu";
         icon = "";
         interval = 2000;
-        width = 13;
+        width = 33;
       })
       (metric {
         component = "memory";
-        icon = "";
+        icon = "";
         interval = 3000;
-        width = 5;
+        width = 15;
       })
       (metric {
         component = "network";
-        icon = "󰓅";
+        icon = "󰛳";
         interval = 2000;
-        width = 13;
+        width = 33;
       })
       (metric {
         component = "disk";
         icon = "󰋊";
         interval = 15000;
-        width = 21;
+        last = !amdGpuEnabled;
+        width = 51;
       })
+    ] ++ lib.optionals amdGpuEnabled [
       (metric {
         component = "gpu";
         icon = "󰢮";
         interval = 2000;
-        width = 21;
+        width = 51;
       })
+    ] ++ lib.optionals dockerEnabled [
       {
         type = "script";
         name = "docker";
@@ -118,35 +111,28 @@ let
       {
         type = "clock";
         name = "clock";
-        class = "island";
+        class = "island center-item center-first";
         format = "󰥔  %H:%M";
+        format_popup = "󰃭  %A, %d %B %Y";
         locale = "pl_PL";
-        disable_popup = true;
-        tooltip = "{{poll:60000:date '+%A, %d.%m.%Y'}}";
+        show_week_numbers = false;
       }
       {
         type = "label";
         name = "screenshot";
-        class = "island";
+        class = "island center-item center-last";
         label = "󰄀";
-        tooltip = "Screenshot\nLewy: obszar i edycja\nPrawy: cały ekran";
-        on_click_left = "screenshot-menu area";
+        tooltip = "Screenshot\nLewy klik: wybierz okno\nLewy przeciągnij: wybierz obszar\nPrawy: cały ekran\nKażdy tryb otwiera edycję";
+        on_click_left = "screenshot-menu select";
         on_click_right = "screenshot-menu full";
       }
     ];
 
     end = [
       {
-        type = "tray";
-        name = "tray";
-        class = "island";
-        icon_size = 13;
-        prefer_theme_icons = true;
-      }
-      {
         type = "volume";
         name = "volume";
-        class = "island";
+        class = "island status status-first";
         format = "{icon}  {percentage}%";
         mute_format = "󰝟  mute";
         max_volume = 100;
@@ -175,18 +161,96 @@ let
       {
         type = "network_manager";
         name = "network";
-        class = "island network";
-        icon_size = 13;
+        class = "island status network";
+        icon_size = 18;
         types_whitelist = [ "wifi" "ethernet" ];
         interface_blacklist = [ "lo" ];
+        use_default_profiles = false;
+        profiles = {
+          wired_disconnected = {
+            when = {
+              type = "wired";
+              state = "disconnected";
+            };
+            icon = "󰈂";
+          };
+          wired_acquiring = {
+            when = {
+              type = "wired";
+              state = "acquiring";
+            };
+            icon = "󰈁";
+          };
+          wired_connected = {
+            when = {
+              type = "wired";
+              state = "connected";
+            };
+            icon = "󰈀";
+          };
+          wifi_disconnected = {
+            when = {
+              type = "wifi";
+              state = "disconnected";
+            };
+            icon = "󰤭";
+          };
+          wifi_acquiring = {
+            when = {
+              type = "wifi";
+              state = "acquiring";
+            };
+            icon = "";
+          };
+          wifi_connected_none = {
+            when = {
+              type = "wifi";
+              state = "connected";
+              signal_strength = 20;
+            };
+            icon = "";
+          };
+          wifi_connected_weak = {
+            when = {
+              type = "wifi";
+              state = "connected";
+              signal_strength = 40;
+            };
+            icon = "";
+          };
+          wifi_connected_ok = {
+            when = {
+              type = "wifi";
+              state = "connected";
+              signal_strength = 50;
+            };
+            icon = "";
+          };
+          wifi_connected_good = {
+            when = {
+              type = "wifi";
+              state = "connected";
+              signal_strength = 80;
+            };
+            icon = "";
+          };
+          wifi_connected_excellent = {
+            when = {
+              type = "wifi";
+              state = "connected";
+              signal_strength = 100;
+            };
+            icon = "";
+          };
+        };
         tooltip = "Sieć\nKliknij, aby otworzyć panel TUI";
         on_click_left = "desktop-panel wifi";
       }
       {
         type = "bluetooth";
         name = "bluetooth";
-        class = "island";
-        icon_size = 13;
+        class = "island status${lib.optionalString (!laptopEnabled) " status-last"}";
+        icon_size = 18;
         disable_popup = true;
         tooltip = "Bluetooth\nKliknij, aby otworzyć panel TUI";
         on_click_left = "desktop-panel bluetooth";
@@ -198,10 +262,13 @@ let
           connected_battery = "";
         };
       }
+    ] ++ lib.optionals laptopEnabled [
       {
         type = "brightness";
         name = "brightness";
-        class = "island brightness";
+        class = "island status brightness";
+        icon_label = "";
+        justify = "center";
         format = "{percentage}%";
         smooth_scroll_speed = 0.5;
         mode = {
@@ -214,8 +281,9 @@ let
       {
         type = "battery";
         name = "battery";
-        class = "island";
-        icon_size = 13;
+        class = "island status status-last";
+        icon_size = 17;
+        justify = "center";
         format = "{percentage}%";
         profiles = {
           warning = {
@@ -229,6 +297,13 @@ let
             format = "{percentage}%";
           };
         };
+      }
+    ] ++ [
+      {
+        type = "tray";
+        name = "tray";
+        icon_size = 15;
+        prefer_theme_icons = true;
       }
       {
         type = "notifications";
@@ -249,15 +324,24 @@ let
   };
 
   metricLua = ''
+    local cairo = require("lgi").cairo
     local metrics = {}
 
     local palette = {
-      track = "${c.selection}",
+      track = "${c.muted}",
       cpu = { "${c.violet}", "${c.yellow}" },
       memory = { "${c.accent}" },
       network = { "${c.green}", "${c.violet}" },
       disk = { "${c.orange}", "${c.green}", "${c.violet}" },
       gpu = { "${c.blue}", "${c.magenta}", "${c.yellow}" },
+    }
+
+    local symbols = {
+      cpu = { "󰓅", "" },
+      memory = { "󰓅" },
+      network = { "", "" },
+      disk = { "󰓅", "", "" },
+      gpu = { "󰓅", "󰍛", "" },
     }
 
     local function rgb(hex)
@@ -400,9 +484,14 @@ let
       return tonumber((last or ""):match("(%d+)%%%s+/%s*$")) or 0
     end
 
-    local function logarithmic_percent(rate, ceiling)
+    local function throughput_percent(rate, knee, ceiling, knee_percent)
       if rate <= 0 then return 0 end
-      return clamp(math.log(rate + 1) / math.log(ceiling + 1) * 100)
+      if rate < knee then
+        return clamp(rate / knee * knee_percent)
+      end
+      if rate >= ceiling then return 100 end
+      local progress = math.log(rate / knee) / math.log(ceiling / knee)
+      return clamp(knee_percent + progress * (100 - knee_percent))
     end
 
     local function rounded_rectangle(cr, x, y, width, height, radius)
@@ -456,8 +545,8 @@ let
           local up = state.tx and math.max((tx - state.tx) / elapsed, 0) or 0
           state.interface, state.rx, state.tx, state.time = interface, rx, tx, now
           return {
-            logarithmic_percent(down, 100 * 1024 * 1024),
-            logarithmic_percent(up, 100 * 1024 * 1024),
+            throughput_percent(down, 1024 * 1024, 100 * 1024 * 1024, 20),
+            throughput_percent(up, 1024 * 1024, 100 * 1024 * 1024, 20),
           }
         end
 
@@ -469,8 +558,8 @@ let
           state.disk_read, state.disk_write, state.time = read_bytes, write_bytes, now
           return {
             clamp(root_disk_percent()),
-            logarithmic_percent(read_rate, 1024 * 1024 * 1024),
-            logarithmic_percent(write_rate, 1024 * 1024 * 1024),
+            throughput_percent(read_rate, 10 * 1024 * 1024, 1024 * 1024 * 1024, 20),
+            throughput_percent(write_rate, 10 * 1024 * 1024, 1024 * 1024 * 1024, 20),
           }
         end
 
@@ -488,25 +577,59 @@ let
       return function(cr, width, height)
         local current = values()
         local colors = palette[component] or { "${c.foreground}" }
-        local bar_width = 5
+        local bar_width = 15
         local gap = 3
-        local bar_height = height - 4
+        local bar_height = height - 2
         local track_r, track_g, track_b = rgb(palette.track)
+        local base_r, base_g, base_b = rgb("${c.background}")
+        local bright_r, bright_g, bright_b = rgb("${c.bright}")
+        local outline = {
+          { -1, 0 },
+          { 1, 0 },
+          { 0, -1 },
+          { 0, 1 },
+        }
 
         for index, value in ipairs(current) do
           local x = (index - 1) * (bar_width + gap)
-          rounded_rectangle(cr, x, 2, bar_width, bar_height, 2.5)
-          cr:set_source_rgba(track_r, track_g, track_b, 0.72)
+          rounded_rectangle(cr, x, 1, bar_width, bar_height, 3)
+          cr:set_source_rgba(track_r, track_g, track_b, 0.22)
           cr:fill()
 
           local fill = bar_height * clamp(value) / 100
           if fill > 0 then
             fill = math.max(fill, 2)
             local red, green, blue = rgb(colors[index] or colors[#colors])
-            rounded_rectangle(cr, x, 2 + bar_height - fill, bar_width, fill, 2.5)
-            cr:set_source_rgba(red, green, blue, 1)
+            rounded_rectangle(
+              cr,
+              x,
+              1 + bar_height - fill,
+              bar_width,
+              fill,
+              3
+            )
+            cr:set_source_rgba(red, green, blue, 0.96)
             cr:fill()
           end
+
+          local symbol = (symbols[component] or {})[index] or "•"
+          cr:select_font_face(
+            "${theme.fonts.monospace}",
+            cairo.FontSlant.NORMAL,
+            cairo.FontWeight.BOLD
+          )
+          cr:set_font_size(12)
+          local extents = cr:text_extents(symbol)
+          local symbol_x = x + (bar_width - extents.width) / 2 - extents.x_bearing
+          local symbol_y = 1 + (bar_height - extents.height) / 2 - extents.y_bearing
+          cr:set_source_rgba(base_r, base_g, base_b, 0.94)
+          for _, offset in ipairs(outline) do
+            cr:move_to(symbol_x + offset[1], symbol_y + offset[2])
+            cr:show_text(symbol)
+          end
+          cr:move_to(symbol_x, symbol_y)
+          cr:set_source_rgba(bright_r, bright_g, bright_b, 1)
+          cr:show_text(symbol)
         end
       end
     end
@@ -545,13 +668,22 @@ in
       @define-color red #${c.red};
       @define-color accent #${c.accent};
       @define-color magenta #${c.magenta};
+      @define-color panel #${s.panel};
+      @define-color panel-hover #${s.panelHover};
+      @define-color line #${s.border};
+      @define-color active #${s.active};
+      @define-color info #${s.info};
+      @define-color success #${s.success};
+      @define-color warning #${s.warning};
+      @define-color thermal #${s.thermal};
+      @define-color critical #${s.critical};
 
       * {
         border: none;
         border-radius: 0;
         box-shadow: none;
         font-family: "${theme.fonts.interface}";
-        font-size: 10.5px;
+        font-size: 11px;
         font-weight: 500;
       }
 
@@ -564,82 +696,106 @@ in
         background-color: transparent;
       }
 
-      #start > * + *,
-      #center > * + *,
-      #end > * + * {
-        margin-left: 4px;
+      #metric-cpu,
+      #docker,
+      #notifications {
+        margin-left: 5px;
       }
 
       .island {
         min-height: 28px;
         padding: 0 8px;
         color: @text;
-        background-color: alpha(@base, 0.96);
-        border: 1px solid alpha(@overlay, 0.56);
+        background-color: alpha(@panel, 0.95);
+        border: 1px solid alpha(@line, 0.62);
         border-radius: 9px;
-        box-shadow: 0 3px 8px alpha(@base, 0.50);
+        box-shadow: 0 2px 6px alpha(@base, 0.42);
       }
 
       .island:hover {
         color: @bright;
-        background-color: alpha(@surface, 0.98);
-        border-color: alpha(@accent, 0.68);
+        background-color: alpha(@panel-hover, 0.98);
+        border-color: alpha(@active, 0.76);
       }
 
       #workspace-island {
-        padding: 0 3px;
+        padding: 0 5px;
+        background-color: alpha(@panel, 0.97);
+        border-color: alpha(@line, 0.72);
       }
 
       #workspace-island .item {
-        min-width: 18px;
-        min-height: 20px;
-        margin: 4px 1px;
-        padding: 0 2px;
+        min-width: 20px;
+        min-height: 22px;
+        margin: 3px 1px;
+        padding: 0;
         color: alpha(@subtext, 0.46);
         background: transparent;
-        border: 1px solid transparent;
-        border-radius: 8px;
-        font-size: 9px;
+        border: none;
+        border-radius: 99px;
+        box-shadow: none;
+        font-family: "${theme.fonts.monospace}";
+        font-size: 10px;
+        font-weight: 700;
       }
 
       #workspace-island .item:not(.inactive) {
-        color: @blue;
-        background: alpha(@blue, 0.22);
-        border-color: alpha(@blue, 0.72);
+        color: @subtext;
+        background: transparent;
+        border: none;
+        box-shadow: none;
         font-size: 10px;
       }
 
       #workspace-island .item.visible {
         color: @bright;
-        border-color: alpha(@violet, 0.88);
       }
 
       #workspace-island .item.focused {
-        min-width: 27px;
-        color: @bright;
-        background: alpha(@accent, 0.56);
-        border-color: alpha(@accent, 0.94);
-        box-shadow: inset 0 -2px alpha(@bright, 0.18);
+        min-width: 22px;
+        min-height: 22px;
+        margin: 3px 1px;
+        color: @base;
+        background: @active;
+        border: none;
+        border-radius: 99px;
+        box-shadow: 0 0 0 1px alpha(@bright, 0.12);
         font-size: 11px;
+        font-weight: 800;
       }
 
       #workspace-island .item.urgent {
+        color: @base;
+        background: @critical;
+        font-size: 11px;
+      }
+
+      #workspace-island .item:hover {
         color: @bright;
-        background: alpha(@red, 0.72);
-        border-color: alpha(@red, 0.9);
+        background: transparent;
+        border: none;
+      }
+
+      #workspace-island .item.focused:hover {
+        color: @base;
+        background: @bright;
       }
 
       .metric {
-        padding: 0 6px;
-        background-color: alpha(@base, 0.96);
+        padding: 0 5px;
+        background-color: alpha(@panel, 0.95);
+        border-color: alpha(@line, 0.62);
+        border-radius: 0;
+        box-shadow: none;
       }
 
+      .metric-icon,
       .metric .metric-icon {
-        margin-right: 5px;
-        color: @bright;
+        min-width: 22px;
+        margin: 0 6px 0 1px;
         font-family: "${theme.fonts.monospace}";
-        font-size: 11px;
-        font-weight: 700;
+        font-size: 24px;
+        font-weight: 800;
       }
 
       .metric .cairo {
@@ -647,31 +803,202 @@ in
         padding: 0;
       }
 
-      #metric-cpu { border-color: alpha(@violet, 0.58); }
-      #metric-memory { border-color: alpha(@accent, 0.58); }
-      #metric-network { border-color: alpha(@green, 0.58); }
-      #metric-disk { border-color: alpha(@orange, 0.58); }
-      #metric-gpu { border-color: alpha(@blue, 0.68); }
+      #metric-cpu .metric-icon { color: @violet; }
+      #metric-memory .metric-icon { color: @accent; }
+      #metric-network .metric-icon { color: @green; }
+      #metric-disk .metric-icon { color: @orange; }
+      #metric-gpu .metric-icon { color: @blue; }
 
-      #docker { color: @blue; }
-      #clock { color: @bright; font-weight: 600; }
-      #screenshot { color: @orange; font-size: 12px; }
-      #volume { color: @violet; }
-      #network { color: @green; }
-      #bluetooth { color: @blue; }
-      #brightness { color: @yellow; }
-      #battery { color: @yellow; }
-      #battery.profile-warning { border-color: alpha(@yellow, 0.75); }
-      #battery.profile-critical { color: @red; border-color: alpha(@red, 0.86); }
-      #notifications { color: @accent; }
+      #metric-cpu {
+        border-right: none;
+        border-radius: 9px 0 0 9px;
+      }
+
+      #metric-memory,
+      #metric-network,
+      #metric-disk,
+      #metric-gpu {
+        margin-left: 0;
+        border-left-width: 2px;
+        border-left-style: solid;
+      }
+
+      #metric-memory { border-left-color: alpha(@accent, 0.76); }
+      #metric-network { border-left-color: alpha(@green, 0.76); }
+      #metric-disk { border-left-color: alpha(@orange, 0.76); }
+      #metric-gpu { border-left-color: alpha(@blue, 0.86); }
+
+      #metric-memory,
+      #metric-network,
+      #metric-disk {
+        border-right: none;
+      }
+
+      #metric-gpu {
+        border-right: 1px solid alpha(@line, 0.62);
+        border-radius: 0 9px 9px 0;
+      }
+
+      #metric-disk.metric-last {
+        border-right: 1px solid alpha(@line, 0.62);
+        border-radius: 0 9px 9px 0;
+      }
+
+      .metric:hover {
+        background-color: alpha(@panel-hover, 0.98);
+      }
+
+      #docker { color: @text; }
+      #docker.offline { color: @subtext; }
+
+      #clock {
+        padding: 0 10px;
+        color: @bright;
+        border-right: none;
+        border-radius: 9px 0 0 9px;
+        font-size: 11.5px;
+        font-weight: 700;
+      }
+
+      #screenshot {
+        margin-left: 0;
+        padding: 0 9px;
+        color: @orange;
+        border-left-color: alpha(@line, 0.36);
+        border-radius: 0 9px 9px 0;
+        font-size: 16px;
+      }
+
+      .status {
+        margin-left: 0;
+        padding: 0 7px;
+        border-left-color: alpha(@line, 0.34);
+        border-right: none;
+        border-radius: 0;
+        box-shadow: none;
+        font-size: 11.5px;
+        font-weight: 600;
+      }
+
+      .status.status-last {
+        border-right: 1px solid alpha(@line, 0.62);
+        border-radius: 0 9px 9px 0;
+      }
+
+      #volume {
+        min-width: 58px;
+        color: @text;
+        border-left-color: alpha(@line, 0.62);
+        border-radius: 9px 0 0 9px;
+      }
+
+      #network {
+        min-width: 32px;
+        padding: 0 6px;
+        color: @success;
+      }
+
+      #network .item,
+      #network .icon,
+      #network .text-icon {
+        min-width: 20px;
+        margin: 0;
+        padding: 0;
+        font-family: "${theme.fonts.monospace}";
+        font-size: 18px;
+        font-weight: 800;
+      }
+
+      #bluetooth {
+        min-width: 32px;
+        padding: 0 6px;
+        color: @info;
+        font-family: "${theme.fonts.monospace}";
+        font-size: 18px;
+        font-weight: 800;
+      }
+
+      #bluetooth label {
+        min-width: 20px;
+        margin: 0;
+        padding: 0;
+        font-family: "${theme.fonts.monospace}";
+        font-size: 18px;
+        font-weight: 800;
+      }
+
+      #brightness {
+        min-width: 64px;
+        padding: 0 7px;
+        color: @thermal;
+      }
+
+      #brightness .icon {
+        min-width: 20px;
+        margin: 0 5px 0 0;
+        padding: 0;
+        font-family: "${theme.fonts.monospace}";
+        font-size: 18px;
+        font-weight: 800;
+      }
+
+      #brightness .label {
+        min-width: 38px;
+        margin: 0;
+        padding: 0;
+        font-size: 11.5px;
+        font-weight: 700;
+      }
+
+      #battery {
+        min-width: 58px;
+        color: @success;
+        border-right: 1px solid alpha(@line, 0.62);
+        border-radius: 0 9px 9px 0;
+      }
+
+      #battery.profile-warning {
+        color: @warning;
+        background-color: alpha(@orange, 0.13);
+      }
+
+      #battery.profile-critical {
+        color: @critical;
+        background-color: alpha(@red, 0.18);
+        border-color: alpha(@critical, 0.76);
+      }
+
+      #notifications { color: @active; }
+
+      #notifications label {
+        font-size: 16px;
+      }
 
       #tray {
-        padding: 0 5px;
+        padding: 0;
+        background: transparent;
       }
 
       #tray .item {
-        padding: 0 3px;
-        background: transparent;
+        min-width: 22px;
+        min-height: 28px;
+        margin-left: 5px;
+        padding: 0 4px;
+        color: @text;
+        background-color: alpha(@panel, 0.95);
+        border: 1px solid alpha(@line, 0.62);
+        border-radius: 9px;
+        box-shadow: 0 2px 6px alpha(@base, 0.42);
+      }
+
+      #tray .item:hover {
+        color: @bright;
+        background-color: alpha(@panel-hover, 0.98);
+        border-color: alpha(@active, 0.76);
+      }
+
+      #tray .item + .item {
+        margin-left: 2px;
       }
 
       #network .item,
@@ -686,7 +1013,7 @@ in
         min-height: 10px;
         padding: 1px;
         color: @bright;
-        background: @accent;
+        background: @active;
         border-radius: 99px;
         font-size: 7px;
         font-weight: 700;
@@ -697,9 +1024,9 @@ in
       popover contents,
       .popup {
         color: @text;
-        background: alpha(@base, 0.99);
-        border: 1px solid alpha(@accent, 0.62);
-        border-radius: 10px;
+        background: alpha(@panel, 0.99);
+        border: 1px solid alpha(@line, 0.92);
+        border-radius: 11px;
         box-shadow: 0 8px 24px alpha(@base, 0.74);
       }
 
@@ -714,6 +1041,70 @@ in
 
       .popup {
         padding: 10px;
+      }
+
+      .popup-clock {
+        min-width: 240px;
+        padding: 12px;
+      }
+
+      .popup-clock .calendar-clock {
+        padding: 2px 4px 10px;
+        color: @bright;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .popup-clock .calendar {
+        padding: 4px;
+        color: @text;
+        background: transparent;
+        font-size: 10.5px;
+      }
+
+      .popup-clock calendar header {
+        padding-bottom: 6px;
+        color: @bright;
+        background: transparent;
+      }
+
+      .popup-clock calendar header button {
+        min-width: 24px;
+        min-height: 24px;
+        color: @subtext;
+        border-radius: 99px;
+      }
+
+      .popup-clock calendar header button:hover {
+        color: @bright;
+        background: alpha(@surface, 0.70);
+      }
+
+      .popup-clock calendar .day-name {
+        color: @subtext;
+        font-weight: 700;
+      }
+
+      .popup-clock calendar .day-number {
+        min-width: 24px;
+        min-height: 24px;
+        color: @text;
+        border-radius: 99px;
+      }
+
+      .popup-clock calendar .day-number:hover {
+        color: @bright;
+        background: alpha(@surface, 0.90);
+      }
+
+      .popup-clock calendar .other-month {
+        color: alpha(@subtext, 0.32);
+      }
+
+      .popup-clock calendar .today {
+        color: @base;
+        background: @active;
+        font-weight: 800;
       }
 
       button,

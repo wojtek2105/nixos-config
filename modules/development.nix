@@ -1,7 +1,7 @@
 { pkgs, ... }:
 
 {
-  programs.fish.enable = true;
+  imports = [ ./development-core.nix ];
 
   virtualisation.docker = {
     enable = true;
@@ -15,9 +15,7 @@
   users.users.wojtek.extraGroups = [ "docker" ];
 
   environment.systemPackages = with pkgs; [
-    codex
     docker-compose
-    gnumake
     lazydocker
     lazyssh
   ];

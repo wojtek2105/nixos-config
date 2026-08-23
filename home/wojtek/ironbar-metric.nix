@@ -33,17 +33,46 @@ pkgs.writeShellApplication {
         "$label" "$color" "''${levels[index]}"
     }
 
+    markup_escape() {
+      printf '%s' "$1" \
+        | sed \
+          -e 's/&/\&amp;/g' \
+          -e 's/</\&lt;/g' \
+          -e 's/>/\&gt;/g' \
+          -e 's/"/\&quot;/g' \
+          -e "s/'/\&apos;/g"
+    }
+
+    pad_right() {
+      local text="$1"
+      local width="$2"
+      local missing=$((width - ''${#text}))
+      printf '%s' "$text"
+      (( missing > 0 )) && printf '%*s' "$missing" ""
+    }
+
+    pad_left() {
+      local text="$1"
+      local width="$2"
+      local missing=$((width - ''${#text}))
+      (( missing > 0 )) && printf '%*s' "$missing" ""
+      printf '%s' "$text"
+    }
+
     row() {
       local label="$1"
       local value="$2"
       local color="''${3:-${c.bright}}"
-      printf '<span foreground="#${c.subtle}">%-16s</span><span foreground="#%s"><b>%12s</b></span>' \
-        "$label" "$color" "$value"
+      local padded_label padded_value
+      padded_label="$(pad_right "$label" 16)"
+      padded_value="$(pad_left "$value" 12)"
+      printf '<span foreground="#${c.subtle}">%s</span><span foreground="#%s"><b>%s</b></span>' \
+        "$(markup_escape "$padded_label")" "$color" "$(markup_escape "$padded_value")"
     }
 
     tooltip_start() {
       printf '<span font_family="${theme.fonts.monospace}"><span foreground="#${c.bright}"><b>%s  %s</b></span>\n' \
-        "$1" "$2"
+        "$(markup_escape "$1")" "$(markup_escape "$2")"
     }
 
     emit() {
@@ -73,7 +102,17 @@ pkgs.writeShellApplication {
             '{text: $text, tooltip: $tooltip, class: $class, percentage: $percentage}'
           ;;
         tooltip)
-          printf '%s\n' "$tooltip</span>" | sed -E 's/<[^>]+>//g'
+          printf '%s\n' "$tooltip</span>"
+          ;;
+        tooltip_plain)
+          printf '%s\n' "$tooltip</span>" \
+            | sed -E \
+              -e 's/<[^>]+>//g' \
+              -e 's/&amp;/\&/g' \
+              -e 's/&lt;/</g' \
+              -e 's/&gt;/>/g' \
+              -e 's/&quot;/"/g' \
+              -e "s/&apos;/'/g"
           ;;
         percentage)
           printf '%s\n' "$percentage"
@@ -89,11 +128,10 @@ pkgs.writeShellApplication {
       local rate="''${1:-0}"
       if (( rate >= 104857600 )); then printf '100\n'
       elif (( rate >= 52428800 )); then printf '88\n'
-      elif (( rate >= 10485760 )); then printf '72\n'
-      elif (( rate >= 1048576 )); then printf '56\n'
-      elif (( rate >= 102400 )); then printf '40\n'
-      elif (( rate >= 10240 )); then printf '24\n'
-      elif (( rate > 0 )); then printf '12\n'
+      elif (( rate >= 10485760 )); then printf '60\n'
+      elif (( rate >= 5242880 )); then printf '48\n'
+      elif (( rate >= 1048576 )); then printf '20\n'
+      elif (( rate > 0 )); then printf '%s\n' "$((rate * 20 / 1048576))"
       else printf '0\n'
       fi
     }
@@ -101,13 +139,11 @@ pkgs.writeShellApplication {
     disk_io_percentage() {
       local rate="''${1:-0}"
       if (( rate >= 1073741824 )); then printf '100\n'
-      elif (( rate >= 524288000 )); then printf '90\n'
-      elif (( rate >= 262144000 )); then printf '80\n'
-      elif (( rate >= 104857600 )); then printf '68\n'
-      elif (( rate >= 52428800 )); then printf '56\n'
-      elif (( rate >= 10485760 )); then printf '44\n'
-      elif (( rate >= 1048576 )); then printf '30\n'
-      elif (( rate > 0 )); then printf '14\n'
+      elif (( rate >= 536870912 )); then printf '88\n'
+      elif (( rate >= 104857600 )); then printf '60\n'
+      elif (( rate >= 52428800 )); then printf '48\n'
+      elif (( rate >= 10485760 )); then printf '20\n'
+      elif (( rate > 0 )); then printf '%s\n' "$((rate * 20 / 10485760))"
       else printf '0\n'
       fi
     }
@@ -192,7 +228,7 @@ pkgs.writeShellApplication {
         (( cpu_temperature > level )) && level=$cpu_temperature
         bars="$(gauge "$usage" '${c.violet}')$(gauge "$cpu_temperature" '${c.yellow}' '°')"
 
-        tooltip="$(tooltip_start '' 'PROCESOR · CPU / °C')"$'\n'
+        tooltip="$(tooltip_start '' 'PROCESOR · CPU / °C')"$'\n'
         tooltip+="$(row 'Użycie' "$usage%" '${c.violet}')"$'\n'
         tooltip+="$(row 'Temperatura' "$cpu_temperature°C" '${c.yellow}')"$'\n'
         tooltip+="$(row 'Taktowanie' "$frequency_display")"$'\n'
@@ -200,7 +236,7 @@ pkgs.writeShellApplication {
         tooltip+="$(row 'Load · 5 min' "$load_5")"$'\n'
         tooltip+="$(row 'Load · 15 min' "$load_15")"$'\n'
         tooltip+="$(row 'Wątki' "$(nproc)")"
-        emit "$level" '' "$bars" "$tooltip"
+        emit "$level" '' "$bars" "$tooltip"
         ;;
 
       memory)
@@ -233,7 +269,7 @@ pkgs.writeShellApplication {
           memory_title+=' / SWAP'
         fi
 
-        tooltip="$(tooltip_start '' "$memory_title")"$'\n'
+        tooltip="$(tooltip_start '' "$memory_title")"$'\n'
         tooltip+="$(row 'Użycie' "$percentage%" '${c.accent}')"$'\n'
         tooltip+="$(row 'Zajęte' "$used_display")"$'\n'
         tooltip+="$(row 'Dostępne' "$available_display" '${c.green}')"$'\n'
@@ -242,7 +278,7 @@ pkgs.writeShellApplication {
           tooltip+=$'\n'"$(row 'Swap' "$swap_display")"$'\n'
           tooltip+="$(row 'Swap użycie' "$swap_percentage%" '${c.blue}')"
         fi
-        emit "$level" '' "$bars" "$tooltip"
+        emit "$level" '' "$bars" "$tooltip"
         ;;
 
       network)

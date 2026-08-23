@@ -2,12 +2,15 @@
 
 ## Flake
 
-`flake.nix` przypina zależności w `flake.lock` i udostępnia jeden docelowy output
-laptopa:
+`flake.nix` przypina zależności w `flake.lock` i udostępnia jeden aktywny output
+sprzętowy:
 
 ```text
-nixosConfigurations.laptop
+nixosConfigurations.rog-polamaniec
 ```
+
+`nixosModules.simple` udostępnia lekką bazę przyszłych hostów, a domyślny
+`devShell` zapewnia Codex, Git i Neovim do ich przygotowania.
 
 Pulpit korzysta wyłącznie z Ironbara. Kod Waybara i Noctalii został usunięty,
 natomiast ich historyczne benchmarki pozostają zapisane w dokumentacji.
@@ -28,13 +31,17 @@ zestawu pakietów.
 .
 ├── flake.nix
 ├── hosts/
-│   └── laptop/
+│   ├── rog-polamaniec/
+│   │   ├── configuration.nix
+│   │   └── hardware-configuration.nix
+│   └── simple/
 │       ├── configuration.nix
-│       └── hardware-configuration.nix
+│       └── README.md
 ├── modules/
 │   ├── common.nix
 │   ├── desktop.nix
 │   ├── desktop-shell.nix
+│   ├── development-core.nix
 │   ├── development.nix
 │   ├── gaming.nix
 │   └── hardware-amd-rog.nix

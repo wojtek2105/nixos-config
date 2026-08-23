@@ -1,9 +1,12 @@
-{ inputs, lib, pkgs, ... }:
+{ desktopFeatures, inputs, lib, pkgs, ... }:
 
 let
   theme = import ./theme.nix { inherit inputs; };
   c = theme.colors;
   scripts = import ./scripts.nix { inherit pkgs; };
+  gamingEnabled = desktopFeatures.gaming or false;
+  laptopEnabled = desktopFeatures.laptop or false;
+  personalAppsEnabled = desktopFeatures.personalApps or false;
 
   wallpaperPaths = lib.concatMapStringsSep "\n        "
     (wallpaper: lib.escapeShellArg (toString wallpaper))
@@ -76,6 +79,10 @@ in
         "@ACTIVE_BORDER_ALT@"
         "@INACTIVE_BORDER@"
         "@SHADOW@"
+        "@START_GAMING@"
+        "@BIND_PERSONAL_APPS@"
+        "@BIND_GAMING@"
+        "@BIND_LAPTOP@"
       ]
       [
         "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1"
@@ -83,6 +90,21 @@ in
         c.yellow
         c.muted
         c.background
+        (lib.optionalString gamingEnabled ''hl.exec_cmd("gsr-ui launch-hide")'')
+        (lib.optionalString personalAppsEnabled ''
+          bind_exec(mod .. " + M", "plexamp")
+          bind_exec(mod .. " + SHIFT + A", "easyeffects")
+        '')
+        (lib.optionalString gamingEnabled ''
+          bind_exec("ALT + Z", "gsr-ui-cli toggle-show")
+          bind_exec(mod .. " + G", "gsr-ui-cli toggle-show")
+          bind_exec(mod .. " + R", "gsr-ui-cli replay-save")
+          bind_exec(mod .. " + SHIFT + R", "gsr-ui-cli toggle-replay")
+        '')
+        (lib.optionalString laptopEnabled ''
+          bind_exec("XF86MonBrightnessUp", "swayosd-client --brightness=+5 --device=amdgpu_bl2", { locked = true, repeating = true })
+          bind_exec("XF86MonBrightnessDown", "swayosd-client --brightness=-5 --device=amdgpu_bl2", { locked = true, repeating = true })
+        '')
       ]
       (builtins.readFile ./hyprland.lua);
 

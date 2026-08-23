@@ -1,14 +1,14 @@
-{ inputs, pkgs, ... }:
+{ desktopFeatures, inputs, lib, pkgs, ... }:
 
 let
   theme = import ./theme.nix { inherit inputs; };
   c = theme.colors;
 in
 {
-  home.packages = with pkgs; [
+  home.packages = lib.optionals (desktopFeatures.personalApps or false) (with pkgs; [
     easyeffects
     plexamp
-  ];
+  ]);
 
   # Ironbar provides native, event-driven network and Bluetooth widgets. Hide
   # the legacy XDG tray applets while keeping NetworkManager and BlueZ intact.

@@ -61,8 +61,10 @@ antyaliasingu, średniego hintingu i układu subpikseli RGB.
 
 Cała sesja używa jednej, przypiętej palety `Biscuit de Mar Dark`. Definicja w
 `home/wojtek/theme.nix` jest źródłem kolorów, fontów, tapety, motywu GTK, ikon i
-kursora. Konfiguracja obejmuje zaokrąglenia, cienie, przezroczystość, blur oraz
-animacje Hyprlanda.
+kursora. Warstwa semantyczna przypisuje kolory do stałych ról: różowy oznacza
+aktywny element, fiolet informację, zielony poprawny stan, żółty temperaturę i
+jasność, pomarańcz ostrzeżenie, a czerwony błąd lub stan krytyczny. Konfiguracja
+obejmuje zaokrąglenia, cienie, przezroczystość, blur oraz animacje Hyprlanda.
 
 Dark mode jest deklaratywny:
 
@@ -101,20 +103,37 @@ startu, w którym Hyprland widział tylko `simpledrm` i kończył pracę komunik
 ## Panel, metryki i screenshoty
 
 - domyślny Ironbar rysuje w Cairo
-  prawdziwe, ciągłe i zaokrąglone pionowe słupki z odstępami; CPU pokazuje
-  użycie/temperaturę, RAM pamięć oraz
+  prawdziwe, ciągłe i zaokrąglone pionowe słupki z odstępami; każda grupa ma
+  jedną dużą ikonę zasobu, a proste znaki w słupkach opisują ich znaczenie:
+  użycie/temperaturę, pobieranie/wysyłanie, odczyt/zapis oraz rdzeń/VRAM; CPU
+  pokazuje użycie/temperaturę, RAM pamięć oraz
   opcjonalny swap tylko wtedy, gdy jest skonfigurowany, sieć
   pobieranie/wysyłanie, dysk zajętość/odczyt/zapis, a GPU rdzeń/VRAM/temperaturę,
-- każdy zasób ma osobny tooltip o stałej szerokości, po jednym parametrze w
-  wierszu; nagłówek opisuje kolejność pasków widoczną na panelu, a dane są
-  pobierane dopiero po najechaniu i przechowywane w natywnej zmiennej Ironbara,
+- transfer sieci i dysku używa skali liniowej dla małego ruchu oraz
+  logarytmicznej dopiero powyżej odpowiednio 1 MiB/s i 10 MiB/s; dzięki temu
+  ruch liczony w KiB/s nie udaje połowy dostępnej skali,
+- grupy CPU, RAM, sieci, dysku i GPU tworzą jeden spokojny wizualnie blok z
+  delikatnymi separatorami, zachowując osobne kliknięcia i szczegóły,
+- każdy zasób ma osobny natywny tooltip Ironbara o stałej szerokości i z
+  monospace, po jednym parametrze w wierszu; dane są odświeżane co 10 sekund,
+  ponieważ IPC popupów modułu `custom` w Ironbarze 0.19 nie działa poprawnie,
+- workspaces pokazują kompaktowe numery tylko dla istniejących pulpitów ze
+  wszystkich monitorów, więc ich liczba odpowiada pulpitom rzeczywiście
+  używanym i nie pozwala przeoczyć pozostawionego okna; bieżący pulpit pozostaje
+  widoczny również wtedy, gdy jest chwilowo pusty, aktywny numer ma różowe koło
+  z ciemnym tekstem, a stan pilny osobny, wyraźny akcent Biscuit,
 - sieć, Bluetooth, jasność, głośność, bateria, workspaces, tray, zegar i
   powiadomienia używają natywnych modułów Ironbara; własne pozostają tylko
   wielowartościowe wykresy Cairo, Docker i akcje screenshotów,
+- panel grupuje workspaces, metryki, centrum zegar/screenshot oraz status
+  laptopa w spokojne kapsuły Biscuit; kolor opisuje funkcję, a mocne tło jest
+  zarezerwowane dla aktywnego pulpitu, ostrzeżenia i stanu krytycznego,
+- pusty zasobnik systemowy nie rysuje tła ani pustej wyspy; jego lekkie karty
+  pojawiają się dopiero razem z ikonami aplikacji,
 - kliknięcie wskaźników zasobów otwiera `btop` w pływającym oknie Foot,
 - kliknięcie dźwięku, Wi-Fi albo Bluetooth otwiera pływający panel TUI w Foot:
-  `wiremix`, własne menu Gum sterujące NetworkManagerem przez `nmcli` albo
-  `bluetui`,
+  `wiremix`, `wlctl` albo `bluetui`; `wlctl` zachowuje sposób obsługi znany z
+  Impali, lecz komunikuje się z używanym już przez system NetworkManagerem,
 - wspólna blokada procesu pozwala uruchomić tylko jeden panel TUI jednocześnie;
   konfiguracja wyłącza autostart apletów `nm-applet` i Bluemana, pozostawiając
   działające NetworkManager i BlueZ,
@@ -123,16 +142,19 @@ startu, w którym Hyprland widział tylko `simpledrm` i kończył pracę komunik
   `lazydocker` w tym samym systemie pojedynczego panelu,
 - Docker nie startuje przy bootowaniu; aktywuje się przez socket dopiero przy
   pierwszym użyciu klienta, Compose albo Lazydockera,
-- zegar ma prosty widok czasu i alternatywny widok daty, bez wbudowanego
-  kalendarza; przyszła aplikacja CalDAV będzie osobnym, pełnym klientem,
+- kliknięcie zegara otwiera prosty, natywny kalendarz Ironbara bez osobnego
+  procesu w tle; przyszła aplikacja CalDAV pozostanie osobnym, pełnym klientem,
 - ikona powiadomień otwiera lekkie centrum SwayNC; prawy klik przełącza DND,
   a panel zawiera wyłącznie nagłówek, czyszczenie i listę powiadomień,
 - powiadomienia pojawiają się pod panelem w prawym górnym rogu jako karty z
-  ikoną, tytułem, treścią, dokładnym czasem lokalnym i kolorem ważności,
-- przycisk aparatu uruchamia od razu zaznaczenie obszaru; prawy klik zapisuje
-  cały ekran, a pełne menu jest dostępne pod `Super+Shift+S`,
+  ikoną, tytułem, treścią, krótkim czasem względnym i kolorem ważności,
+- przycisk aparatu pozwala krótkim lewym kliknięciem wskazać całe okno, a
+  przeciągnięciem zaznaczyć dowolny obszar; prawy klik przechwytuje cały ekran,
+  każdy z tych trybów otwiera edytor Satty, a pełne menu jest dostępne pod
+  `Super+Shift+S`,
 - obszar wybiera lekki Slurp, Grim przechwytuje zaznaczenie albo geometrię
-  aktywnego okna, a Satty otwiera wynik do przycięcia i adnotacji; Enter zapisuje
+  aktywnego okna; po wyborze skrypt czeka kilka klatek na zniknięcie warstwy
+  Slurpa, a Satty otwiera czysty wynik do przycięcia i adnotacji; Enter zapisuje
   wynik, zamyka edytor, a skrypt kopiuje dokładnie zapisany PNG do schowka,
 - `Print` przechwytuje obszar i otwiera edytor, `Shift+Print` robi to samo dla
   aktywnego okna, a `Ctrl+Print` zapisuje cały ekran bez edytora,

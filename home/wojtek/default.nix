@@ -1,9 +1,12 @@
-{ inputs, pkgs, replayConfig, ... }:
+{ desktopFeatures, inputs, lib, pkgs, replayConfig, ... }:
 
 let
   theme = import ./theme.nix { inherit inputs; };
   c = theme.colors;
   scripts = import ./scripts.nix { inherit pkgs; };
+  dockerEnabled = desktopFeatures.docker or false;
+  gamingEnabled = desktopFeatures.gaming or false;
+  personalAppsEnabled = desktopFeatures.personalApps or false;
 
   tideDefaults = pkgs.runCommand "tide-declarative-defaults.fish" { } ''
     sed -E 's/^(tide_[^ ]+)(.*)$/set -U \1\2/' \
@@ -52,6 +55,12 @@ let
           >/dev/null 2>&1 || true
       }
 
+      wait_for_selection_overlay() {
+        # Slurp exits before the compositor has necessarily removed its
+        # dimming layer. Waiting a few frames keeps that layer out of Grim.
+        sleep 0.12
+      }
+
       screenshot_dir="''${XDG_SCREENSHOTS_DIR:-$HOME/Pictures/Screenshots}"
       mkdir -p "$screenshot_dir"
 
@@ -67,6 +76,7 @@ let
       fi
 
       case "$mode" in
+        select) target=select ;;
         area|'󰆞  Obszar') target=area ;;
         window|'󰖯  Aktywne okno') target=active ;;
         full|'󰍹  Cały ekran') target=screen ;;
@@ -77,30 +87,52 @@ let
       sleep 0.2
 
       output="$screenshot_dir/$(date +%F_%H-%M-%S).png"
-
-      if [[ "$target" == screen ]]; then
-        if ! grim "$output"; then
-          notify-send --urgency=critical "Screenshot" "Nie udało się przechwycić ekranu."
-          exit 1
-        fi
-        wl-copy --type image/png < "$output"
-        osd_success
-        exit 0
-      fi
-
       temporary="$(mktemp --tmpdir screenshot.XXXXXX.png)"
       cleanup() {
         rm -f "$temporary"
       }
       trap cleanup EXIT
 
-      if [[ "$target" == area ]]; then
+      if [[ "$target" == screen ]]; then
+        if ! grim "$temporary"; then
+          notify-send --urgency=critical "Screenshot" "Nie udało się przechwycić ekranu."
+          exit 1
+        fi
+      elif [[ "$target" == select ]]; then
+        # A short click picks a predefined window; dragging creates any region.
+        # Deliberately omit -r so both interactions remain available.
+        geometry="$({
+          hyprctl clients -j | jq --raw-output '
+            .[]
+            | select(
+                .mapped == true and
+                .hidden == false and
+                .size[0] > 0 and
+                .size[1] > 0
+              )
+            | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"
+          '
+        } | slurp \
+          -b '#${c.background}cc' \
+          -B '#${c.surface}66' \
+          -c '#${c.accent}ff' \
+          -s '#${c.selection}88' \
+          -w 2)" || exit 0
+        [[ -n "$geometry" ]] || exit 0
+        wait_for_selection_overlay
+
+        if ! grim -g "$geometry" "$temporary"; then
+          notify-send --urgency=critical "Screenshot" "Nie udało się przechwycić wybranego okna lub obszaru."
+          exit 1
+        fi
+      elif [[ "$target" == area ]]; then
         geometry="$(slurp \
           -b '#${c.background}cc' \
           -c '#${c.accent}ff' \
           -s '#${c.selection}88' \
           -w 2)" || exit 0
         [[ -n "$geometry" ]] || exit 0
+        wait_for_selection_overlay
 
         if ! grim -g "$geometry" "$temporary"; then
           notify-send --urgency=critical "Screenshot" "Nie udało się przechwycić obszaru."
@@ -181,131 +213,6 @@ let
           mask = key = dispatcher = argument = ""
         }
       ' | sort -u | fuzzel --dmenu --prompt "Skróty: " --width 72 --lines 20
-    '';
-  };
-
-  wifi-menu = pkgs.writeShellApplication {
-    name = "wifi-menu";
-    runtimeInputs = with pkgs; [
-      gawk
-      gum
-      libnotify
-      networkmanager
-    ];
-    text = ''
-      export LC_ALL=C.UTF-8
-
-      notify_error() {
-        notify-send --urgency=critical "Wi-Fi" "$1"
-      }
-
-      while true; do
-        wifi_state="$(nmcli radio wifi)"
-        options=()
-        declare -A value_by_option=()
-
-        if [[ "$wifi_state" == enabled ]]; then
-          options+=("󰖪  Wyłącz Wi-Fi" "󰑐  Skanuj ponownie" "󰌙  Rozłącz obecną sieć")
-          value_by_option["󰖪  Wyłącz Wi-Fi"]="__disable"
-          value_by_option["󰑐  Skanuj ponownie"]="__rescan"
-          value_by_option["󰌙  Rozłącz obecną sieć"]="__disconnect"
-
-          declare -A seen=()
-          declare -A security_by_ssid=()
-          while IFS=$'\t' read -r active signal security ssid; do
-            [[ -n "$ssid" ]] || continue
-            [[ -z "''${seen[$ssid]+x}" ]] || continue
-            seen["$ssid"]=1
-            security_by_ssid["$ssid"]="$security"
-
-            if (( signal >= 75 )); then
-              signal_icon="󰤨"
-            elif (( signal >= 50 )); then
-              signal_icon="󰤥"
-            elif (( signal >= 25 )); then
-              signal_icon="󰤢"
-            else
-              signal_icon="󰤟"
-            fi
-
-            [[ "$security" == "--" ]] && lock_icon="󰖩" || lock_icon="󰌾"
-            [[ "$active" == "yes" ]] && active_icon="●" || active_icon=" "
-            option="$active_icon  $signal_icon  $ssid  $lock_icon  $signal%"
-            options+=("$option")
-            value_by_option["$option"]="$ssid"
-          done < <(nmcli --terse --escape no --separator $'\t' \
-            --fields ACTIVE,SIGNAL,SECURITY,SSID device wifi list --rescan no)
-        else
-          options+=("󰖩  Włącz Wi-Fi")
-          value_by_option["󰖩  Włącz Wi-Fi"]="__enable"
-        fi
-
-        printf '\033[2J\033[H'
-        selected="$(gum choose \
-          --header '  Wi-Fi  •  Enter: wybierz  •  Esc: zamknij' \
-          --height 16 \
-          --cursor '▌ ' \
-          --cursor.foreground '#${c.accent}' \
-          --header.foreground '#${c.yellow}' \
-          --item.foreground '#${c.foreground}' \
-          --selected.foreground '#${c.green}' \
-          "''${options[@]}")" || exit 0
-        choice="''${value_by_option[$selected]}"
-
-        case "$choice" in
-          __enable)
-            nmcli radio wifi on || notify_error "Nie udało się włączyć Wi-Fi"
-            sleep 1
-            continue
-            ;;
-          __disable)
-            nmcli radio wifi off || notify_error "Nie udało się wyłączyć Wi-Fi"
-            exit 0
-            ;;
-          __rescan)
-            nmcli device wifi rescan || notify_error "Skanowanie nie powiodło się"
-            sleep 1
-            continue
-            ;;
-          __disconnect)
-            device="$(nmcli --terse --fields DEVICE,TYPE device status \
-              | awk -F: '$2 == "wifi" { print $1; exit }')"
-            [[ -n "$device" ]] || {
-              notify_error "Nie znaleziono interfejsu Wi-Fi"
-              exit 1
-            }
-            if nmcli device disconnect "$device"; then
-              notify-send "Wi-Fi" "Rozłączono sieć"
-            else
-              notify_error "Nie udało się rozłączyć sieci"
-            fi
-            exit 0
-            ;;
-        esac
-
-        if nmcli device wifi connect "$choice" >/dev/null 2>&1; then
-          notify-send "Wi-Fi" "Połączono z $choice"
-          exit 0
-        fi
-
-        security="''${security_by_ssid[$choice]:---}"
-        [[ "$security" != "--" ]] || {
-          notify_error "Nie udało się połączyć z $choice"
-          exit 1
-        }
-
-        printf '\033[2J\033[H\n  Łączenie z %s\n\n' "$choice"
-        if nmcli --ask device wifi connect "$choice"; then
-          printf '\n  Połączono.\n'
-          notify-send "Wi-Fi" "Połączono z $choice"
-        else
-          printf '\n  Nie udało się połączyć. Naciśnij Enter, aby zamknąć.\n'
-          notify_error "Nie udało się połączyć z $choice"
-          read -r _
-          exit 1
-        fi
-        exit 0
-      done
     '';
   };
 
@@ -413,15 +320,14 @@ let
 
   desktop-panel = pkgs.writeShellApplication {
     name = "desktop-panel";
-    runtimeInputs = with pkgs; [
-      bluetui
-      btop
-      foot
-      lazydocker
-      util-linux
-      wifi-menu
-      wiremix
-    ];
+    runtimeInputs = [
+      inputs.wlctl.packages.${pkgs.stdenv.hostPlatform.system}.default
+      pkgs.bluetui
+      pkgs.btop
+      pkgs.foot
+      pkgs.util-linux
+      pkgs.wiremix
+    ] ++ lib.optionals dockerEnabled [ pkgs.lazydocker ];
     text = ''
       panel="''${1:-}"
       lock_file="''${XDG_RUNTIME_DIR:?}/desktop-panel.lock"
@@ -432,7 +338,7 @@ let
       case "$panel" in
         metrics)
           exec foot --app-id=desktop-metrics --title=Zasoby \
-            --window-size-chars=120x36 btop
+            --window-size-chars=96x28 btop
           ;;
         audio)
           exec foot --app-id=desktop-audio --title=Dźwięk \
@@ -440,18 +346,20 @@ let
           ;;
         wifi)
           exec foot --app-id=desktop-wifi --title=Wi-Fi \
-            --window-size-chars=76x24 wifi-menu
+            --window-size-chars=92x28 wlctl
           ;;
         bluetooth)
           exec foot --app-id=desktop-bluetooth --title=Bluetooth \
             --window-size-chars=86x26 bluetui
           ;;
-        docker)
-          exec foot --app-id=desktop-docker --title=Docker \
-            --window-size-chars=110x32 lazydocker
-          ;;
+        ${lib.optionalString dockerEnabled ''
+          docker)
+            exec foot --app-id=desktop-docker --title=Docker \
+              --window-size-chars=110x32 lazydocker
+            ;;
+        ''}
         *)
-          printf 'Użycie: desktop-panel {metrics|audio|wifi|bluetooth|docker}\n' >&2
+          printf 'Użycie: desktop-panel {metrics|audio|wifi|bluetooth${lib.optionalString dockerEnabled "|docker"}}\n' >&2
           exit 2
           ;;
       esac
@@ -615,19 +523,20 @@ in
     homeDirectory = "/home/wojtek";
     stateVersion = "26.05";
 
-    packages = with pkgs; [
-      cliphist
-      clipboard-history
-      discord
-      hypr-bindings
-      playerctl
-      screenshot-menu
-      screensaver
-      docker-status
-      desktop-panel
-      wl-clipboard
-      wlogout
-    ];
+    packages =
+      (with pkgs; [
+        cliphist
+        clipboard-history
+        hypr-bindings
+        playerctl
+        screenshot-menu
+        screensaver
+        desktop-panel
+        wl-clipboard
+        wlogout
+      ])
+      ++ lib.optionals personalAppsEnabled [ pkgs.discord ]
+      ++ lib.optionals dockerEnabled [ docker-status ];
 
     sessionVariables = {
       BROWSER = "zen-twilight";
@@ -779,31 +688,33 @@ in
     '';
   };
 
-  xdg.configFile."gpu-screen-recorder/config_ui".text = ''
-    main.wayland_warning_shown true
-    main.hotkeys_enable_option disable_hotkeys
-    replay.record_options.record_area_option ${replayConfig.captureSource}
-    replay.record_options.fps ${toString replayConfig.fps}
-    replay.record_options.video_bitrate ${toString replayConfig.videoBitrate}
-    replay.record_options.video_quality custom
-    replay.record_options.codec ${replayConfig.videoCodec}
-    replay.record_options.audio_codec ${replayConfig.audioCodec}
-    replay.record_options.framerate_mode cfr
-    replay.record_options.advanced_view true
-    replay.record_options.audio_track_item false [add_audio_track]
-    replay.record_options.audio_track_item false default_output
-    replay.record_options.audio_track_item false default_input
-    replay.record_options.audio_track_item false [add_audio_track]
-    replay.record_options.audio_track_item false default_output
-    replay.record_options.audio_track_item false [add_audio_track]
-    replay.record_options.audio_track_item false default_input
-    replay.turn_on_replay_automatically_mode dont_turn_on_automatically
-    replay.restart_replay_on_save false
-    replay.save_directory /home/wojtek/Videos/Replays
-    replay.container mp4
-    replay.time ${toString replayConfig.seconds}
-    replay.replay_storage ram
-  '';
+  xdg.configFile."gpu-screen-recorder/config_ui" = lib.mkIf gamingEnabled {
+    text = ''
+      main.wayland_warning_shown true
+      main.hotkeys_enable_option disable_hotkeys
+      replay.record_options.record_area_option ${replayConfig.captureSource}
+      replay.record_options.fps ${toString replayConfig.fps}
+      replay.record_options.video_bitrate ${toString replayConfig.videoBitrate}
+      replay.record_options.video_quality custom
+      replay.record_options.codec ${replayConfig.videoCodec}
+      replay.record_options.audio_codec ${replayConfig.audioCodec}
+      replay.record_options.framerate_mode cfr
+      replay.record_options.advanced_view true
+      replay.record_options.audio_track_item false [add_audio_track]
+      replay.record_options.audio_track_item false default_output
+      replay.record_options.audio_track_item false default_input
+      replay.record_options.audio_track_item false [add_audio_track]
+      replay.record_options.audio_track_item false default_output
+      replay.record_options.audio_track_item false [add_audio_track]
+      replay.record_options.audio_track_item false default_input
+      replay.turn_on_replay_automatically_mode dont_turn_on_automatically
+      replay.restart_replay_on_save false
+      replay.save_directory /home/wojtek/Videos/Replays
+      replay.container mp4
+      replay.time ${toString replayConfig.seconds}
+      replay.replay_storage ram
+    '';
+  };
 
   xdg.configFile."screensaver/wojtech.txt".text = ''
      ▄█     █▄   ▄██████▄       ▄█       ███        ▄████████  ▄████████    ▄█    █▄

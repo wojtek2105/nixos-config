@@ -91,7 +91,7 @@ hl.animation({ leaf = "fade", enabled = true, speed = 5, bezier = "easeOutQuint"
 hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "easeOutQuint", style = "slide" })
 
 hl.on("hyprland.start", function()
-  hl.exec_cmd("gsr-ui launch-hide")
+  @START_GAMING@
   hl.exec_cmd("wl-paste --type text --watch cliphist store")
   hl.exec_cmd("wl-paste --type image --watch cliphist store")
   hl.exec_cmd("@POLKIT_AGENT@")
@@ -104,19 +104,15 @@ end
 bind_exec(mod .. " + RETURN", terminal)
 bind_exec(mod .. " + E", file_manager)
 bind_exec(mod .. " + B", "zen-twilight")
-bind_exec(mod .. " + M", "plexamp")
 bind_exec(mod .. " + SPACE", menu)
 bind_exec(mod .. " + N", "swaync-client -t -sw")
 bind_exec(mod .. " + L", "hyprlock")
 bind_exec(mod .. " + F1", "hypr-bindings")
 bind_exec(mod .. " + ESCAPE", "wlogout")
 bind_exec(mod .. " + SHIFT + E", "wlogout")
-bind_exec(mod .. " + SHIFT + A", "easyeffects")
+@BIND_PERSONAL_APPS@
 
-bind_exec("ALT + Z", "gsr-ui-cli toggle-show")
-bind_exec(mod .. " + G", "gsr-ui-cli toggle-show")
-bind_exec(mod .. " + R", "gsr-ui-cli replay-save")
-bind_exec(mod .. " + SHIFT + R", "gsr-ui-cli toggle-replay")
+@BIND_GAMING@
 bind_exec(mod .. " + SHIFT + V", "clipboard-history")
 
 hl.bind(mod .. " + Q", hl.dsp.window.close())
@@ -141,7 +137,7 @@ for workspace = 1, 10 do
   hl.bind(mod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = workspace }))
 end
 
-bind_exec("Print", "screenshot-menu area")
+bind_exec("Print", "screenshot-menu select")
 bind_exec("SHIFT + Print", "screenshot-menu window")
 bind_exec("CTRL + Print", "screenshot-menu full")
 bind_exec(mod .. " + SHIFT + S", "screenshot-menu")
@@ -151,8 +147,7 @@ bind_exec("XF86AudioRaiseVolume", "swayosd-client --output-volume=+5 --max-volum
 bind_exec("XF86AudioLowerVolume", "swayosd-client --output-volume=-5 --max-volume=100", { locked = true, repeating = true })
 bind_exec("XF86AudioMute", "swayosd-client --output-volume=mute-toggle --max-volume=100", { locked = true, repeating = true })
 bind_exec("XF86AudioMicMute", "swayosd-client --input-volume=mute-toggle --max-volume=100", { locked = true, repeating = true })
-bind_exec("XF86MonBrightnessUp", "swayosd-client --brightness=+5 --device=amdgpu_bl2", { locked = true, repeating = true })
-bind_exec("XF86MonBrightnessDown", "swayosd-client --brightness=-5 --device=amdgpu_bl2", { locked = true, repeating = true })
+@BIND_LAPTOP@
 bind_exec("XF86AudioPlay", "playerctl play-pause", { locked = true })
 bind_exec("XF86AudioNext", "playerctl next", { locked = true })
 bind_exec("XF86AudioPrev", "playerctl previous", { locked = true })
