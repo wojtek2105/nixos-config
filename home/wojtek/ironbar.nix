@@ -20,7 +20,11 @@ let
     name = "metric-${component}";
     class = "island metric metric-${component}${lib.optionalString last " metric-last"}";
     disable_popup = true;
-    tooltip = "{{poll:10000:${ironbarMetric}/bin/ironbar-metric ${component} tooltip_plain}}";
+    on_mouse_enter = ''
+      ${pkgs.ironbar}/bin/ironbar var set metric_${component}_tooltip "$(${ironbarMetric}/bin/ironbar-metric ${component} tooltip)" \
+        && ${pkgs.ironbar}/bin/ironbar bar main show-popup metric-${component}
+    '';
+    on_mouse_exit = "${pkgs.ironbar}/bin/ironbar bar main hide-popup";
     on_click_left = "desktop-panel metrics";
     bar = [
       {
@@ -36,6 +40,14 @@ let
         height = 23;
       }
     ];
+    popup = [
+      {
+        type = "label";
+        class = "metric-tooltip metric-tooltip-${component}";
+        label = "#metric_${component}_tooltip";
+        justify = "left";
+      }
+    ];
   };
 
   ironbarConfig = {
@@ -44,6 +56,13 @@ let
     anchor_to_edges = true;
     height = 30;
     layer = "top";
+    ironvar_defaults = {
+      metric_cpu_tooltip = "";
+      metric_memory_tooltip = "";
+      metric_network_tooltip = "";
+      metric_disk_tooltip = "";
+      metric_gpu_tooltip = "";
+    };
     popup_gap = 6;
     popup_autohide = true;
     margin = {
@@ -795,9 +814,10 @@ in
         border: none;
         border-radius: 99px;
         box-shadow: none;
-        font-family: "${theme.fonts.monospace}";
+        font-family: "${theme.fonts.sans}";
         font-size: 10px;
         font-weight: 700;
+        font-feature-settings: "tnum" 1;
       }
 
       #workspace-island .item:not(.inactive) {
@@ -826,8 +846,12 @@ in
       }
 
       #workspace-island .item label {
+        min-width: 20px;
+        min-height: 20px;
         margin: 0;
-        padding: 1px 0 0;
+        padding: 0;
+        font-family: "${theme.fonts.sans}";
+        font-feature-settings: "tnum" 1;
       }
 
       #workspace-island .item.urgent {
@@ -1142,6 +1166,15 @@ in
         color: @text;
         font-family: "${theme.fonts.monospace}";
         font-size: 10px;
+        font-weight: 500;
+      }
+
+      .popup .metric-tooltip {
+        min-width: 240px;
+        padding: 1px 2px;
+        color: @text;
+        font-family: "${theme.fonts.monospace}";
+        font-size: 10.5px;
         font-weight: 500;
       }
 

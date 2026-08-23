@@ -71,8 +71,9 @@ pkgs.writeShellApplication {
     }
 
     tooltip_start() {
-      printf '<span font_family="${theme.fonts.monospace}"><span foreground="#${c.bright}"><b>%s  %s</b></span>\n' \
-        "$(markup_escape "$1")" "$(markup_escape "$2")"
+      local color="''${3:-${c.bright}}"
+      printf '<span font_family="${theme.fonts.monospace}"><span foreground="#%s" size="large" weight="bold">%s</span><span foreground="#${c.bright}" size="large" weight="bold">  %s</span>\n' \
+        "$color" "$(markup_escape "$1")" "$(markup_escape "$2")"
     }
 
     emit() {
@@ -244,7 +245,7 @@ pkgs.writeShellApplication {
         (( cpu_temperature > level )) && level=$cpu_temperature
         bars="$(gauge "$usage" '${c.violet}')$(gauge "$cpu_temperature" '${c.yellow}' '°')"
 
-        tooltip="$(tooltip_start '' 'PROCESOR · CPU / °C')"$'\n'
+        tooltip="$(tooltip_start '' 'PROCESOR · CPU / °C' '${c.violet}')"$'\n'
         tooltip+="$(row 'Użycie' "$usage%" '${c.violet}')"$'\n'
         tooltip+="$(row 'Temperatura' "$cpu_temperature°C" '${c.yellow}')"$'\n'
         tooltip+="$(row 'Taktowanie' "$frequency_display")"$'\n'
@@ -285,7 +286,7 @@ pkgs.writeShellApplication {
           memory_title+=' / SWAP'
         fi
 
-        tooltip="$(tooltip_start '' "$memory_title")"$'\n'
+        tooltip="$(tooltip_start '' "$memory_title" '${c.accent}')"$'\n'
         tooltip+="$(row 'Użycie' "$percentage%" '${c.accent}')"$'\n'
         tooltip+="$(row 'Zajęte' "$used_display")"$'\n'
         tooltip+="$(row 'Dostępne' "$available_display" '${c.green}')"$'\n'
@@ -340,7 +341,7 @@ pkgs.writeShellApplication {
           fi
         )"
 
-        tooltip="$(tooltip_start '󰓅' 'SIEĆ · ↓ / ↑')"
+        tooltip="$(tooltip_start '󰓅' 'SIEĆ · ↓ / ↑' '${c.green}')"
         tooltip+=$'\n'"$(row 'Interfejs' "''${interface:-brak}")"$'\n'
         tooltip+="$(row 'Adres IPv4' "''${ip_address:-brak}")"$'\n'
         tooltip+="$(row 'Pobieranie' "$rx_display" '${c.green}')"$'\n'
@@ -381,7 +382,7 @@ pkgs.writeShellApplication {
         disk_scale_display="$(numfmt --to=iec-i --suffix=B/s "$disk_scale" 2>/dev/null || printf '100 MiB/s')"
         bars="$(gauge "$percentage" '${c.orange}')$(gauge "$read_percentage" '${c.green}' '↓')$(gauge "$write_percentage" '${c.violet}' '↑')"
 
-        tooltip="$(tooltip_start '󰋊' 'DYSK · % / ↓ / ↑')"
+        tooltip="$(tooltip_start '󰋊' 'DYSK · % / ↓ / ↑' '${c.orange}')"
         tooltip+=$'\n'"$(row 'Punkt montowania' '/')"$'\n'
         tooltip+="$(row 'Użycie' "$percentage%" '${c.orange}')"$'\n'
         tooltip+="$(row 'Odczyt' "$read_display" '${c.green}')"$'\n'
@@ -418,7 +419,7 @@ pkgs.writeShellApplication {
         (( gpu_temperature > level )) && level=$gpu_temperature
         bars="$(gauge "$usage" '${c.blue}')$(gauge "$vram_percentage" '${c.magenta}' 'V')$(gauge "$gpu_temperature" '${c.yellow}' '°')"
 
-        tooltip="$(tooltip_start '󰢮' 'GPU · RDZEŃ / VRAM / °C')"
+        tooltip="$(tooltip_start '󰢮' 'GPU · RDZEŃ / VRAM / °C' '${c.blue}')"
         tooltip+=$'\n'"$(row 'Użycie rdzenia' "$usage%" '${c.blue}')"$'\n'
         tooltip+="$(row 'VRAM' "$vram_percentage%" '${c.magenta}')"$'\n'
         tooltip+="$(row 'VRAM zajęte' "$vram_used_display")"$'\n'
