@@ -1,4 +1,6 @@
-HOST ?= rog-polamaniec
+-include .env
+
+HOST ?= simple
 FLAKE ?= path:.
 KEEP ?= 4
 SYSTEM_PROFILE ?= /nix/var/nix/profiles/system
