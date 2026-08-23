@@ -109,11 +109,16 @@ startu, w którym Hyprland widział tylko `simpledrm` i kończył pracę komunik
   pokazuje użycie/temperaturę, RAM pamięć oraz
   opcjonalny swap tylko wtedy, gdy jest skonfigurowany, sieć
   pobieranie/wysyłanie, dysk zajętość/odczyt/zapis, a GPU rdzeń/VRAM/temperaturę,
-- transfer sieci i dysku używa skali liniowej dla małego ruchu oraz
-  logarytmicznej dopiero powyżej odpowiednio 1 MiB/s i 10 MiB/s; dzięki temu
-  ruch liczony w KiB/s nie udaje połowy dostępnej skali,
+- transfer sieci i dysku ma adaptacyjną, wspólną dla obu kierunków skalę z
+  minimum odpowiednio 10 MiB/s i 100 MiB/s; zakres rośnie natychmiast z 25%
+  zapasu, utrzymuje szczyt przez 30 sekund, a następnie opada łagodnie z
+  60-sekundowym czasem połowicznego zaniku; aktualny zakres jest widoczny w
+  tooltipie, więc mały ruch nie udaje dużego obciążenia, a szybki transfer nie
+  blokuje słupka stale na 100%,
 - grupy CPU, RAM, sieci, dysku i GPU tworzą jeden spokojny wizualnie blok z
-  delikatnymi separatorami, zachowując osobne kliknięcia i szczegóły,
+  wyraźnymi separatorami w kolorze funkcji, zachowując osobne kliknięcia i
+  szczegóły; RAM ma jednoznaczną ikonę modułu pamięci, a powtarzalny symbol
+  użycia jest taki sam dla CPU, RAM, zajętości dysku i rdzenia GPU,
 - każdy zasób ma osobny natywny tooltip Ironbara o stałej szerokości i z
   monospace, po jednym parametrze w wierszu; dane są odświeżane co 10 sekund,
   ponieważ IPC popupów modułu `custom` w Ironbarze 0.19 nie działa poprawnie,

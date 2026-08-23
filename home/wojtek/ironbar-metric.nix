@@ -124,28 +124,44 @@ pkgs.writeShellApplication {
       esac
     }
 
-    network_percentage() {
-      local rate="''${1:-0}"
-      if (( rate >= 104857600 )); then printf '100\n'
-      elif (( rate >= 52428800 )); then printf '88\n'
-      elif (( rate >= 10485760 )); then printf '60\n'
-      elif (( rate >= 5242880 )); then printf '48\n'
-      elif (( rate >= 1048576 )); then printf '20\n'
-      elif (( rate > 0 )); then printf '%s\n' "$((rate * 20 / 1048576))"
-      else printf '0\n'
+    adaptive_scale() {
+      local component="$1"
+      local floor="''${2:-1}"
+      local scale_file="''${XDG_RUNTIME_DIR:?}/ironbar-$component-scale"
+      local ceiling="$floor"
+      local candidate=""
+
+      if [[ -r "$scale_file" ]]; then
+        read -r candidate < "$scale_file" || true
+        if [[ "$candidate" =~ ^[0-9]+$ ]] && (( candidate >= floor )); then
+          ceiling=$candidate
+        fi
       fi
+      printf '%s\n' "$ceiling"
+    }
+
+    adaptive_percentage() {
+      local rate="''${1:-0}"
+      local component="$2"
+      local floor="$3"
+      local ceiling percentage
+      ceiling="$(adaptive_scale "$component" "$floor")"
+
+      if (( rate <= 0 )); then
+        printf '0\n'
+        return
+      fi
+      percentage=$((rate * 100 / ceiling))
+      (( percentage > 100 )) && percentage=100
+      printf '%s\n' "$percentage"
+    }
+
+    network_percentage() {
+      adaptive_percentage "$1" network 10485760
     }
 
     disk_io_percentage() {
-      local rate="''${1:-0}"
-      if (( rate >= 1073741824 )); then printf '100\n'
-      elif (( rate >= 536870912 )); then printf '88\n'
-      elif (( rate >= 104857600 )); then printf '60\n'
-      elif (( rate >= 52428800 )); then printf '48\n'
-      elif (( rate >= 10485760 )); then printf '20\n'
-      elif (( rate > 0 )); then printf '%s\n' "$((rate * 20 / 10485760))"
-      else printf '0\n'
-      fi
+      adaptive_percentage "$1" disk 104857600
     }
 
     disk_bytes_total() {
@@ -269,7 +285,7 @@ pkgs.writeShellApplication {
           memory_title+=' / SWAP'
         fi
 
-        tooltip="$(tooltip_start '' "$memory_title")"$'\n'
+        tooltip="$(tooltip_start '' "$memory_title")"$'\n'
         tooltip+="$(row 'Użycie' "$percentage%" '${c.accent}')"$'\n'
         tooltip+="$(row 'Zajęte' "$used_display")"$'\n'
         tooltip+="$(row 'Dostępne' "$available_display" '${c.green}')"$'\n'
@@ -278,7 +294,7 @@ pkgs.writeShellApplication {
           tooltip+=$'\n'"$(row 'Swap' "$swap_display")"$'\n'
           tooltip+="$(row 'Swap użycie' "$swap_percentage%" '${c.blue}')"
         fi
-        emit "$level" '' "$bars" "$tooltip"
+        emit "$level" '' "$bars" "$tooltip"
         ;;
 
       network)
@@ -315,6 +331,8 @@ pkgs.writeShellApplication {
         bars="$(gauge "$rx_percentage" '${c.green}' '↓')$(gauge "$tx_percentage" '${c.violet}' '↑')"
         rx_display="$(numfmt --to=iec-i --suffix=B/s "$rx_rate" 2>/dev/null || printf '0 B/s')"
         tx_display="$(numfmt --to=iec-i --suffix=B/s "$tx_rate" 2>/dev/null || printf '0 B/s')"
+        network_scale="$(adaptive_scale network 10485760)"
+        network_scale_display="$(numfmt --to=iec-i --suffix=B/s "$network_scale" 2>/dev/null || printf '10 MiB/s')"
         ip_address="$(
           if [[ -n "$interface" ]]; then
             ip -4 -o address show dev "$interface" 2>/dev/null \
@@ -326,7 +344,8 @@ pkgs.writeShellApplication {
         tooltip+=$'\n'"$(row 'Interfejs' "''${interface:-brak}")"$'\n'
         tooltip+="$(row 'Adres IPv4' "''${ip_address:-brak}")"$'\n'
         tooltip+="$(row 'Pobieranie' "$rx_display" '${c.green}')"$'\n'
-        tooltip+="$(row 'Wysyłanie' "$tx_display" '${c.violet}')"
+        tooltip+="$(row 'Wysyłanie' "$tx_display" '${c.violet}')"$'\n'
+        tooltip+="$(row 'Skala wykresu' "$network_scale_display" '${c.muted}')"
         emit "$level" '󰓅' "$bars" "$tooltip" 101 101
         ;;
 
@@ -358,6 +377,8 @@ pkgs.writeShellApplication {
         write_percentage="$(disk_io_percentage "$write_rate")"
         read_display="$(numfmt --to=iec-i --suffix=B/s "$read_rate" 2>/dev/null || printf '0 B/s')"
         write_display="$(numfmt --to=iec-i --suffix=B/s "$write_rate" 2>/dev/null || printf '0 B/s')"
+        disk_scale="$(adaptive_scale disk 104857600)"
+        disk_scale_display="$(numfmt --to=iec-i --suffix=B/s "$disk_scale" 2>/dev/null || printf '100 MiB/s')"
         bars="$(gauge "$percentage" '${c.orange}')$(gauge "$read_percentage" '${c.green}' '↓')$(gauge "$write_percentage" '${c.violet}' '↑')"
 
         tooltip="$(tooltip_start '󰋊' 'DYSK · % / ↓ / ↑')"
@@ -365,6 +386,7 @@ pkgs.writeShellApplication {
         tooltip+="$(row 'Użycie' "$percentage%" '${c.orange}')"$'\n'
         tooltip+="$(row 'Odczyt' "$read_display" '${c.green}')"$'\n'
         tooltip+="$(row 'Zapis' "$write_display" '${c.violet}')"$'\n'
+        tooltip+="$(row 'Skala wykresu' "$disk_scale_display" '${c.muted}')"$'\n'
         tooltip+="$(row 'Zajęte' "$used_display")"$'\n'
         tooltip+="$(row 'Wolne' "$available_display" '${c.green}')"$'\n'
         tooltip+="$(row 'Łącznie' "$total_display")"

@@ -70,7 +70,7 @@ let
       })
       (metric {
         component = "memory";
-        icon = "";
+        icon = "";
         interval = 3000;
         width = 15;
       })
@@ -162,7 +162,7 @@ let
         type = "network_manager";
         name = "network";
         class = "island status network";
-        icon_size = 18;
+        icon_size = 22;
         types_whitelist = [ "wifi" "ethernet" ];
         interface_blacklist = [ "lo" ];
         use_default_profiles = false;
@@ -172,35 +172,35 @@ let
               type = "wired";
               state = "disconnected";
             };
-            icon = "󰈂";
+            icon = "icon:network-wired-disconnected-symbolic";
           };
           wired_acquiring = {
             when = {
               type = "wired";
               state = "acquiring";
             };
-            icon = "󰈁";
+            icon = "icon:network-wired-acquiring-symbolic";
           };
           wired_connected = {
             when = {
               type = "wired";
               state = "connected";
             };
-            icon = "󰈀";
+            icon = "icon:network-wired-symbolic";
           };
           wifi_disconnected = {
             when = {
               type = "wifi";
               state = "disconnected";
             };
-            icon = "󰤭";
+            icon = "icon:network-wireless-signal-none-symbolic";
           };
           wifi_acquiring = {
             when = {
               type = "wifi";
               state = "acquiring";
             };
-            icon = "";
+            icon = "icon:network-wireless-acquiring-symbolic";
           };
           wifi_connected_none = {
             when = {
@@ -208,7 +208,7 @@ let
               state = "connected";
               signal_strength = 20;
             };
-            icon = "";
+            icon = "icon:network-wireless-signal-none-symbolic";
           };
           wifi_connected_weak = {
             when = {
@@ -216,7 +216,7 @@ let
               state = "connected";
               signal_strength = 40;
             };
-            icon = "";
+            icon = "icon:network-wireless-signal-weak-symbolic";
           };
           wifi_connected_ok = {
             when = {
@@ -224,7 +224,7 @@ let
               state = "connected";
               signal_strength = 50;
             };
-            icon = "";
+            icon = "icon:network-wireless-signal-ok-symbolic";
           };
           wifi_connected_good = {
             when = {
@@ -232,7 +232,7 @@ let
               state = "connected";
               signal_strength = 80;
             };
-            icon = "";
+            icon = "icon:network-wireless-signal-good-symbolic";
           };
           wifi_connected_excellent = {
             when = {
@@ -240,7 +240,7 @@ let
               state = "connected";
               signal_strength = 100;
             };
-            icon = "";
+            icon = "icon:network-wireless-signal-excellent-symbolic";
           };
         };
         tooltip = "Sieć\nKliknij, aby otworzyć panel TUI";
@@ -484,16 +484,6 @@ let
       return tonumber((last or ""):match("(%d+)%%%s+/%s*$")) or 0
     end
 
-    local function throughput_percent(rate, knee, ceiling, knee_percent)
-      if rate <= 0 then return 0 end
-      if rate < knee then
-        return clamp(rate / knee * knee_percent)
-      end
-      if rate >= ceiling then return 100 end
-      local progress = math.log(rate / knee) / math.log(ceiling / knee)
-      return clamp(knee_percent + progress * (100 - knee_percent))
-    end
-
     local function rounded_rectangle(cr, x, y, width, height, radius)
       radius = math.min(radius, width / 2, height / 2)
       cr:new_sub_path()
@@ -514,7 +504,49 @@ let
         disk_read = nil,
         disk_write = nil,
         time = nil,
+        scale = nil,
+        scale_time = nil,
+        scale_hold_until = 0,
+        scale_last_write = nil,
       }
+
+      local function adaptive_ceiling(rate, floor, maximum, now)
+        local previous = state.scale or floor
+        local elapsed = state.scale_time and math.max(now - state.scale_time, 0) or 0
+        local ceiling = previous
+
+        if rate >= ceiling * 0.80 then
+          -- Leave 25% headroom after a sudden transfer spike.
+          ceiling = math.min(maximum, math.max(ceiling, rate / 0.75))
+          state.scale_hold_until = now + 30
+        elseif now > state.scale_hold_until and elapsed > 0 then
+          -- After the hold, decay smoothly with a 60-second half-life.
+          local decayed = ceiling * math.pow(0.5, elapsed / 60)
+          local live_target = rate > 0 and rate / 0.80 or floor
+          ceiling = math.max(floor, live_target, decayed)
+        end
+
+        state.scale = ceiling
+        state.scale_time = now
+
+        local runtime_directory = os.getenv("XDG_RUNTIME_DIR")
+        local should_write = not state.scale_last_write
+          or now - state.scale_last_write >= 10
+          or ceiling > previous
+        if runtime_directory and should_write then
+          local file = io.open(
+            runtime_directory .. "/ironbar-" .. component .. "-scale",
+            "w"
+          )
+          if file then
+            file:write(string.format("%.0f\n", ceiling))
+            file:close()
+            state.scale_last_write = now
+          end
+        end
+
+        return ceiling
+      end
 
       local function values()
         local now = ironbar:unixtime().secs
@@ -536,7 +568,10 @@ let
 
         if component == "network" then
           local interface = default_interface()
-          if not interface then return { 0, 0 } end
+          if not interface then
+            adaptive_ceiling(0, 10 * 1024 * 1024, 1024 * 1024 * 1024, now)
+            return { 0, 0 }
+          end
           local rx = read_number("/sys/class/net/" .. interface .. "/statistics/rx_bytes")
           local tx = read_number("/sys/class/net/" .. interface .. "/statistics/tx_bytes")
           local elapsed = state.time and math.max(now - state.time, 0.001) or 1
@@ -544,9 +579,15 @@ let
           local down = state.rx and math.max((rx - state.rx) / elapsed, 0) or 0
           local up = state.tx and math.max((tx - state.tx) / elapsed, 0) or 0
           state.interface, state.rx, state.tx, state.time = interface, rx, tx, now
+          local ceiling = adaptive_ceiling(
+            math.max(down, up),
+            10 * 1024 * 1024,
+            1024 * 1024 * 1024,
+            now
+          )
           return {
-            throughput_percent(down, 1024 * 1024, 100 * 1024 * 1024, 20),
-            throughput_percent(up, 1024 * 1024, 100 * 1024 * 1024, 20),
+            clamp(down / ceiling * 100),
+            clamp(up / ceiling * 100),
           }
         end
 
@@ -556,10 +597,16 @@ let
           local read_rate = state.disk_read and math.max((read_bytes - state.disk_read) / elapsed, 0) or 0
           local write_rate = state.disk_write and math.max((write_bytes - state.disk_write) / elapsed, 0) or 0
           state.disk_read, state.disk_write, state.time = read_bytes, write_bytes, now
+          local ceiling = adaptive_ceiling(
+            math.max(read_rate, write_rate),
+            100 * 1024 * 1024,
+            8 * 1024 * 1024 * 1024,
+            now
+          )
           return {
             clamp(root_disk_percent()),
-            throughput_percent(read_rate, 10 * 1024 * 1024, 1024 * 1024 * 1024, 20),
-            throughput_percent(write_rate, 10 * 1024 * 1024, 1024 * 1024 * 1024, 20),
+            clamp(read_rate / ceiling * 100),
+            clamp(write_rate / ceiling * 100),
           }
         end
 
@@ -901,7 +948,8 @@ in
       #network .item,
       #network .icon,
       #network .text-icon {
-        min-width: 20px;
+        min-width: 22px;
+        min-height: 22px;
         margin: 0;
         padding: 0;
         font-family: "${theme.fonts.monospace}";
