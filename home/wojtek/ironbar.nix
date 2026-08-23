@@ -162,7 +162,8 @@ let
         type = "network_manager";
         name = "network";
         class = "island status network";
-        icon_size = 22;
+        icon_size = 17;
+        justify = "center";
         types_whitelist = [ "wifi" "ethernet" ];
         interface_blacklist = [ "lo" ];
         use_default_profiles = false;
@@ -172,35 +173,35 @@ let
               type = "wired";
               state = "disconnected";
             };
-            icon = "icon:network-wired-disconnected-symbolic";
+            icon = "󰈂";
           };
           wired_acquiring = {
             when = {
               type = "wired";
               state = "acquiring";
             };
-            icon = "icon:network-wired-acquiring-symbolic";
+            icon = "󰈁";
           };
           wired_connected = {
             when = {
               type = "wired";
               state = "connected";
             };
-            icon = "icon:network-wired-symbolic";
+            icon = "󰈀";
           };
           wifi_disconnected = {
             when = {
               type = "wifi";
               state = "disconnected";
             };
-            icon = "icon:network-wireless-signal-none-symbolic";
+            icon = "󰤭";
           };
           wifi_acquiring = {
             when = {
               type = "wifi";
               state = "acquiring";
             };
-            icon = "icon:network-wireless-acquiring-symbolic";
+            icon = "󰤫";
           };
           wifi_connected_none = {
             when = {
@@ -208,7 +209,7 @@ let
               state = "connected";
               signal_strength = 20;
             };
-            icon = "icon:network-wireless-signal-none-symbolic";
+            icon = "󰤯";
           };
           wifi_connected_weak = {
             when = {
@@ -216,7 +217,7 @@ let
               state = "connected";
               signal_strength = 40;
             };
-            icon = "icon:network-wireless-signal-weak-symbolic";
+            icon = "󰤟";
           };
           wifi_connected_ok = {
             when = {
@@ -224,7 +225,7 @@ let
               state = "connected";
               signal_strength = 50;
             };
-            icon = "icon:network-wireless-signal-ok-symbolic";
+            icon = "󰤢";
           };
           wifi_connected_good = {
             when = {
@@ -232,7 +233,7 @@ let
               state = "connected";
               signal_strength = 80;
             };
-            icon = "icon:network-wireless-signal-good-symbolic";
+            icon = "󰤥";
           };
           wifi_connected_excellent = {
             when = {
@@ -240,7 +241,7 @@ let
               state = "connected";
               signal_strength = 100;
             };
-            icon = "icon:network-wireless-signal-excellent-symbolic";
+            icon = "󰤨";
           };
         };
         tooltip = "Sieć\nKliknij, aby otworzyć panel TUI";
@@ -306,6 +307,18 @@ let
         prefer_theme_icons = true;
       }
       {
+        type = "inhibit";
+        name = "caffeine";
+        class = "island caffeine";
+        durations = [ "inf" ];
+        default_duration = "inf";
+        on_click_left = "toggle";
+        on_click_right = "toggle";
+        format_on = "<span foreground=\"#${c.orange}\">󰅶</span>";
+        format_off = "<span foreground=\"#${c.subtle}\">󰾪</span>";
+        tooltip = "Caffeine\nKliknij, aby zablokować wygaszanie i automatyczne usypianie";
+      }
+      {
         type = "notifications";
         name = "notifications";
         class = "island";
@@ -341,7 +354,7 @@ let
       memory = { "󰓅" },
       network = { "", "" },
       disk = { "󰓅", "", "" },
-      gpu = { "󰓅", "󰍛", "" },
+      gpu = { "󰓅", "", "" },
     }
 
     local function rgb(hex)
@@ -745,6 +758,7 @@ in
 
       #metric-cpu,
       #docker,
+      #caffeine,
       #notifications {
         margin-left: 5px;
       }
@@ -773,8 +787,8 @@ in
 
       #workspace-island .item {
         min-width: 20px;
-        min-height: 22px;
-        margin: 3px 1px;
+        min-height: 20px;
+        margin: 4px 1px;
         padding: 0;
         color: alpha(@subtext, 0.46);
         background: transparent;
@@ -799,16 +813,21 @@ in
       }
 
       #workspace-island .item.focused {
-        min-width: 22px;
-        min-height: 22px;
-        margin: 3px 1px;
+        min-width: 20px;
+        min-height: 20px;
+        margin: 4px 1px;
         color: @base;
         background: @active;
         border: none;
         border-radius: 99px;
-        box-shadow: 0 0 0 1px alpha(@bright, 0.12);
-        font-size: 11px;
+        box-shadow: inset 0 0 0 1px alpha(@bright, 0.10);
+        font-size: 10px;
         font-weight: 800;
+      }
+
+      #workspace-island .item label {
+        margin: 0;
+        padding: 1px 0 0;
       }
 
       #workspace-island .item.urgent {
@@ -855,6 +874,12 @@ in
       #metric-network .metric-icon { color: @green; }
       #metric-disk .metric-icon { color: @orange; }
       #metric-gpu .metric-icon { color: @blue; }
+
+      #metric-gpu .metric-icon {
+        min-width: 24px;
+        margin-right: 5px;
+        font-size: 28px;
+      }
 
       #metric-cpu {
         border-right: none;
@@ -940,21 +965,23 @@ in
       }
 
       #network {
-        min-width: 32px;
+        min-width: 30px;
         padding: 0 6px;
         color: @success;
+        font-family: "${theme.fonts.monospace}";
       }
 
       #network .item,
+      #network button,
       #network .icon,
       #network .text-icon {
-        min-width: 22px;
-        min-height: 22px;
+        min-width: 18px;
+        min-height: 20px;
         margin: 0;
         padding: 0;
         font-family: "${theme.fonts.monospace}";
-        font-size: 18px;
-        font-weight: 800;
+        font-size: 17px;
+        font-weight: 700;
       }
 
       #bluetooth {
@@ -1017,6 +1044,21 @@ in
       }
 
       #notifications { color: @active; }
+
+      #caffeine {
+        min-width: 28px;
+        padding: 0 6px;
+        font-family: "${theme.fonts.monospace}";
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      #caffeine button,
+      #caffeine label {
+        min-width: 18px;
+        margin: 0;
+        padding: 0;
+      }
 
       #notifications label {
         font-size: 16px;

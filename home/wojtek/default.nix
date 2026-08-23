@@ -251,7 +251,7 @@ let
       }
 
       if ! systemctl is-active --quiet docker.service; then
-        output "  –" $'<b>Docker</b>\nDaemon jest uśpiony. Uruchomi się przy pierwszym użyciu.' "offline"
+        output "  –" $'<b>Docker</b>\nDaemon jest zatrzymany. Uruchom go ręcznie: sudo systemctl start docker.' "offline"
         exit 0
       fi
 

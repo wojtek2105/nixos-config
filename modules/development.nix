@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 
 {
   imports = [ ./development-core.nix ];
@@ -6,11 +6,12 @@
   virtualisation.docker = {
     enable = true;
     enableOnBoot = false;
-    autoPrune = {
-      enable = true;
-      dates = "weekly";
-    };
   };
+
+  # NixOS enables docker.socket even with enableOnBoot = false, which starts
+  # dockerd as soon as a client touches the socket. Keep Docker fully manual;
+  # starting docker.service will pull in its required socket when needed.
+  systemd.sockets.docker.wantedBy = lib.mkForce [ ];
 
   users.users.wojtek.extraGroups = [ "docker" ];
 

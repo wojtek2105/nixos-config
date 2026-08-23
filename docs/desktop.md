@@ -127,9 +127,9 @@ startu, w którym Hyprland widział tylko `simpledrm` i kończył pracę komunik
   używanym i nie pozwala przeoczyć pozostawionego okna; bieżący pulpit pozostaje
   widoczny również wtedy, gdy jest chwilowo pusty, aktywny numer ma różowe koło
   z ciemnym tekstem, a stan pilny osobny, wyraźny akcent Biscuit,
-- sieć, Bluetooth, jasność, głośność, bateria, workspaces, tray, zegar i
-  powiadomienia używają natywnych modułów Ironbara; własne pozostają tylko
-  wielowartościowe wykresy Cairo, Docker i akcje screenshotów,
+- sieć, Bluetooth, jasność, głośność, bateria, workspaces, tray, zegar,
+  caffeine i powiadomienia używają natywnych modułów Ironbara; własne pozostają
+  tylko wielowartościowe wykresy Cairo, Docker i akcje screenshotów,
 - panel grupuje workspaces, metryki, centrum zegar/screenshot oraz status
   laptopa w spokojne kapsuły Biscuit; kolor opisuje funkcję, a mocne tło jest
   zarezerwowane dla aktywnego pulpitu, ostrzeżenia i stanu krytycznego,
@@ -145,8 +145,8 @@ startu, w którym Hyprland widział tylko `simpledrm` i kończył pracę komunik
 - wskaźnik Dockera pokazuje aktywne i wszystkie kontenery, ostrzega o błędach
   oraz `unhealthy`, a tooltip zawiera CPU i RAM kontenerów; kliknięcie otwiera
   `lazydocker` w tym samym systemie pojedynczego panelu,
-- Docker nie startuje przy bootowaniu; aktywuje się przez socket dopiero przy
-  pierwszym użyciu klienta, Compose albo Lazydockera,
+- Docker nie startuje przy bootowaniu ani przez socket activation; daemon jest
+  uruchamiany wyłącznie ręcznie poleceniem `sudo systemctl start docker`,
 - kliknięcie zegara otwiera prosty, natywny kalendarz Ironbara bez osobnego
   procesu w tle; przyszła aplikacja CalDAV pozostanie osobnym, pełnym klientem,
 - ikona powiadomień otwiera lekkie centrum SwayNC; prawy klik przełącza DND,
@@ -251,8 +251,13 @@ na żywo system uruchomiony podczas bootowania.
 
 ## Blokada i bezczynność
 
-- po 4 minutach uruchamiany jest animowany wygaszacz,
-- po 5 minutach sesja jest blokowana,
-- po 5 minutach i 30 sekundach ekran jest wyłączany przez DPMS,
-- po 30 minutach system przechodzi w suspend,
+- po 5 minutach uruchamiany jest animowany wygaszacz,
+- po 6 minutach sesja jest blokowana,
+- po 10 minutach ekran jest wyłączany przez DPMS zarówno na baterii, jak i na
+  zasilaczu,
+- po 30 minutach system przechodzi w suspend tylko podczas pracy z baterii;
+  zasilanie zewnętrzne blokuje automatyczny suspend,
+- zamknięcie pokrywy jest ignorowane na baterii, zasilaczu i w stacji dokującej,
+- natywny przełącznik caffeine w Ironbarze blokuje wygaszacz, blokadę, DPMS oraz
+  automatyczny suspend do czasu ponownego kliknięcia,
 - wybudzenie ponownie włącza ekran.
