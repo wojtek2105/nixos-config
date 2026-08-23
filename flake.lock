@@ -1,0 +1,123 @@
+{
+  "nodes": {
+    "biscuit-desktop": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1786683537,
+        "narHash": "sha256-ydJ1VytCyYlwKUSwPcsAqrufCaxBRhq7p3V9X8SDbIY=",
+        "owner": "OldJobobo",
+        "repo": "omarchy-biscuit-de-mar-dark-theme",
+        "rev": "e87f5f2eba826c2a2863ba038fd708a7a38a1016",
+        "type": "github"
+      },
+      "original": {
+        "owner": "OldJobobo",
+        "repo": "omarchy-biscuit-de-mar-dark-theme",
+        "type": "github"
+      }
+    },
+    "biscuit-gtk": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1696876646,
+        "narHash": "sha256-lEUqube0mvPLhN1prQ5IypspnJ244byu2IQSn6Vr8QE=",
+        "owner": "Biscuit-Theme",
+        "repo": "gtk",
+        "rev": "024685f1fed60b861e4589993c98103c6af6d906",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Biscuit-Theme",
+        "repo": "gtk",
+        "type": "github"
+      }
+    },
+    "biscuit-nvim": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1718787789,
+        "narHash": "sha256-rHtMScH9z/x8+oRQa4kMObblx0XumV5UwkyaHFnbNbc=",
+        "owner": "Biscuit-Theme",
+        "repo": "nvim",
+        "rev": "1307d875ac42c5bf620b311781de7211521a0e42",
+        "type": "github"
+      },
+      "original": {
+        "owner": "Biscuit-Theme",
+        "repo": "nvim",
+        "type": "github"
+      }
+    },
+    "home-manager": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1787379775,
+        "narHash": "sha256-XL2qfqmocfsvuEGyomZg4nOZfkuSe8vZtrOX99I+b6I=",
+        "owner": "nix-community",
+        "repo": "home-manager",
+        "rev": "ec1a8fdf74ed3f276148ee106299a2ba0e65d51f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "home-manager",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1787360063,
+        "narHash": "sha256-dt4WdcvsA8/RCe+VZZwqU0X+XMM3wBbGCWA0/sFWzGo=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "2c423e03bbafcff28bfadc6781a4a8257f205cb5",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "biscuit-desktop": "biscuit-desktop",
+        "biscuit-gtk": "biscuit-gtk",
+        "biscuit-nvim": "biscuit-nvim",
+        "home-manager": "home-manager",
+        "nixpkgs": "nixpkgs",
+        "zen-browser": "zen-browser"
+      }
+    },
+    "zen-browser": {
+      "inputs": {
+        "home-manager": [
+          "home-manager"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1787430507,
+        "narHash": "sha256-suOYXVn7PadruX8SlCji40gnmKUqQOSQRLtja/E60Vw=",
+        "owner": "0xc000022070",
+        "repo": "zen-browser-flake",
+        "rev": "b49e5b7b3f925b78b2af9ca21e81e8c0d1a4711e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "0xc000022070",
+        "repo": "zen-browser-flake",
+        "type": "github"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
