@@ -1,14 +1,6 @@
 { inputs }:
 
-{
-  name = "Biscuit de Mar Dark";
-
-  fonts = {
-    interface = "CommitMono Nerd Font Propo";
-    monospace = "CommitMono Nerd Font Mono";
-    sans = "Inter";
-  };
-
+let
   colors = {
     background = "1A1515";
     surface = "2D2424";
@@ -27,12 +19,53 @@
     magenta = "7B3D79";
     accent = "AE3F82";
   };
+in
+{
+  name = "Biscuit de Mar Dark";
+
+  fonts = {
+    interface = "CommitMono Nerd Font Propo";
+    monospace = "CommitMono Nerd Font Mono";
+    sans = "Inter";
+  };
+
+  inherit colors;
+
+  semantic = {
+    panel = colors.surface;
+    panelHover = colors.selection;
+    border = colors.muted;
+    active = colors.accent;
+    info = colors.violet;
+    success = colors.green;
+    warning = colors.orange;
+    thermal = colors.yellow;
+    critical = colors.red;
+  };
 
   wallpapers = [
     ./wallpapers/frieren-observatory.png
     ./wallpapers/night-ops.png
     ./wallpapers/devsecops-owl.png
-    "${inputs.biscuit-desktop}/backgrounds/4-copper-arc.png"
+    ./wallpapers/zero-trust-shrine.png
+    ./wallpapers/dependency-labyrinth.png
+    ./wallpapers/packet-rain-rooftop.png
+    ./wallpapers/reproducible-build-forge.png
+    ./wallpapers/secure-release-montage.png
+    ./wallpapers/smoke-and-policy.png
+    ./wallpapers/desert-chemistry-ci.png
+    ./wallpapers/demon-proxy.png
+    ./wallpapers/monster-hunter-firewall.png
+    ./wallpapers/shadow-incident.png
+    ./wallpapers/malware-devil-hunt.png
+    ./wallpapers/edge-runner-deploy.png
+    ./wallpapers/subway-red-team.png
+    ./wallpapers/soc-after-midnight.png
+    ./wallpapers/physical-red-team-heist.png
+    ./wallpapers/container-harbor.png
+    ./wallpapers/cold-aisle-ghost.png
+    ./wallpapers/threat-hunter-archive.png
+    ./wallpapers/incident-response-bunker.png
   ];
   gtkTheme = "biscuit-dark";
   gtkThemeSource = "${inputs.biscuit-gtk}/biscuit-dark";

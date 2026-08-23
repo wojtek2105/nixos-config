@@ -16,6 +16,10 @@ aktorów, postaci, logotypów ani konkretnych ujęć.
 - easter eggi do odkrycia: NixOS, graf Git, CVE, port 22, `0xDEADBEEF`, rubber
   duck debugging, Kubernetes i kontenery, klucze SSH, OWASP, Vim, `sudo`, liczba
   42, podpisy artefaktów, canary, honeypot i ukryte `WOJTECH`;
+- narzędzia open source rozłożone po całej kolekcji: Neovim, Tux/Linux, NixOS,
+  Git, Podman, Kubernetes, Ansible, OpenTofu, OpenSSH, GPG, tmux, Fish, btop,
+  Wireshark oraz abstrakcyjne motywy Prometheusa i Grafany; po kilka na scenę,
+  bez ściany logotypów;
 - bez wielkich napisów, przypadkowego kodu, generycznej neonowej metropolii,
   znaków wodnych i nachalnych symboli.
 
