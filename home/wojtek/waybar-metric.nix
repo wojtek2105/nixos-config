@@ -23,6 +23,13 @@ pkgs.writeShellApplication {
       printf '%s' "''${levels[value * 7 / 100]}"
     }
 
+    bar() {
+      local value="''${1:-0}"
+      local color="$2"
+      printf '<span font_family="${theme.fonts.monospace}" size="x-large" weight="bold" foreground="#%s" background="#${c.selection}"> %s </span> ' \
+        "$color" "$(block "$value")"
+    }
+
     row() {
       local label="$1"
       local value="$2"
@@ -39,7 +46,7 @@ pkgs.writeShellApplication {
     emit() {
       local percentage="$1"
       local icon="$2"
-      local color="$3"
+      local bars="$3"
       local tooltip="$4"
       local warning="''${5:-75}"
       local critical="''${6:-90}"
@@ -54,11 +61,48 @@ pkgs.writeShellApplication {
       fi
 
       jq --null-input --compact-output \
-        --arg text "$icon  <span size=\"large\" weight=\"bold\" foreground=\"#$color\">$(block "$percentage")</span>" \
+        --arg text "$icon  $bars" \
         --arg tooltip "$tooltip</span>" \
         --arg class "$class" \
         --argjson percentage "$percentage" \
         '{text: $text, tooltip: $tooltip, class: $class, percentage: $percentage}'
+    }
+
+    network_percentage() {
+      local rate="''${1:-0}"
+      if (( rate >= 104857600 )); then printf '100\n'
+      elif (( rate >= 52428800 )); then printf '88\n'
+      elif (( rate >= 10485760 )); then printf '72\n'
+      elif (( rate >= 1048576 )); then printf '56\n'
+      elif (( rate >= 102400 )); then printf '40\n'
+      elif (( rate >= 10240 )); then printf '24\n'
+      elif (( rate > 0 )); then printf '12\n'
+      else printf '0\n'
+      fi
+    }
+
+    disk_io_percentage() {
+      local rate="''${1:-0}"
+      if (( rate >= 1073741824 )); then printf '100\n'
+      elif (( rate >= 524288000 )); then printf '90\n'
+      elif (( rate >= 262144000 )); then printf '80\n'
+      elif (( rate >= 104857600 )); then printf '68\n'
+      elif (( rate >= 52428800 )); then printf '56\n'
+      elif (( rate >= 10485760 )); then printf '44\n'
+      elif (( rate >= 1048576 )); then printf '30\n'
+      elif (( rate > 0 )); then printf '14\n'
+      else printf '0\n'
+      fi
+    }
+
+    disk_bytes_total() {
+      awk '
+        $3 ~ /^(sd[a-z]+|vd[a-z]+|xvd[a-z]+|nvme[0-9]+n[0-9]+|mmcblk[0-9]+)$/ {
+          read_sectors += $6
+          written_sectors += $10
+        }
+        END { printf "%.0f %.0f\n", read_sectors * 512, written_sectors * 512 }
+      ' /proc/diskstats
     }
 
     max_temperature() {
@@ -127,8 +171,11 @@ pkgs.writeShellApplication {
           frequency_display="n/d"
         fi
         cpu_temperature="$(max_temperature '^(k10temp|zenpower)$')"
+        level=$usage
+        (( cpu_temperature > level )) && level=$cpu_temperature
+        bars="$(bar "$usage" '${c.violet}')$(bar "$cpu_temperature" '${c.yellow}')"
 
-        tooltip="$(tooltip_start '' 'PROCESOR')"$'\n'
+        tooltip="$(tooltip_start '' 'PROCESOR · CPU / °C')"$'\n'
         tooltip+="$(row 'Użycie' "$usage%" '${c.violet}')"$'\n'
         tooltip+="$(row 'Temperatura' "$cpu_temperature°C" '${c.yellow}')"$'\n'
         tooltip+="$(row 'Taktowanie' "$frequency_display")"$'\n'
@@ -136,7 +183,7 @@ pkgs.writeShellApplication {
         tooltip+="$(row 'Load · 5 min' "$load_5")"$'\n'
         tooltip+="$(row 'Load · 15 min' "$load_15")"$'\n'
         tooltip+="$(row 'Wątki' "$(nproc)")"
-        emit "$usage" '' '${c.violet}' "$tooltip"
+        emit "$level" '' "$bars" "$tooltip"
         ;;
 
       memory)
@@ -152,19 +199,26 @@ pkgs.writeShellApplication {
         used=$((total - available))
         percentage=$((used * 100 / total))
         swap_used=$((swap_total - swap_free))
+        (( swap_total > 0 )) \
+          && swap_percentage=$((swap_used * 100 / swap_total)) \
+          || swap_percentage=0
         used_display="$(awk -v value="$used" 'BEGIN { printf "%.1f GiB", value / 1048576 }')"
         total_display="$(awk -v value="$total" 'BEGIN { printf "%.1f GiB", value / 1048576 }')"
         available_display="$(awk -v value="$available" 'BEGIN { printf "%.1f GiB", value / 1048576 }')"
         swap_display="$(awk -v used="$swap_used" -v total="$swap_total" \
           'BEGIN { printf "%.1f / %.1f GiB", used / 1048576, total / 1048576 }')"
+        level=$percentage
+        (( swap_percentage > level )) && level=$swap_percentage
+        bars="$(bar "$percentage" '${c.accent}')$(bar "$swap_percentage" '${c.blue}')"
 
-        tooltip="$(tooltip_start '' 'PAMIĘĆ RAM')"$'\n'
+        tooltip="$(tooltip_start '' 'PAMIĘĆ · RAM / SWAP')"$'\n'
         tooltip+="$(row 'Użycie' "$percentage%" '${c.accent}')"$'\n'
         tooltip+="$(row 'Zajęte' "$used_display")"$'\n'
         tooltip+="$(row 'Dostępne' "$available_display" '${c.green}')"$'\n'
         tooltip+="$(row 'Łącznie' "$total_display")"$'\n'
-        tooltip+="$(row 'Swap' "$swap_display")"
-        emit "$percentage" '' '${c.accent}' "$tooltip"
+        tooltip+="$(row 'Swap' "$swap_display")"$'\n'
+        tooltip+="$(row 'Swap użycie' "$swap_percentage%" '${c.blue}')"
+        emit "$level" '' "$bars" "$tooltip"
         ;;
 
       network)
@@ -194,16 +248,11 @@ pkgs.writeShellApplication {
         tx_rate=$(((tx_bytes - previous_tx) / elapsed))
         (( rx_rate >= 0 )) || rx_rate=0
         (( tx_rate >= 0 )) || tx_rate=0
-        total_rate=$((rx_rate + tx_rate))
-        if (( total_rate >= 104857600 )); then percentage=100
-        elif (( total_rate >= 52428800 )); then percentage=85
-        elif (( total_rate >= 10485760 )); then percentage=70
-        elif (( total_rate >= 1048576 )); then percentage=55
-        elif (( total_rate >= 102400 )); then percentage=40
-        elif (( total_rate >= 10240 )); then percentage=25
-        elif (( total_rate > 0 )); then percentage=10
-        else percentage=0
-        fi
+        rx_percentage="$(network_percentage "$rx_rate")"
+        tx_percentage="$(network_percentage "$tx_rate")"
+        level=$rx_percentage
+        (( tx_percentage > level )) && level=$tx_percentage
+        bars="$(bar "$rx_percentage" '${c.green}')$(bar "$tx_percentage" '${c.violet}')"
         rx_display="$(numfmt --to=iec-i --suffix=B/s "$rx_rate" 2>/dev/null || printf '0 B/s')"
         tx_display="$(numfmt --to=iec-i --suffix=B/s "$tx_rate" 2>/dev/null || printf '0 B/s')"
         ip_address="$(
@@ -213,12 +262,12 @@ pkgs.writeShellApplication {
           fi
         )"
 
-        tooltip="$(tooltip_start '󰓅' 'SIEĆ')"
+        tooltip="$(tooltip_start '󰓅' 'SIEĆ · ↓ / ↑')"
         tooltip+=$'\n'"$(row 'Interfejs' "''${interface:-brak}")"$'\n'
         tooltip+="$(row 'Adres IPv4' "''${ip_address:-brak}")"$'\n'
         tooltip+="$(row 'Pobieranie' "$rx_display" '${c.green}')"$'\n'
         tooltip+="$(row 'Wysyłanie' "$tx_display" '${c.violet}')"
-        emit "$percentage" '󰓅' '${c.green}' "$tooltip" 101 101
+        emit "$level" '󰓅' "$bars" "$tooltip" 101 101
         ;;
 
       disk)
@@ -229,13 +278,37 @@ pkgs.writeShellApplication {
         used_display="$(awk -v value="$used" 'BEGIN { printf "%.0f GiB", value / 1048576 }')"
         available_display="$(awk -v value="$available" 'BEGIN { printf "%.0f GiB", value / 1048576 }')"
 
-        tooltip="$(tooltip_start '󰋊' 'DYSK SYSTEMOWY')"
+        read -r read_bytes written_bytes < <(disk_bytes_total)
+        now="$(date +%s)"
+        state_file="''${XDG_RUNTIME_DIR:?}/waybar-disk.state"
+        previous_read=$read_bytes
+        previous_written=$written_bytes
+        previous_time=$now
+        if [[ -r "$state_file" ]]; then
+          read -r previous_read previous_written previous_time < "$state_file" || true
+        fi
+        printf '%s %s %s\n' "$read_bytes" "$written_bytes" "$now" > "$state_file"
+        elapsed=$((now - previous_time))
+        (( elapsed > 0 )) || elapsed=1
+        read_rate=$(((read_bytes - previous_read) / elapsed))
+        write_rate=$(((written_bytes - previous_written) / elapsed))
+        (( read_rate >= 0 )) || read_rate=0
+        (( write_rate >= 0 )) || write_rate=0
+        read_percentage="$(disk_io_percentage "$read_rate")"
+        write_percentage="$(disk_io_percentage "$write_rate")"
+        read_display="$(numfmt --to=iec-i --suffix=B/s "$read_rate" 2>/dev/null || printf '0 B/s')"
+        write_display="$(numfmt --to=iec-i --suffix=B/s "$write_rate" 2>/dev/null || printf '0 B/s')"
+        bars="$(bar "$percentage" '${c.orange}')$(bar "$read_percentage" '${c.green}')$(bar "$write_percentage" '${c.violet}')"
+
+        tooltip="$(tooltip_start '󰋊' 'DYSK · % / ↓ / ↑')"
         tooltip+=$'\n'"$(row 'Punkt montowania' '/')"$'\n'
         tooltip+="$(row 'Użycie' "$percentage%" '${c.orange}')"$'\n'
+        tooltip+="$(row 'Odczyt' "$read_display" '${c.green}')"$'\n'
+        tooltip+="$(row 'Zapis' "$write_display" '${c.violet}')"$'\n'
         tooltip+="$(row 'Zajęte' "$used_display")"$'\n'
         tooltip+="$(row 'Wolne' "$available_display" '${c.green}')"$'\n'
         tooltip+="$(row 'Łącznie' "$total_display")"
-        emit "$percentage" '󰋊' '${c.orange}' "$tooltip" 80 92
+        emit "$percentage" '󰋊' "$bars" "$tooltip" 80 92
         ;;
 
       gpu)
@@ -258,14 +331,18 @@ pkgs.writeShellApplication {
         (( vram_total > 0 )) && vram_percentage=$((vram_used * 100 / vram_total)) || vram_percentage=0
         vram_used_display="$(awk -v value="$vram_used" 'BEGIN { printf "%.1f GiB", value / 1073741824 }')"
         vram_total_display="$(awk -v value="$vram_total" 'BEGIN { printf "%.1f GiB", value / 1073741824 }')"
+        level=$usage
+        (( vram_percentage > level )) && level=$vram_percentage
+        (( gpu_temperature > level )) && level=$gpu_temperature
+        bars="$(bar "$usage" '${c.blue}')$(bar "$vram_percentage" '${c.magenta}')$(bar "$gpu_temperature" '${c.yellow}')"
 
-        tooltip="$(tooltip_start '󰢮' 'GPU')"
+        tooltip="$(tooltip_start '󰢮' 'GPU · RDZEŃ / VRAM / °C')"
         tooltip+=$'\n'"$(row 'Użycie rdzenia' "$usage%" '${c.blue}')"$'\n'
         tooltip+="$(row 'VRAM' "$vram_percentage%" '${c.magenta}')"$'\n'
         tooltip+="$(row 'VRAM zajęte' "$vram_used_display")"$'\n'
         tooltip+="$(row 'VRAM łącznie' "$vram_total_display")"$'\n'
         tooltip+="$(row 'Temperatura' "$gpu_temperature°C" '${c.yellow}')"
-        emit "$usage" '󰢮' '${c.blue}' "$tooltip"
+        emit "$level" '󰢮' "$bars" "$tooltip"
         ;;
 
       temperature)
@@ -275,13 +352,14 @@ pkgs.writeShellApplication {
         maximum=$cpu_temperature
         (( gpu_temperature > maximum )) && maximum=$gpu_temperature
         (( nvme_temperature > maximum )) && maximum=$nvme_temperature
+        bars="$(bar "$cpu_temperature" '${c.violet}')$(bar "$gpu_temperature" '${c.blue}')$(bar "$nvme_temperature" '${c.orange}')"
 
         tooltip="$(tooltip_start '' 'TEMPERATURY')"
         tooltip+=$'\n'"$(row 'CPU' "$cpu_temperature°C" '${c.violet}')"$'\n'
         tooltip+="$(row 'GPU' "$gpu_temperature°C" '${c.blue}')"$'\n'
         tooltip+="$(row 'NVMe' "$nvme_temperature°C" '${c.orange}')"$'\n'
         tooltip+="$(row 'Najwyższa' "$maximum°C" '${c.yellow}')"
-        emit "$maximum" '' '${c.yellow}' "$tooltip" 75 90
+        emit "$maximum" '' "$bars" "$tooltip" 75 90
         ;;
 
       *)

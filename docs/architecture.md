@@ -45,7 +45,8 @@ zestawu pakietów.
 │       ├── scripts.nix
 │       ├── theme.nix
 │       ├── waybar-metric.nix
-│       └── waybar.nix
+│       ├── waybar.nix
+│       └── zen.nix
 └── docs/
 ```
 

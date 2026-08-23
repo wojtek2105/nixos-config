@@ -74,3 +74,6 @@ gsr-ui-cli --help
 8. Sprawdzić `Print`, `Super+Shift+S` oraz zapis i kopiowanie z Satty.
 9. Otworzyć `about:policies` w Zen i potwierdzić Dark Reader oraz Bitwarden na
    pasku narzędzi i w prywatnym oknie.
+10. Po zamknięciu i ponownym uruchomieniu Zen sprawdzić Biscuit w interfejsie,
+    nowej karcie oraz `about:preferences`; profil powinien zachować historię,
+    zakładki i poprzednią sesję.

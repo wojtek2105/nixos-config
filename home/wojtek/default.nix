@@ -104,13 +104,11 @@ let
         --filename "$temporary" \
         --output-filename "$output" \
         --fullscreen current-screen \
-        --copy-command wl-copy \
-        --early-exit all \
         --initial-tool pointer \
         --font-family '${theme.fonts.sans}' \
-        --actions-on-enter save-to-clipboard save-to-file exit \
+        --actions-on-enter save-to-file exit \
         --actions-on-escape exit \
-        --actions-on-right-click save-to-clipboard save-to-file exit \
+        --actions-on-right-click save-to-file exit \
         --disable-notifications \
         --no-window-decoration \
         --title 'Edytuj screenshot' \
@@ -422,6 +420,7 @@ let
     name = "screensaver-run";
     runtimeInputs = with pkgs; [
       coreutils
+      gawk
       scripts.display-refresh-rate
       terminaltexteffects
     ];
@@ -443,9 +442,81 @@ let
 
       wait_for_terminal_resize
 
+      refresh_rate="$(display-refresh-rate)"
+
+      # TTE expresses most motion as distance or delay per rendered frame.
+      # Normalize it to wall-clock time so a 240 Hz monitor is smoother, not
+      # twice as fast as the laptop panel, then slow the effects by 1.8x.
+      animation_speed() {
+        awk -v value="$1" -v fps="$refresh_rate" \
+          'BEGIN { printf "%.4f", value * 60 / fps / 1.8 }'
+      }
+
+      animation_frames() {
+        awk -v value="$1" -v fps="$refresh_rate" \
+          'BEGIN {
+            frames = value * fps / 60 * 1.8
+            if (frames < 1) frames = 1
+            printf "%d", frames + 0.5
+          }'
+      }
+
+      effects=(bouncyballs rain rings scattered slide wipe)
+
       while true; do
+        effect="''${effects[RANDOM % ''${#effects[@]}]}"
+        effect_args=()
+        case "$effect" in
+          bouncyballs)
+            effect_args=(
+              --ball-delay "$(animation_frames 4)"
+              --movement-speed "$(animation_speed 0.45)"
+              --ball-colors ${c.orange} ${c.yellow} ${c.accent}
+              --final-gradient-stops ${c.accent} ${c.orange} ${c.bright}
+            )
+            ;;
+          rain)
+            effect_args=(
+              --movement-speed "$(animation_speed 0.33)-$(animation_speed 0.57)"
+              --rain-colors ${c.violet} ${c.blue} ${c.accent}
+              --final-gradient-stops ${c.violet} ${c.accent} ${c.bright}
+            )
+            ;;
+          rings)
+            effect_args=(
+              --spin-duration "$(animation_frames 200)"
+              --spin-speed "$(animation_speed 0.25)-$(animation_speed 1.0)"
+              --disperse-duration "$(animation_frames 200)"
+              --ring-colors ${c.accent} ${c.orange} ${c.yellow}
+              --final-gradient-stops ${c.accent} ${c.orange} ${c.bright}
+            )
+            ;;
+          scattered)
+            effect_args=(
+              --movement-speed "$(animation_speed 0.5)"
+              --final-gradient-frames "$(animation_frames 9)"
+              --final-gradient-stops ${c.violet} ${c.accent} ${c.bright}
+            )
+            ;;
+          slide)
+            effect_args=(
+              --movement-speed "$(animation_speed 0.8)"
+              --gap "$(animation_frames 2)"
+              --final-gradient-frames "$(animation_frames 6)"
+              --final-gradient-stops ${c.orange} ${c.accent} ${c.bright}
+            )
+            ;;
+          wipe)
+            effect_args=(
+              --wipe-delay "$(animation_frames 1)"
+              --final-gradient-frames "$(animation_frames 3)"
+              --final-gradient-stops ${c.violet} ${c.accent} ${c.orange} ${c.bright}
+            )
+            ;;
+        esac
+
         tte --input-file "''${XDG_CONFIG_HOME:-$HOME/.config}/screensaver/wojtech.txt" \
-          --frame-rate "$(display-refresh-rate)" \
+          --frame-rate "$refresh_rate" \
           --canvas-width 0 \
           --canvas-height 0 \
           --anchor-canvas c \
@@ -453,7 +524,8 @@ let
           --random-effect \
           --reuse-canvas \
           --no-eol \
-          --no-restore-cursor &
+          --no-restore-cursor \
+          "$effect" "''${effect_args[@]}" &
         effect_pid=$!
 
         while kill -0 "$effect_pid" 2>/dev/null; do
@@ -494,6 +566,7 @@ in
     ./notifications.nix
     ./osd.nix
     ./waybar.nix
+    ./zen.nix
   ];
 
   home = {
@@ -788,35 +861,6 @@ in
       background-image: url("${pkgs.wlogout}/share/wlogout/icons/shutdown.png");
     }
   '';
-
-  programs.zen-browser = {
-    enable = true;
-    setAsDefaultBrowser = true;
-    policies = {
-      DisableAppUpdate = true;
-      DisableTelemetry = true;
-      DontCheckDefaultBrowser = true;
-      EnableTrackingProtection = {
-        Value = true;
-        Cryptomining = true;
-        Fingerprinting = true;
-      };
-      ExtensionSettings = {
-        "addon@darkreader.org" = {
-          installation_mode = "force_installed";
-          install_url = "https://addons.mozilla.org/firefox/downloads/latest/darkreader/latest.xpi";
-          default_area = "navbar";
-          private_browsing = true;
-        };
-        "{446900e4-71c2-419f-a6a7-df9c091e268b}" = {
-          installation_mode = "force_installed";
-          install_url = "https://addons.mozilla.org/firefox/downloads/latest/bitwarden-password-manager/latest.xpi";
-          default_area = "navbar";
-          private_browsing = true;
-        };
-      };
-    };
-  };
 
   xdg.userDirs = {
     enable = true;

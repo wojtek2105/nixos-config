@@ -89,6 +89,23 @@ in
     };
   };
 
+  # Foot ships three desktop entries in one package. Keep the regular terminal
+  # visible and hide the implementation-oriented server/client launchers.
+  xdg.desktopEntries = {
+    foot-server = {
+      name = "Foot Server";
+      exec = "foot --server";
+      icon = "foot";
+      noDisplay = true;
+    };
+    footclient = {
+      name = "Foot Client";
+      exec = "footclient";
+      icon = "foot";
+      noDisplay = true;
+    };
+  };
+
   gtk = {
     enable = true;
     theme.name = theme.gtkTheme;

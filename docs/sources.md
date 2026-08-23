@@ -36,6 +36,7 @@ Preferowane są oficjalne repozytoria GitHub i dokumentacja pierwotna.
 
 ## Oficjalne źródła poza GitHubem
 
+- [Zen: live editing](https://docs.zen-browser.app/guides/live-editing) — oficjalna dokumentacja obsługi `userChrome.css` i `userContent.css`.
 - [Dark Reader dla Firefoksa](https://addons.mozilla.org/firefox/addon/darkreader/) — deklaratywnie instalowany oficjalny dodatek AMO.
 - [Bitwarden dla Firefoksa](https://addons.mozilla.org/firefox/addon/bitwarden-password-manager/) — deklaratywnie instalowany oficjalny dodatek AMO.
 - [GPU Screen Recorder](https://git.dec05eba.com/gpu-screen-recorder/about/) — oficjalny upstream CLI.

@@ -43,10 +43,13 @@ Mar Dark jest generowany przez Home Manager.
 Wbudowana matryca laptopa działa w natywnym `2560x1600` ze skalą logiczną `2`.
 Przyszły host PC może ustawić własną skalę niezależnie.
 Animacje Hyprlanda są synchronizowane przez kompozytor z aktywnym trybem
-monitora. Awww i wygaszacz odczytują przy uruchomieniu rzeczywiste
-`refreshRate` z `hyprctl monitors -j`; laptop używa więc 120 Hz, a przyszły
-monitor 240 Hz automatycznie dostanie 240 FPS bez parametru specyficznego dla
-hosta.
+monitora. Awww odczytuje przy uruchomieniu rzeczywiste `refreshRate` z
+`hyprctl monitors -j`; laptop używa więc 120 Hz, a przyszły monitor 240 Hz
+automatycznie dostanie przejście 240 FPS bez parametru specyficznego dla hosta.
+Tekstowy wygaszacz używa tej samej częstotliwości, ale prędkości ruchu i czasy
+trwania efektów są przeliczane względem liczby klatek. Dzięki temu 240 Hz daje
+większą płynność, a nie dwa razy szybszą animację; tempo jest celowo spowolnione
+około 1,8 raza względem domyślnych efektów TTE.
 
 XWayland nie skaluje aplikacji bitmapowo (`force_zero_scaling = true`). Steam
 dostaje własną skalę interfejsu 2× przez `STEAM_FORCE_DESKTOPUI_SCALING`, dzięki
@@ -68,9 +71,9 @@ Dark mode jest deklaratywny:
 - ikony `papirus-biscuit-dark`,
 - kursor `Bibata-Modern-Amber` w GTK i Hyprcursor.
 
-Foot, Fish/Tide, tmux, nvim, btop, Lazygit, Fuzzel, Waybar, SwayNC, Hyprland,
-Hyprlock, wlogout i wygaszacz korzystają z tej samej palety generowanej przez
-Home Managera.
+Foot, Fish/Tide, tmux, nvim, btop, Lazygit, Fuzzel, Waybar, SwayNC, Zen,
+Hyprland, Hyprlock, wlogout i wygaszacz korzystają z tej samej palety
+generowanej przez Home Managera.
 
 Awww ustawia przypiętą w `flake.lock` tapetę `4-copper-arc.png` z adaptacji
 Biscuit dla Omarchy. Przejście tapety używa częstotliwości odświeżania
@@ -92,9 +95,11 @@ startu, w którym Hyprland widział tylko `simpledrm` i kończył pracę komunik
 
 ## Waybar i screenshoty
 
-- kompaktowe pionowe wskaźniki `▁…█` pokazują CPU, RAM, ruch sieciowy, dysk,
-  dedykowane GPU, VRAM i temperatury; każdy wskaźnik ma osobny, wyrównany
-  tooltip z wartościami dotyczącymi wyłącznie danego zasobu,
+- kompaktowe pionowe wskaźniki `▁…█` mają stałe, kontrastowe tło i osobny kolor
+  dla każdej wartości: CPU pokazuje użycie/temperaturę, RAM pamięć/swap, sieć
+  pobieranie/wysyłanie, dysk zajętość/odczyt/zapis, a GPU rdzeń/VRAM/temperaturę,
+- każdy zasób ma osobny tooltip o stałej szerokości, po jednym parametrze w
+  wierszu; nagłówek opisuje kolejność pasków widoczną na panelu,
 - kliknięcie wskaźników zasobów otwiera `btop` w pływającym oknie Foot,
 - kliknięcie dźwięku, Wi-Fi albo Bluetooth otwiera pływający panel TUI w Foot:
   `wiremix`, własne menu Gum sterujące NetworkManagerem przez `nmcli` albo
@@ -115,7 +120,9 @@ startu, w którym Hyprland widział tylko `simpledrm` i kończył pracę komunik
   ikoną, tytułem, treścią, dokładnym czasem lokalnym i kolorem ważności,
 - przycisk aparatu uruchamia od razu zaznaczenie obszaru; prawy klik zapisuje
   cały ekran, a pełne menu jest dostępne pod `Super+Shift+S`,
-- zaznaczenie obszaru zamraża obraz i otwiera Satty do przycięcia oraz adnotacji,
+- zaznaczenie obszaru zamraża obraz i otwiera Satty do przycięcia oraz adnotacji;
+  Enter albo przycisk kopiowania najpierw zapisuje wynik, zamyka edytor, a skrypt
+  kopiuje dokładnie zapisany PNG do schowka,
 - `Print` przechwytuje obszar i otwiera edytor, `Shift+Print` robi to samo dla
   aktywnego okna, a `Ctrl+Print` zapisuje cały ekran bez edytora,
 - zmiany głośności, wyciszenia i jasności pokazuje osobny Biscuit OSD na dole
@@ -127,7 +134,10 @@ Zen Twilight jest przeglądarką domyślną. Polityki enterprise wyłączają
 telemetrię i aktualizację aplikacji poza Nixem oraz deklaratywnie instalują
 oficjalne dodatki Dark Reader i Bitwarden z Mozilla Add-ons. Obie ikony są
 przypięte do paska narzędzi i oba rozszerzenia mogą działać w oknach prywatnych.
-Polityki można sprawdzić w Zen pod `about:policies`.
+Polityki można sprawdzić w Zen pod `about:policies`. Moduł `home/wojtek/zen.nix`
+używa istniejącego profilu, aby zachować historię, sesję i zakładki, oraz dodaje
+deklaratywny Biscuit `userChrome` i `userContent` dla interfejsu przeglądarki,
+strony nowej karty, ustawień, dodatków i menedżera haseł.
 
 ## Benchmark pulpitu
 

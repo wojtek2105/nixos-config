@@ -39,7 +39,6 @@ in
         "custom/network-usage"
         "custom/disk"
         "custom/gpu"
-        "custom/temperature"
         "custom/docker"
       ];
       modules-center = [
@@ -61,11 +60,11 @@ in
         on-click = "activate";
         persistent-workspaces."*" = 5;
         format-icons = {
-          active = "●";
-          default = "●";
-          empty = "○";
-          persistent = "○";
-          urgent = "!";
+          active = "";
+          default = "";
+          empty = "";
+          persistent = "";
+          urgent = "";
         };
       };
 
@@ -81,7 +80,6 @@ in
       "custom/network-usage" = metric "network" 2;
       "custom/disk" = metric "disk" 15;
       "custom/gpu" = metric "gpu" 2;
-      "custom/temperature" = metric "temperature" 3;
 
       "custom/docker" = {
         exec = "docker-status";
@@ -236,7 +234,6 @@ in
       #custom-network-usage,
       #custom-disk,
       #custom-gpu,
-      #custom-temperature,
       #custom-docker,
       #custom-screenshot,
       #pulseaudio,
@@ -261,7 +258,6 @@ in
       #custom-network-usage:hover,
       #custom-disk:hover,
       #custom-gpu:hover,
-      #custom-temperature:hover,
       #custom-docker:hover,
       #custom-screenshot:hover,
       #pulseaudio:hover,
@@ -283,7 +279,7 @@ in
         min-height: 20px;
         margin: 4px 1px;
         padding: 0 2px;
-        font-size: 8.5px;
+        font-size: 9px;
         color: alpha(@subtext, 0.72);
         background: transparent;
         border: 1px solid transparent;
@@ -296,6 +292,11 @@ in
         color: alpha(@overlay, 0.66);
       }
 
+      #workspaces button:not(.empty):not(.active) {
+        color: @subtext;
+        background: alpha(@surface, 0.34);
+      }
+
       #workspaces button:hover {
         color: @bright;
         background: alpha(@surface, 0.82);
@@ -303,11 +304,12 @@ in
       }
 
       #workspaces button.active {
-        min-width: 25px;
+        min-width: 27px;
+        font-size: 11px;
         color: @bright;
-        background: alpha(@mauve, 0.72);
-        border-color: alpha(@bright, 0.22);
-        box-shadow: 0 2px 6px alpha(@base, 0.48);
+        background: alpha(@mauve, 0.60);
+        border-color: alpha(@mauve, 0.92);
+        box-shadow: 0 0 0 1px alpha(@mauve, 0.20), 0 2px 7px alpha(@base, 0.54);
       }
 
       #workspaces button.urgent {
@@ -330,13 +332,22 @@ in
       #custom-memory,
       #custom-network-usage,
       #custom-disk,
-      #custom-gpu,
-      #custom-temperature {
-        min-width: 31px;
+      #custom-gpu {
         padding: 0 5px;
-        font-size: 11px;
-        background: alpha(@surface, 0.94);
-        border-color: alpha(@overlay, 0.66);
+        font-size: 12px;
+        background: alpha(@base, 0.95);
+        border-color: alpha(@muted, 0.48);
+      }
+
+      #custom-cpu,
+      #custom-memory,
+      #custom-network-usage {
+        min-width: 49px;
+      }
+
+      #custom-disk,
+      #custom-gpu {
+        min-width: 64px;
       }
 
       #custom-cpu { color: @blue; }
@@ -344,21 +355,18 @@ in
       #custom-network-usage { color: @green; }
       #custom-disk { color: @peach; }
       #custom-gpu { color: @sapphire; }
-      #custom-temperature { color: @yellow; }
 
       #custom-cpu.warning,
       #custom-memory.warning,
       #custom-disk.warning,
-      #custom-gpu.warning,
-      #custom-temperature.warning {
+      #custom-gpu.warning {
         border-color: alpha(@yellow, 0.72);
       }
 
       #custom-cpu.critical,
       #custom-memory.critical,
       #custom-disk.critical,
-      #custom-gpu.critical,
-      #custom-temperature.critical {
+      #custom-gpu.critical {
         color: @red;
         border-color: alpha(@red, 0.82);
       }
