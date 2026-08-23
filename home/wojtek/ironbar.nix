@@ -209,7 +209,7 @@ let
               state = "connected";
               signal_strength = 20;
             };
-            icon = "󰤯";
+            icon = "";
           };
           wifi_connected_weak = {
             when = {
@@ -217,7 +217,7 @@ let
               state = "connected";
               signal_strength = 40;
             };
-            icon = "󰤟";
+            icon = "";
           };
           wifi_connected_ok = {
             when = {
@@ -225,7 +225,7 @@ let
               state = "connected";
               signal_strength = 50;
             };
-            icon = "󰤢";
+            icon = "";
           };
           wifi_connected_good = {
             when = {
@@ -233,7 +233,7 @@ let
               state = "connected";
               signal_strength = 80;
             };
-            icon = "󰤥";
+            icon = "";
           };
           wifi_connected_excellent = {
             when = {
@@ -241,7 +241,7 @@ let
               state = "connected";
               signal_strength = 100;
             };
-            icon = "󰤨";
+            icon = "";
           };
         };
         tooltip = "Sieć\nKliknij, aby otworzyć panel TUI";
@@ -268,7 +268,7 @@ let
         type = "brightness";
         name = "brightness";
         class = "island status brightness";
-        icon_label = "";
+        icon_label = "󰖨";
         justify = "center";
         format = "{percentage}%";
         smooth_scroll_speed = 0.5;
@@ -644,10 +644,10 @@ let
         local base_r, base_g, base_b = rgb("${c.background}")
         local bright_r, bright_g, bright_b = rgb("${c.bright}")
         local outline = {
-          { -1, 0 },
-          { 1, 0 },
-          { 0, -1 },
-          { 0, 1 },
+          { -0.65, 0 },
+          { 0.65, 0 },
+          { 0, -0.65 },
+          { 0, 0.65 },
         }
 
         for index, value in ipairs(current) do
@@ -674,7 +674,7 @@ let
 
           local symbol = (symbols[component] or {})[index] or "•"
           cr:select_font_face(
-            "${theme.fonts.monospace}",
+            "${theme.fonts.interface}",
             cairo.FontSlant.NORMAL,
             cairo.FontWeight.BOLD
           )
@@ -965,24 +965,40 @@ in
       }
 
       #network {
-        min-width: 30px;
-        padding: 0 6px;
+        min-width: 32px;
+        padding: 0;
         color: @success;
-        font-family: "${theme.fonts.monospace}";
+        font-family: "${theme.fonts.interface}";
       }
 
       #network .item,
       #network button,
       #network .icon,
       #network .text-icon {
-        min-width: 18px;
-        min-height: 20px;
+        min-width: 32px;
+        min-height: 28px;
         margin: 0;
         padding: 0;
-        font-family: "${theme.fonts.monospace}";
-        font-size: 17px;
-        font-weight: 700;
+        font-family: "${theme.fonts.interface}";
+        font-size: 18px;
+        font-weight: 500;
       }
+
+      #network.profile-wifi_disconnected,
+      #network.profile-wired_disconnected {
+        color: @subtext;
+      }
+
+      #network.profile-wifi_acquiring,
+      #network.profile-wired_acquiring {
+        color: @warning;
+      }
+
+      #network.profile-wifi_connected_none { color: alpha(@success, 0.38); }
+      #network.profile-wifi_connected_weak { color: alpha(@success, 0.52); }
+      #network.profile-wifi_connected_ok { color: alpha(@success, 0.68); }
+      #network.profile-wifi_connected_good { color: alpha(@success, 0.84); }
+      #network.profile-wifi_connected_excellent { color: @success; }
 
       #bluetooth {
         min-width: 32px;
@@ -1003,22 +1019,22 @@ in
       }
 
       #brightness {
-        min-width: 64px;
-        padding: 0 7px;
+        min-width: 58px;
+        padding: 0 6px;
         color: @thermal;
       }
 
       #brightness .icon {
-        min-width: 20px;
-        margin: 0 5px 0 0;
+        min-width: 16px;
+        margin: 0 2px 0 0;
         padding: 0;
-        font-family: "${theme.fonts.monospace}";
-        font-size: 18px;
-        font-weight: 800;
+        font-family: "${theme.fonts.interface}";
+        font-size: 17px;
+        font-weight: 600;
       }
 
       #brightness .label {
-        min-width: 38px;
+        min-width: 32px;
         margin: 0;
         padding: 0;
         font-size: 11.5px;
