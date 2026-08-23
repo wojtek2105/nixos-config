@@ -13,11 +13,18 @@ Preferowane są oficjalne repozytoria GitHub i dokumentacja pierwotna.
 - [hyprwm/Hyprland](https://github.com/hyprwm/Hyprland) — compositor i dispatchery.
 - [Oficjalny przykład konfiguracji Lua Hyprlanda](https://github.com/hyprwm/Hyprland/blob/main/example/hyprland.lua) — struktura `hl.config`, bindy, animacje i reguły.
 - [hyprwm/Hyprland Wiki](https://github.com/hyprwm/hyprland-wiki) — dokumentacja Hyprlanda.
-- [hyprwm/contrib: Grimblast](https://github.com/hyprwm/contrib/tree/main/grimblast) — screenshoty obszaru, aktywnego okna i ekranu z zamrożeniem obrazu.
+- [Grim](https://gitlab.freedesktop.org/emersion/grim) — bezpośrednie przechwytywanie obrazu pod Waylandem.
+- [Slurp](https://gitlab.freedesktop.org/emersion/slurp) — lekki wybór geometrii obszaru ekranu.
 - [Satty](https://github.com/gabm/Satty) — edycja, adnotacje, zapis i kopiowanie screenshotów.
 - [Fuzzel](https://codeberg.org/dnkl/fuzzel) — lekki launcher oraz menu wyboru pod Waylandem.
+- [JakeStanger/ironbar](https://github.com/JakeStanger/ironbar) — panel GTK4
+- [mpv-player/mpv](https://github.com/mpv-player/mpv) — lekki odtwarzacz obrazów i wideo
+- [tomasklaen/uosc](https://github.com/tomasklaen/uosc) — nowoczesny interfejs MPV
+- [po5/thumbfast](https://github.com/po5/thumbfast) — miniatury osi czasu MPV
+  napisany w Rust, natywne moduły i osadzane wykresy Cairo/LuaJIT.
 - [SwayNotificationCenter](https://github.com/ErikReider/SwayNotificationCenter) — centrum i historia powiadomień.
 - [SwayOSD](https://github.com/ErikReider/SwayOSD) — lekkie OSD głośności, mikrofonu i jasności.
+- [Awww](https://github.com/LGFae/awww) — lekki daemon tapet, skalowanie i animowane przejścia.
 - [Biscuit-Theme/biscuit](https://github.com/Biscuit-Theme/biscuit) — oficjalna paleta Biscuit de Mar Dark.
 - [Biscuit-Theme/nvim](https://github.com/Biscuit-Theme/nvim) — oficjalny motyw Biscuit dla Neovim.
 - [Biscuit-Theme/gtk](https://github.com/Biscuit-Theme/gtk) — oficjalny motyw GTK i wariant ikon Papirus.

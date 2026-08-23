@@ -1,16 +1,23 @@
 HOST ?= laptop
 FLAKE ?= path:.
+KEEP ?= 4
+SYSTEM_PROFILE ?= /nix/var/nix/profiles/system
 
-.PHONY: help check build test rollback boot switch
+.PHONY: help check build test test-waybar test-ironbar rollback boot switch generations gc benchmark
 
 help:
 	@printf '%s\n' \
 		'make check     - sprawdź wszystkie wyjścia flake' \
 		'make build     - zbuduj system bez aktywacji' \
 		'make test      - aktywuj konfigurację do restartu' \
+		'make test-waybar   - aktywuj wariant Waybar do restartu' \
+		'make test-ironbar  - aktywuj wariant Ironbar do restartu' \
+		'make benchmark [SECONDS=120] - zmierz aktywny shell pulpitu' \
 		'make rollback  - wróć na żywo do systemu uruchomionego przy bootowaniu' \
 		'make boot      - ustaw konfigurację na następny start' \
-		'make switch    - aktywuj i ustaw konfigurację jako domyślną'
+		'make switch    - aktywuj i ustaw konfigurację jako domyślną' \
+		'make generations       - pokaż zachowane generacje systemu' \
+		'make gc KEEP=4         - zachowaj 4 ostatnie generacje i zwolnij miejsce'
 
 check:
 	nix flake check $(FLAKE)
@@ -21,6 +28,23 @@ build:
 test:
 	sudo nixos-rebuild test --flake $(FLAKE)\#$(HOST)
 
+test-waybar:
+	sudo nixos-rebuild test --flake $(FLAKE)\#laptop-waybar
+	@if systemctl --user --quiet is-active ironbar.service; then systemctl --user stop ironbar.service; fi
+	@pkill -x ironbar 2>/dev/null || true
+	@pkill -x .ironbar-wrappe 2>/dev/null || true
+	systemctl --user restart waybar.service
+
+test-ironbar:
+	sudo nixos-rebuild test --flake $(FLAKE)\#laptop
+	@if systemctl --user --quiet is-active waybar.service; then systemctl --user stop waybar.service; fi
+	@pkill -x waybar 2>/dev/null || true
+	@pkill -x .waybar-wrapped 2>/dev/null || true
+	systemctl --user restart ironbar.service
+
+benchmark:
+	desktop-benchmark $(or $(SECONDS),120)
+
 rollback:
 	sudo /run/booted-system/bin/switch-to-configuration test
 
@@ -29,3 +53,13 @@ boot:
 
 switch:
 	sudo nixos-rebuild switch --flake $(FLAKE)\#$(HOST)
+
+generations:
+	sudo nix-env --profile $(SYSTEM_PROFILE) --list-generations
+
+gc:
+	@case '$(KEEP)' in ''|*[!0-9]*) printf 'KEEP musi być dodatnią liczbą całkowitą.\n' >&2; exit 2;; esac
+	@test '$(KEEP)' -ge 1 || { printf 'KEEP musi być większe lub równe 1.\n' >&2; exit 2; }
+	sudo nix-env --profile $(SYSTEM_PROFILE) --delete-generations +$(KEEP)
+	sudo nix-store --gc
+	sudo nix-env --profile $(SYSTEM_PROFILE) --list-generations

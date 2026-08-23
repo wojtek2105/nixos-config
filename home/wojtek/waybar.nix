@@ -15,10 +15,18 @@ let
     min-length = 3;
     align = 0.5;
     justify = "center";
-    on-click = "waybar-panel metrics";
+    on-click = "desktop-panel metrics";
   };
 in
 {
+  systemd.user.services.waybar = {
+    Unit.Conflicts = [ "ironbar.service" ];
+    Service.ExecStartPre = [
+      "-${pkgs.procps}/bin/pkill -x ironbar"
+      "-${pkgs.procps}/bin/pkill -x .ironbar-wrappe"
+    ];
+  };
+
   programs.waybar = {
     enable = true;
     systemd.enable = true;
@@ -87,7 +95,7 @@ in
         return-type = "json";
         format = "{}";
         tooltip = true;
-        on-click = "waybar-panel docker";
+        on-click = "desktop-panel docker";
       };
 
       "custom/screenshot" = {
@@ -110,7 +118,7 @@ in
           ""
           ""
         ];
-        on-click = "waybar-panel audio";
+        on-click = "desktop-panel audio";
         on-click-right = "swayosd-client --output-volume=mute-toggle --max-volume=100";
         on-scroll-up = "swayosd-client --output-volume=+5 --max-volume=100";
         on-scroll-down = "swayosd-client --output-volume=-5 --max-volume=100";
@@ -121,14 +129,14 @@ in
         format-ethernet = "󰈀 LAN";
         format-disconnected = "󰖪 off";
         tooltip-format-wifi = "{essid} ({signalStrength}%)\n{ipaddr}";
-        on-click = "waybar-panel wifi";
+        on-click = "desktop-panel wifi";
       };
 
       bluetooth = {
         format = "";
         format-connected = " {num_connections}";
         format-disabled = "󰂲";
-        on-click = "waybar-panel bluetooth";
+        on-click = "desktop-panel bluetooth";
       };
 
       backlight = {

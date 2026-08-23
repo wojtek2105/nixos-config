@@ -91,7 +91,6 @@ hl.animation({ leaf = "fade", enabled = true, speed = 5, bezier = "easeOutQuint"
 hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "easeOutQuint", style = "slide" })
 
 hl.on("hyprland.start", function()
-  @DESKTOP_SHELL_AUTOSTART@
   hl.exec_cmd("gsr-ui launch-hide")
   hl.exec_cmd("wl-paste --type text --watch cliphist store")
   hl.exec_cmd("wl-paste --type image --watch cliphist store")
@@ -163,10 +162,9 @@ hl.bind(mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
 hl.window_rule({
   name = "center-tui-utilities",
-  match = { class = "^(waybar-metrics|waybar-audio|waybar-wifi|waybar-bluetooth|waybar-docker)$" },
+  match = { class = "^(desktop-metrics|desktop-audio|desktop-wifi|desktop-bluetooth|desktop-docker)$" },
   float = true,
   center = true,
-  size = { 900, 650 },
 })
 hl.window_rule({
   name = "float-steam-dialogs",

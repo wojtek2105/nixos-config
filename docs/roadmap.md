@@ -6,6 +6,9 @@ kończyć się `nix flake check` oraz pełnym buildem dotkniętych hostów.
 ## Najbliższe zadania
 
 - [ ] Aktywować i ręcznie sprawdzić bieżącą konfigurację na laptopie.
+- [x] Zmierzyć `laptop-ironbar` przez 120 sekund i porównać go z zapisanym
+      wynikiem Waybara oraz Noctalii.
+- [x] Wybrać Ironbar jako docelowy panel i zachować Waybara jako wariant awaryjny.
 - [ ] Przetestować wklejanie tekstu i obrazów z historii schowka.
 - [ ] Przetestować jakość replay w dynamicznej grze przy 2560x1600.
 - [ ] Sprawdzić kolejność i synchronizację trzech ścieżek audio.
@@ -27,7 +30,7 @@ kończyć się `nix flake check` oraz pełnym buildem dotkniętych hostów.
 
 ## Replay
 
-- [ ] Dodać wskaźnik aktywnego bufora do Waybara.
+- [ ] Dodać wskaźnik aktywnego bufora do wybranego panelu.
 - [ ] Zmierzyć faktyczne użycie GPU i RAM podczas gry.
 - [ ] Rozważyć automatyczne usuwanie najstarszych klipów po przekroczeniu limitu.
 

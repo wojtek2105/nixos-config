@@ -28,7 +28,12 @@
     accent = "AE3F82";
   };
 
-  wallpaper = "${inputs.biscuit-desktop}/backgrounds/4-copper-arc.png";
+  wallpapers = [
+    ./wallpapers/frieren-observatory.png
+    ./wallpapers/night-ops.png
+    ./wallpapers/devsecops-owl.png
+    "${inputs.biscuit-desktop}/backgrounds/4-copper-arc.png"
+  ];
   gtkTheme = "biscuit-dark";
   gtkThemeSource = "${inputs.biscuit-gtk}/biscuit-dark";
   iconTheme = "papirus-biscuit-dark";

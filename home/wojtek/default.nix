@@ -1,10 +1,9 @@
-{ inputs, pkgs, replayConfig, ... }:
+{ desktopBar ? "waybar", inputs, pkgs, replayConfig, ... }:
 
 let
   theme = import ./theme.nix { inherit inputs; };
   c = theme.colors;
   scripts = import ./scripts.nix { inherit pkgs; };
-  waybar-metric = import ./waybar-metric.nix { inherit inputs pkgs; };
 
   tideDefaults = pkgs.runCommand "tide-declarative-defaults.fish" { } ''
     sed -E 's/^(tide_[^ ]+)(.*)$/set -U \1\2/' \
@@ -36,9 +35,12 @@ let
     runtimeInputs = with pkgs; [
       coreutils
       fuzzel
-      grimblast
+      grim
+      hyprland
+      jq
       libnotify
       satty
+      slurp
       swayosd
       wl-clipboard
     ];
@@ -77,7 +79,11 @@ let
       output="$screenshot_dir/$(date +%F_%H-%M-%S).png"
 
       if [[ "$target" == screen ]]; then
-        grimblast copysave screen "$output"
+        if ! grim "$output"; then
+          notify-send --urgency=critical "Screenshot" "Nie udało się przechwycić ekranu."
+          exit 1
+        fi
+        wl-copy --type image/png < "$output"
         osd_success
         exit 0
       fi
@@ -89,12 +95,27 @@ let
       trap cleanup EXIT
 
       if [[ "$target" == area ]]; then
-        if ! grimblast --freeze save area "$temporary"; then
+        geometry="$(slurp \
+          -b '#${c.background}cc' \
+          -c '#${c.accent}ff' \
+          -s '#${c.selection}88' \
+          -w 2)" || exit 0
+        [[ -n "$geometry" ]] || exit 0
+
+        if ! grim -g "$geometry" "$temporary"; then
           notify-send --urgency=critical "Screenshot" "Nie udało się przechwycić obszaru."
           exit 1
         fi
       else
-        if ! grimblast save active "$temporary"; then
+        geometry="$(hyprctl activewindow -j | jq --raw-output --exit-status '
+          select(.address != null and .address != "")
+          | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"
+        ')" || {
+          notify-send --urgency=critical "Screenshot" "Nie znaleziono aktywnego okna."
+          exit 1
+        }
+
+        if ! grim -g "$geometry" "$temporary"; then
           notify-send --urgency=critical "Screenshot" "Nie udało się przechwycić aktywnego okna."
           exit 1
         fi
@@ -106,9 +127,14 @@ let
         --fullscreen current-screen \
         --initial-tool pointer \
         --font-family '${theme.fonts.sans}' \
-        --actions-on-enter save-to-file exit \
+        --copy-command wl-copy \
+        --actions-on-enter save-to-clipboard \
+        --actions-on-enter save-to-file \
+        --actions-on-enter exit \
         --actions-on-escape exit \
-        --actions-on-right-click save-to-file exit \
+        --actions-on-right-click save-to-clipboard \
+        --actions-on-right-click save-to-file \
+        --actions-on-right-click exit \
         --disable-notifications \
         --no-window-decoration \
         --title 'Edytuj screenshot' \
@@ -288,16 +314,33 @@ let
     runtimeInputs = with pkgs; [
       coreutils
       docker-client
+      gnused
       jq
       systemd
     ];
     text = ''
+      output_mode="''${1:-json}"
+
       output() {
-        jq --null-input --compact-output \
-          --arg text "$1" \
-          --arg tooltip "$2" \
-          --arg class "$3" \
-          '{text: $text, tooltip: $tooltip, class: $class}'
+        case "$output_mode" in
+          json)
+            jq --null-input --compact-output \
+              --arg text "$1" \
+              --arg tooltip "$2" \
+              --arg class "$3" \
+              '{text: $text, tooltip: $tooltip, class: $class}'
+            ;;
+          label)
+            printf '%s\n' "$1"
+            ;;
+          tooltip)
+            printf '%s\n' "$2" | sed -E 's/<[^>]+>//g'
+            ;;
+          *)
+            printf 'Użycie: docker-status [json|label|tooltip]\n' >&2
+            exit 2
+            ;;
+        esac
       }
 
       if ! systemctl is-active --quiet docker.service; then
@@ -368,13 +411,12 @@ let
     '';
   };
 
-  waybar-panel = pkgs.writeShellApplication {
-    name = "waybar-panel";
+  desktop-panel = pkgs.writeShellApplication {
+    name = "desktop-panel";
     runtimeInputs = with pkgs; [
       bluetui
       btop
       foot
-      gum
       lazydocker
       util-linux
       wifi-menu
@@ -382,34 +424,34 @@ let
     ];
     text = ''
       panel="''${1:-}"
-      lock_file="''${XDG_RUNTIME_DIR:?}/waybar-panel.lock"
+      lock_file="''${XDG_RUNTIME_DIR:?}/desktop-panel.lock"
 
       exec 9>"$lock_file"
       flock --nonblock 9 || exit 0
 
       case "$panel" in
         metrics)
-          exec foot --app-id=waybar-metrics --title=Zasoby \
+          exec foot --app-id=desktop-metrics --title=Zasoby \
             --window-size-chars=120x36 btop
           ;;
         audio)
-          exec foot --app-id=waybar-audio --title=Dźwięk \
+          exec foot --app-id=desktop-audio --title=Dźwięk \
             --window-size-chars=100x30 wiremix
           ;;
         wifi)
-          exec foot --app-id=waybar-wifi --title=Wi-Fi \
+          exec foot --app-id=desktop-wifi --title=Wi-Fi \
             --window-size-chars=76x24 wifi-menu
           ;;
         bluetooth)
-          exec foot --app-id=waybar-bluetooth --title=Bluetooth \
+          exec foot --app-id=desktop-bluetooth --title=Bluetooth \
             --window-size-chars=86x26 bluetui
           ;;
         docker)
-          exec foot --app-id=waybar-docker --title=Docker \
+          exec foot --app-id=desktop-docker --title=Docker \
             --window-size-chars=110x32 lazydocker
           ;;
         *)
-          printf 'Użycie: waybar-panel {metrics|audio|wifi|bluetooth|docker}\n' >&2
+          printf 'Użycie: desktop-panel {metrics|audio|wifi|bluetooth|docker}\n' >&2
           exit 2
           ;;
       esac
@@ -446,16 +488,16 @@ let
 
       # TTE expresses most motion as distance or delay per rendered frame.
       # Normalize it to wall-clock time so a 240 Hz monitor is smoother, not
-      # twice as fast as the laptop panel, then slow the effects by 1.8x.
+      # twice as fast as the laptop panel, then slow the effects by 6x.
       animation_speed() {
         awk -v value="$1" -v fps="$refresh_rate" \
-          'BEGIN { printf "%.4f", value * 60 / fps / 1.8 }'
+          'BEGIN { printf "%.4f", value * 60 / fps / 6.0 }'
       }
 
       animation_frames() {
         awk -v value="$1" -v fps="$refresh_rate" \
           'BEGIN {
-            frames = value * fps / 60 * 1.8
+            frames = value * fps / 60 * 6.0
             if (frames < 1) frames = 1
             printf "%d", frames + 0.5
           }'
@@ -521,7 +563,6 @@ let
           --canvas-height 0 \
           --anchor-canvas c \
           --anchor-text c \
-          --random-effect \
           --reuse-canvas \
           --no-eol \
           --no-restore-cursor \
@@ -550,7 +591,7 @@ let
 
       exec foot \
         --app-id=org.polamaniec.screensaver \
-        --override=main.font='${theme.fonts.monospace}:size=20' \
+        --override=main.font='${theme.fonts.monospace}:size=16' \
         --override=main.pad=0x0 \
         --override=colors.background=${c.background} \
         -e screensaver-run org.polamaniec.screensaver
@@ -565,8 +606,16 @@ in
     ./hyprland.nix
     ./notifications.nix
     ./osd.nix
-    ./waybar.nix
     ./zen.nix
+  ] ++ [
+    (if desktopBar == "ironbar" then ./ironbar.nix else ./waybar.nix)
+  ];
+
+  assertions = [
+    {
+      assertion = builtins.elem desktopBar [ "waybar" "ironbar" ];
+      message = "desktopBar musi mieć wartość 'waybar' albo 'ironbar'.";
+    }
   ];
 
   home = {
@@ -583,9 +632,7 @@ in
       screenshot-menu
       screensaver
       docker-status
-      waybar-metric
-      waybar-panel
-      wifi-menu
+      desktop-panel
       wl-clipboard
       wlogout
     ];
@@ -767,15 +814,19 @@ in
   '';
 
   xdg.configFile."screensaver/wojtech.txt".text = ''
-    ██╗    ██╗ ██████╗      ██╗████████╗███████╗ ██████╗██╗  ██╗
-    ██║    ██║██╔═══██╗     ██║╚══██╔══╝██╔════╝██╔════╝██║  ██║
-    ██║ █╗ ██║██║   ██║     ██║   ██║   █████╗  ██║     ███████║
-    ██║███╗██║██║   ██║██   ██║   ██║   ██╔══╝  ██║     ██╔══██║
-    ╚███╔███╔╝╚██████╔╝╚█████╔╝   ██║   ███████╗╚██████╗██║  ██║
-     ╚══╝╚══╝  ╚═════╝  ╚════╝    ╚═╝   ╚══════╝ ╚═════╝╚═╝  ╚═╝
+     ▄█     █▄   ▄██████▄       ▄█       ███        ▄████████  ▄████████    ▄█    █▄
+    ███     ███ ███    ███     ███   ▀█████████▄   ███    ███ ███    ███   ███    ███
+    ███     ███ ███    ███     ███      ▀███▀▀██   ███    █▀  ███    █▀    ███    ███
+    ███     ███ ███    ███     ███       ███   ▀  ▄███▄▄▄     ███         ▄███▄▄▄▄███▄▄
+    ███     ███ ███    ███     ███       ███     ▀▀███▀▀▀     ███        ▀▀███▀▀▀▀███▀
+    ███     ███ ███    ███     ███       ███       ███    █▄  ███    █▄    ███    ███
+    ███ ▄█▄ ███ ███    ███     ███       ███       ███    ███ ███    ███   ███    ███
+     ▀███▀███▀   ▀██████▀  █▄ ▄███      ▄████▀     ██████████ ████████▀    ███    █▀
+                           ▀▀▀▀▀▀
   '';
 
-  xdg.configFile."wlogout/layout".text = builtins.toJSON [
+  # wlogout 1.2.x expects consecutive JSON objects, not a JSON array.
+  xdg.configFile."wlogout/layout".text = builtins.concatStringsSep "\n" (map builtins.toJSON [
     {
       label = "lock";
       action = "hyprlock";
@@ -806,7 +857,7 @@ in
       text = "Wyłącz";
       keybind = "s";
     }
-  ];
+  ]) + "\n";
 
   xdg.configFile."wlogout/style.css".text = ''
     * {

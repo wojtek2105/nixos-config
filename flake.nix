@@ -35,9 +35,11 @@
     inputs@{ nixpkgs, home-manager, ... }:
     let
       system = "x86_64-linux";
-      laptop = nixpkgs.lib.nixosSystem {
+      mkLaptop = desktopBar: nixpkgs.lib.nixosSystem {
         inherit system;
-        specialArgs = { inherit inputs; };
+        specialArgs = {
+          inherit inputs desktopBar;
+        };
         modules = [
           ./hosts/laptop/configuration.nix
           home-manager.nixosModules.home-manager
@@ -47,7 +49,7 @@
               useUserPackages = true;
               backupFileExtension = "hm-backup";
               extraSpecialArgs = {
-                inherit inputs;
+                inherit inputs desktopBar;
               };
               users.wojtek = import ./home/wojtek;
             };
@@ -56,6 +58,10 @@
       };
     in
     {
-      nixosConfigurations.laptop = laptop;
+      nixosConfigurations = {
+        laptop = mkLaptop "ironbar";
+        laptop-ironbar = mkLaptop "ironbar";
+        laptop-waybar = mkLaptop "waybar";
+      };
     };
 }

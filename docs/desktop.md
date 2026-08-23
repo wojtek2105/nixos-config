@@ -16,12 +16,13 @@ przez Hyprlanda jako `This config is a STUB`, aby nie mógł przejąć kolejnej 
 - Greetd i Tuigreet,
 - Foot,
 - Fuzzel,
-- Waybar,
+- Ironbar jako wariant domyślny oraz Waybar jako wariant awaryjny i porównawczy,
 - SwayNC jako usługa użytkownika systemd,
 - SwayOSD dla zmian głośności, mikrofonu i jasności,
 - Thunar,
 - Hyprlock i Hypridle,
 - Awww jako backend tapety,
+- MPV z uosc i thumbfast jako lekki podgląd obrazów i odtwarzacz wideo,
 - Zen Twilight jako domyślna przeglądarka.
 - animowany wygaszacz inspirowany Omarchy, z napisem `WOJTECH`.
 - CommitMono Nerd Font z kolorowymi emoji.
@@ -49,7 +50,7 @@ automatycznie dostanie przejście 240 FPS bez parametru specyficznego dla hosta.
 Tekstowy wygaszacz używa tej samej częstotliwości, ale prędkości ruchu i czasy
 trwania efektów są przeliczane względem liczby klatek. Dzięki temu 240 Hz daje
 większą płynność, a nie dwa razy szybszą animację; tempo jest celowo spowolnione
-około 1,8 raza względem domyślnych efektów TTE.
+około 6 razy względem domyślnych efektów TTE.
 
 XWayland nie skaluje aplikacji bitmapowo (`force_zero_scaling = true`). Steam
 dostaje własną skalę interfejsu 2× przez `STEAM_FORCE_DESKTOPUI_SCALING`, dzięki
@@ -71,8 +72,8 @@ Dark mode jest deklaratywny:
 - ikony `papirus-biscuit-dark`,
 - kursor `Bibata-Modern-Amber` w GTK i Hyprcursor.
 
-Foot, Fish/Tide, tmux, nvim, btop, Lazygit, Fuzzel, Waybar, SwayNC, Zen,
-Hyprland, Hyprlock, wlogout i wygaszacz korzystają z tej samej palety
+Foot, Fish/Tide, tmux, nvim, btop, Lazygit, Fuzzel, Waybar/Ironbar, MPV/uosc,
+SwayNC, Zen, Hyprland, Hyprlock, wlogout i wygaszacz korzystają z tej samej palety
 generowanej przez Home Managera.
 
 Awww ustawia przypiętą w `flake.lock` tapetę `4-copper-arc.png` z adaptacji
@@ -81,7 +82,12 @@ zadeklarowanej dla hosta.
 
 ## Autostart sesji
 
-Usługi użytkownika systemd uruchamiają Waybar, SwayNC, SwayOSD, Awww i Hypridle.
+Usługi użytkownika systemd uruchamiają wybrany panel, SwayNC, SwayOSD, Awww i
+Hypridle. Warianty Waybar i Ironbar są wzajemnie konfliktowe, więc w sesji może
+działać tylko jeden z nich.
+Awww rotuje cztery tapety Biscuit co pięć minut. Krótkotrwały timer używa
+przejścia `wave` o drobnej geometrii `12×12`, z liczbą klatek pobieraną z
+częstotliwości monitora; poza zmianą tapety nie wykonuje żadnej pracy.
 Hyprland po starcie sesji ustawia tapetę przez działający daemon Awww oraz
 uruchamia:
 
@@ -93,20 +99,26 @@ Sterownik `amdgpu` jest ładowany już w initrd. Zapobiega to wyścigowi podczas
 startu, w którym Hyprland widział tylko `simpledrm` i kończył pracę komunikatem
 `Found no gpus to use`.
 
-## Waybar i screenshoty
+## Panel, metryki i screenshoty
 
-- kompaktowe pionowe wskaźniki `▁…█` mają stałe, kontrastowe tło i osobny kolor
-  dla każdej wartości: CPU pokazuje użycie/temperaturę, RAM pamięć/swap, sieć
+- domyślny Ironbar rysuje w Cairo
+  prawdziwe, ciągłe i zaokrąglone pionowe słupki z odstępami; CPU pokazuje
+  użycie/temperaturę, RAM pamięć oraz
+  opcjonalny swap tylko wtedy, gdy jest skonfigurowany, sieć
   pobieranie/wysyłanie, dysk zajętość/odczyt/zapis, a GPU rdzeń/VRAM/temperaturę,
 - każdy zasób ma osobny tooltip o stałej szerokości, po jednym parametrze w
-  wierszu; nagłówek opisuje kolejność pasków widoczną na panelu,
+  wierszu; nagłówek opisuje kolejność pasków widoczną na panelu, a dane są
+  pobierane dopiero po najechaniu i przechowywane w natywnej zmiennej Ironbara,
+- sieć, Bluetooth, jasność, głośność, bateria, workspaces, tray, zegar i
+  powiadomienia używają natywnych modułów Ironbara; własne pozostają tylko
+  wielowartościowe wykresy Cairo, Docker i akcje screenshotów,
 - kliknięcie wskaźników zasobów otwiera `btop` w pływającym oknie Foot,
 - kliknięcie dźwięku, Wi-Fi albo Bluetooth otwiera pływający panel TUI w Foot:
   `wiremix`, własne menu Gum sterujące NetworkManagerem przez `nmcli` albo
   `bluetui`,
 - wspólna blokada procesu pozwala uruchomić tylko jeden panel TUI jednocześnie;
-  konfiguracja nie instaluje do nich `pwvucontrol`, `networkmanagerapplet` ani
-  Bluemana,
+  konfiguracja wyłącza autostart apletów `nm-applet` i Bluemana, pozostawiając
+  działające NetworkManager i BlueZ,
 - wskaźnik Dockera pokazuje aktywne i wszystkie kontenery, ostrzega o błędach
   oraz `unhealthy`, a tooltip zawiera CPU i RAM kontenerów; kliknięcie otwiera
   `lazydocker` w tym samym systemie pojedynczego panelu,
@@ -116,17 +128,23 @@ startu, w którym Hyprland widział tylko `simpledrm` i kończył pracę komunik
   kalendarza; przyszła aplikacja CalDAV będzie osobnym, pełnym klientem,
 - ikona powiadomień otwiera lekkie centrum SwayNC; prawy klik przełącza DND,
   a panel zawiera wyłącznie nagłówek, czyszczenie i listę powiadomień,
-- powiadomienia pojawiają się pod Waybarem w prawym górnym rogu jako karty z
+- powiadomienia pojawiają się pod panelem w prawym górnym rogu jako karty z
   ikoną, tytułem, treścią, dokładnym czasem lokalnym i kolorem ważności,
 - przycisk aparatu uruchamia od razu zaznaczenie obszaru; prawy klik zapisuje
   cały ekran, a pełne menu jest dostępne pod `Super+Shift+S`,
-- zaznaczenie obszaru zamraża obraz i otwiera Satty do przycięcia oraz adnotacji;
-  Enter albo przycisk kopiowania najpierw zapisuje wynik, zamyka edytor, a skrypt
-  kopiuje dokładnie zapisany PNG do schowka,
+- obszar wybiera lekki Slurp, Grim przechwytuje zaznaczenie albo geometrię
+  aktywnego okna, a Satty otwiera wynik do przycięcia i adnotacji; Enter zapisuje
+  wynik, zamyka edytor, a skrypt kopiuje dokładnie zapisany PNG do schowka,
 - `Print` przechwytuje obszar i otwiera edytor, `Shift+Print` robi to samo dla
   aktywnego okna, a `Ctrl+Print` zapisuje cały ekran bez edytora,
 - zmiany głośności, wyciszenia i jasności pokazuje osobny Biscuit OSD na dole
   ekranu; nie trafiają one do historii powiadomień.
+
+MPV jest głównie napisany w C i korzysta z akceleracji sprzętowej. Interfejs
+uosc oraz miniatury thumbfast są napisane w Lua, a małe narzędzie pomocnicze
+uosc w Go. Program nie uruchamia stałego demona: pojawia się tylko po otwarciu
+obrazu lub filmu. Home Manager przypisuje MPV jako domyślną aplikację dla
+najczęstszych formatów obrazów i wideo, a kolory uosc pochodzą z palety Biscuit.
 
 ## Zen Browser
 
@@ -141,37 +159,76 @@ strony nowej karty, ustawień, dodatków i menedżera haseł.
 
 ## Benchmark pulpitu
 
-Aktualny shell pulpitu opiera się na Waybarze, SwayNC, SwayOSD i Awww zamiast
-pełnego shella Quickshell. Noctalia została usunięta z flake, ale jej ostatni
-porównywalny pomiar pozostaje zapisany jako historyczny punkt odniesienia:
+Domyślny shell pulpitu opiera się na Ironbarze, SwayNC, SwayOSD i Awww zamiast
+pełnego shella Quickshell. Flake zachowuje równoległy wariant `laptop-waybar`
+z tymi samymi funkcjami jako awaryjny punkt odniesienia do benchmarków.
+Noctalia została usunięta z flake, ale jej ostatni porównywalny pomiar pozostaje
+zapisany jako historyczny punkt odniesienia:
 
 | Wariant | CPU systemu | CPU shella (1 wątek) | PSS shella | iGPU busy |
 | --- | ---: | ---: | ---: | ---: |
 | Waybar + SwayNC + Awww | 1,56% | 2,550% | 105,7 MiB | 2,30% |
 | Noctalia v5 | 1,53% | 3,717% | 127,1 MiB | 22,40% |
+| Waybar + Biscuit, 2026-08-23 | 1,50% | 1,042% | 124,9 MiB | 6,61% |
+| Ironbar + Biscuit, 2026-08-23 | 1,53% | 0,508% | 127,0 MiB | 4,20% |
 
 Na 16-wątkowym CPU wynik procesu shella odpowiada około 0,159% całego CPU dla
-Waybara oraz 0,232% dla Noctalii. Największą różnicę w tym przebiegu pokazało
-obciążenie iGPU. Wyniki pochodzą z konfiguracji sprzed motywu Biscuit, dlatego
-następny pomiar Waybara należy traktować jako nową serię, nie nadpisywać tabeli.
+historycznego Waybara, 0,232% dla Noctalii i 0,065% dla obecnego Waybara.
+Największą różnicę w pierwszym przebiegu pokazało obciążenie iGPU. Pierwsze dwa
+wyniki pochodzą z konfiguracji sprzed motywu Biscuit. Trzeci wiersz jest osobną,
+120-sekundową serią wykonaną po wdrożeniu Biscuit. Docker, Voxtype, bufor GPU
+Screen Recordera i Noctalia były wyłączone;
+działały Waybar, SwayNC, Awww oraz bezczynny Foot z Codexem. Timer tapety został
+wyzerowany przed testem, więc przejście Awww nie wystąpiło podczas próbki.
+Laptop był podłączony do zasilacza, dlatego odczyt
+`battery_power_average_w=0.00` nie nadaje się do porównania.
 
-Nowy pomiar:
+Względem zapisanego pomiaru Noctalii nowy Waybar osiągnął o 0,03 punktu
+procentowego niższe CPU całego systemu, o 72,0% niższe CPU procesów shella,
+o 2,2 MiB niższe PSS oraz o 70,5% niższe średnie obciążenie iGPU. PSS można
+traktować jako remis; różnice CPU i iGPU są na tyle duże, że w tej konfiguracji
+Waybar pozostaje korzystniejszym wyborem. Benchmark nie jest pomiarem
+laboratoryjnym, dlatego kolejne shelle należy sprawdzać na tym samym laptopie,
+przy identycznym stanie usług i zasilania.
+
+Ironbar został zmierzony przez 120 sekund przy wyłączonych Waybarze, Dockerze i
+Voxtype. Względem obecnego Waybara jego CPU całego systemu było wyższe jedynie o
+0,03 punktu procentowego, CPU stale działających procesów shella niższe o 51,2%,
+PSS wyższe o 2,1 MiB, a średnie obciążenie iGPU niższe o 36,5%. Względem
+Noctalii osiągnął takie samo CPU całego systemu, o 86,3% niższe CPU shella,
+praktycznie identyczne PSS oraz o 81,3% niższe użycie iGPU. Różnica 0,03 punktu
+CPU systemu mieści się w szumie pojedynczego pomiaru; z tej serii Ironbar jest
+najlepszym kandydatem pod względem CPU procesów shella i zachowuje pełną
+funkcjonalność przygotowanego panelu.
+
+Pomiar Ironbara:
 
 ```bash
-make test
-# wyloguj się i zaloguj ponownie, odczekaj 2 minuty i odłącz zasilacz
-desktop-benchmark 120 | tee /tmp/waybar-biscuit.bench
+make test-ironbar
+# wyloguj się i zaloguj ponownie, odczekaj 2 minuty;
+# do porównania z zapisanym Waybarem pozostaw zasilacz podłączony
+make benchmark SECONDS=120 | tee /tmp/ironbar-biscuit.bench
+
+# tymczasowy powrót do wariantu Waybar
+make test-waybar
 ```
 
-Najważniejszą wartością jest `system_cpu_percent`, ponieważ obejmuje także
-krótkotrwałe skrypty metryk Waybara. `resident_shell_cpu_percent` mierzy stale
-działające procesy Waybara, SwayNC i Awww. `battery_power_average_w` jest
-miarodajne po odłączeniu ładowarki. Podczas każdego przebiegu należy pozostawić
-komputer bezczynny i utrzymać tę samą jasność ekranu, profil zasilania, sieć,
-procesy w tle oraz stan bufora nagrywania.
+Po aktywacji wariantu polecenie `desktop-benchmark` samo zapisuje
+`variant=ironbar` i uwzględnia Ironbar, SwayNC oraz Awww. Wynik Ironbara należy
+dopisać do tabeli dopiero po wykonaniu pełnej 120-sekundowej próbki w tych samych
+warunkach co zapisany pomiar Waybara.
 
-`make test` aktywuje konfigurację tylko do restartu. `make rollback` przywraca
-na żywo system uruchomiony podczas bootowania.
+Najważniejszą wartością jest `system_cpu_percent`, ponieważ obejmuje także
+krótkotrwałe skrypty panelu. `resident_shell_cpu_percent` mierzy stale działający
+Waybar albo Ironbar wraz z SwayNC i Awww. `battery_power_average_w` jest
+miarodajne po odłączeniu ładowarki, ale zapisany pomiar Waybara wykonano na
+zasilaczu. Do bezpośredniego porównania Ironbara należy więc pozostawić komputer
+podłączony i utrzymać tę samą jasność ekranu, profil zasilania, sieć, procesy w
+tle oraz stan bufora nagrywania.
+
+`make test`, `make test-waybar` i `make test-ironbar` aktywują konfigurację tylko
+do restartu. `make rollback` przywraca na żywo system uruchomiony podczas
+bootowania.
 
 ## Blokada i bezczynność
 

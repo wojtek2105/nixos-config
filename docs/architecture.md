@@ -2,11 +2,19 @@
 
 ## Flake
 
-`flake.nix` przypina zależności w `flake.lock` i obecnie udostępnia jeden output:
+`flake.nix` przypina zależności w `flake.lock` i udostępnia trzy nazwy wariantów tego
+samego hosta:
 
 ```text
 nixosConfigurations.laptop
+nixosConfigurations.laptop-ironbar
+nixosConfigurations.laptop-waybar
 ```
+
+Pierwszy jest stabilnym wariantem Ironbar, drugi jego zgodnym aliasem testowym,
+a trzeci zachowuje Waybara jako wariant awaryjny i porównawczy. Wszystkie
+korzystają z tych samych modułów systemowych, Home Managera i parametrów
+sprzętowych, więc benchmark panelu pozostaje porównywalny.
 
 Główne wejścia:
 
@@ -40,6 +48,7 @@ zestawu pakietów.
 │       ├── desktop.nix
 │       ├── hyprland.lua
 │       ├── hyprland.nix
+│       ├── ironbar.nix
 │       ├── notifications.nix
 │       ├── osd.nix
 │       ├── scripts.nix

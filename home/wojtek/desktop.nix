@@ -6,11 +6,93 @@ let
 in
 {
   home.packages = with pkgs; [
-    bluetui
     easyeffects
     plexamp
-    wiremix
   ];
+
+  # Ironbar provides native, event-driven network and Bluetooth widgets. Hide
+  # the legacy XDG tray applets while keeping NetworkManager and BlueZ intact.
+  services.network-manager-applet.enable = false;
+  services.blueman-applet.enable = false;
+
+  xdg.configFile = {
+    "autostart/nm-applet.desktop".text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=NetworkManager Applet
+      Hidden=true
+    '';
+    "autostart/blueman.desktop".text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=Blueman Applet
+      Hidden=true
+    '';
+  };
+
+  programs.mpv = {
+    enable = true;
+    scripts = with pkgs.mpvScripts; [
+      thumbfast
+      uosc
+    ];
+    config = {
+      osc = false;
+      osd-bar = false;
+      border = false;
+      force-window = "immediate";
+      hwdec = "auto-safe";
+      vo = "gpu-next";
+      gpu-api = "vulkan";
+      keep-open = true;
+      image-display-duration = "inf";
+      save-position-on-quit = true;
+      alang = "pl,pol,en,eng";
+      slang = "pl,pol,en,eng";
+      sub-auto = "fuzzy";
+      osd-font = theme.fonts.sans;
+      volume-max = 100;
+    };
+    scriptOpts.uosc = {
+      autoload = true;
+      animation_duration = 100;
+      border_radius = 10;
+      color = builtins.concatStringsSep "," [
+        "foreground=${c.foreground}"
+        "foreground_text=${c.background}"
+        "background=${c.background}"
+        "background_text=${c.foreground}"
+        "window_border=${c.accent}"
+        "curtain=${c.surface}"
+        "success=${c.green}"
+        "error=${c.red}"
+        "match=${c.orange}"
+        "heatmap=${c.magenta}"
+      ];
+      languages = "pl,slang,en";
+      top_bar_flash_on = "video,audio,image";
+    };
+  };
+
+  xdg.mimeApps = {
+    enable = true;
+    defaultApplications = {
+      "image/avif" = [ "mpv.desktop" ];
+      "image/bmp" = [ "mpv.desktop" ];
+      "image/gif" = [ "mpv.desktop" ];
+      "image/jpeg" = [ "mpv.desktop" ];
+      "image/png" = [ "mpv.desktop" ];
+      "image/tiff" = [ "mpv.desktop" ];
+      "image/webp" = [ "mpv.desktop" ];
+      "video/mp4" = [ "mpv.desktop" ];
+      "video/mpeg" = [ "mpv.desktop" ];
+      "video/ogg" = [ "mpv.desktop" ];
+      "video/quicktime" = [ "mpv.desktop" ];
+      "video/webm" = [ "mpv.desktop" ];
+      "video/x-matroska" = [ "mpv.desktop" ];
+      "video/x-msvideo" = [ "mpv.desktop" ];
+    };
+  };
 
   programs.foot = {
     enable = true;

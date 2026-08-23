@@ -9,25 +9,28 @@ pkgs.writeShellApplication {
   runtimeInputs = with pkgs; [
     coreutils
     gawk
+    gnused
     iproute2
     jq
   ];
   text = ''
     component="''${1:-}"
+    output_mode="''${2:-json}"
 
-    block() {
-      local value="''${1:-0}"
-      local levels=(▁ ▂ ▃ ▄ ▅ ▆ ▇ █)
-      (( value < 0 )) && value=0
-      (( value > 100 )) && value=100
-      printf '%s' "''${levels[value * 7 / 100]}"
-    }
-
-    bar() {
+    gauge() {
       local value="''${1:-0}"
       local color="$2"
-      printf '<span font_family="${theme.fonts.monospace}" size="x-large" weight="bold" foreground="#%s" background="#${c.selection}"> %s </span> ' \
-        "$color" "$(block "$value")"
+      local label="''${3:-}"
+      local levels=(▁ ▁ ▂ ▃ ▄ ▅ ▆ ▇ █)
+      local index
+
+      (( value < 0 )) && value=0
+      (( value > 100 )) && value=100
+      index=$((value * 8 / 100))
+      (( value > 0 && index == 0 )) && index=1
+
+      printf '<span font_family="${theme.fonts.monospace}"><span foreground="#${c.bright}" size="small" weight="bold">%s</span><span foreground="#%s" size="large">%s</span></span> ' \
+        "$label" "$color" "''${levels[index]}"
     }
 
     row() {
@@ -46,7 +49,7 @@ pkgs.writeShellApplication {
     emit() {
       local percentage="$1"
       local icon="$2"
-      local bars="$3"
+      local indicators="$3"
       local tooltip="$4"
       local warning="''${5:-75}"
       local critical="''${6:-90}"
@@ -60,12 +63,26 @@ pkgs.writeShellApplication {
         class=warning
       fi
 
-      jq --null-input --compact-output \
-        --arg text "$icon  $bars" \
-        --arg tooltip "$tooltip</span>" \
-        --arg class "$class" \
-        --argjson percentage "$percentage" \
-        '{text: $text, tooltip: $tooltip, class: $class, percentage: $percentage}'
+      case "$output_mode" in
+        json)
+          jq --null-input --compact-output \
+            --arg text "$icon  $indicators" \
+            --arg tooltip "$tooltip</span>" \
+            --arg class "$class" \
+            --argjson percentage "$percentage" \
+            '{text: $text, tooltip: $tooltip, class: $class, percentage: $percentage}'
+          ;;
+        tooltip)
+          printf '%s\n' "$tooltip</span>" | sed -E 's/<[^>]+>//g'
+          ;;
+        percentage)
+          printf '%s\n' "$percentage"
+          ;;
+        *)
+          printf 'Nieznany format wyjścia: %s\n' "$output_mode" >&2
+          exit 2
+          ;;
+      esac
     }
 
     network_percentage() {
@@ -173,7 +190,7 @@ pkgs.writeShellApplication {
         cpu_temperature="$(max_temperature '^(k10temp|zenpower)$')"
         level=$usage
         (( cpu_temperature > level )) && level=$cpu_temperature
-        bars="$(bar "$usage" '${c.violet}')$(bar "$cpu_temperature" '${c.yellow}')"
+        bars="$(gauge "$usage" '${c.violet}')$(gauge "$cpu_temperature" '${c.yellow}' '°')"
 
         tooltip="$(tooltip_start '' 'PROCESOR · CPU / °C')"$'\n'
         tooltip+="$(row 'Użycie' "$usage%" '${c.violet}')"$'\n'
@@ -208,16 +225,23 @@ pkgs.writeShellApplication {
         swap_display="$(awk -v used="$swap_used" -v total="$swap_total" \
           'BEGIN { printf "%.1f / %.1f GiB", used / 1048576, total / 1048576 }')"
         level=$percentage
-        (( swap_percentage > level )) && level=$swap_percentage
-        bars="$(bar "$percentage" '${c.accent}')$(bar "$swap_percentage" '${c.blue}')"
+        bars="$(gauge "$percentage" '${c.accent}')"
+        memory_title='PAMIĘĆ · RAM'
+        if (( swap_total > 0 )); then
+          (( swap_percentage > level )) && level=$swap_percentage
+          bars+="$(gauge "$swap_percentage" '${c.blue}' 'S')"
+          memory_title+=' / SWAP'
+        fi
 
-        tooltip="$(tooltip_start '' 'PAMIĘĆ · RAM / SWAP')"$'\n'
+        tooltip="$(tooltip_start '' "$memory_title")"$'\n'
         tooltip+="$(row 'Użycie' "$percentage%" '${c.accent}')"$'\n'
         tooltip+="$(row 'Zajęte' "$used_display")"$'\n'
         tooltip+="$(row 'Dostępne' "$available_display" '${c.green}')"$'\n'
-        tooltip+="$(row 'Łącznie' "$total_display")"$'\n'
-        tooltip+="$(row 'Swap' "$swap_display")"$'\n'
-        tooltip+="$(row 'Swap użycie' "$swap_percentage%" '${c.blue}')"
+        tooltip+="$(row 'Łącznie' "$total_display")"
+        if (( swap_total > 0 )); then
+          tooltip+=$'\n'"$(row 'Swap' "$swap_display")"$'\n'
+          tooltip+="$(row 'Swap użycie' "$swap_percentage%" '${c.blue}')"
+        fi
         emit "$level" '' "$bars" "$tooltip"
         ;;
 
@@ -252,7 +276,7 @@ pkgs.writeShellApplication {
         tx_percentage="$(network_percentage "$tx_rate")"
         level=$rx_percentage
         (( tx_percentage > level )) && level=$tx_percentage
-        bars="$(bar "$rx_percentage" '${c.green}')$(bar "$tx_percentage" '${c.violet}')"
+        bars="$(gauge "$rx_percentage" '${c.green}' '↓')$(gauge "$tx_percentage" '${c.violet}' '↑')"
         rx_display="$(numfmt --to=iec-i --suffix=B/s "$rx_rate" 2>/dev/null || printf '0 B/s')"
         tx_display="$(numfmt --to=iec-i --suffix=B/s "$tx_rate" 2>/dev/null || printf '0 B/s')"
         ip_address="$(
@@ -298,7 +322,7 @@ pkgs.writeShellApplication {
         write_percentage="$(disk_io_percentage "$write_rate")"
         read_display="$(numfmt --to=iec-i --suffix=B/s "$read_rate" 2>/dev/null || printf '0 B/s')"
         write_display="$(numfmt --to=iec-i --suffix=B/s "$write_rate" 2>/dev/null || printf '0 B/s')"
-        bars="$(bar "$percentage" '${c.orange}')$(bar "$read_percentage" '${c.green}')$(bar "$write_percentage" '${c.violet}')"
+        bars="$(gauge "$percentage" '${c.orange}')$(gauge "$read_percentage" '${c.green}' '↓')$(gauge "$write_percentage" '${c.violet}' '↑')"
 
         tooltip="$(tooltip_start '󰋊' 'DYSK · % / ↓ / ↑')"
         tooltip+=$'\n'"$(row 'Punkt montowania' '/')"$'\n'
@@ -334,7 +358,7 @@ pkgs.writeShellApplication {
         level=$usage
         (( vram_percentage > level )) && level=$vram_percentage
         (( gpu_temperature > level )) && level=$gpu_temperature
-        bars="$(bar "$usage" '${c.blue}')$(bar "$vram_percentage" '${c.magenta}')$(bar "$gpu_temperature" '${c.yellow}')"
+        bars="$(gauge "$usage" '${c.blue}')$(gauge "$vram_percentage" '${c.magenta}' 'V')$(gauge "$gpu_temperature" '${c.yellow}' '°')"
 
         tooltip="$(tooltip_start '󰢮' 'GPU · RDZEŃ / VRAM / °C')"
         tooltip+=$'\n'"$(row 'Użycie rdzenia' "$usage%" '${c.blue}')"$'\n'
@@ -345,25 +369,8 @@ pkgs.writeShellApplication {
         emit "$level" '󰢮' "$bars" "$tooltip"
         ;;
 
-      temperature)
-        cpu_temperature="$(max_temperature '^(k10temp|zenpower)$')"
-        gpu_temperature="$(max_temperature '^amdgpu$')"
-        nvme_temperature="$(max_temperature '^nvme$')"
-        maximum=$cpu_temperature
-        (( gpu_temperature > maximum )) && maximum=$gpu_temperature
-        (( nvme_temperature > maximum )) && maximum=$nvme_temperature
-        bars="$(bar "$cpu_temperature" '${c.violet}')$(bar "$gpu_temperature" '${c.blue}')$(bar "$nvme_temperature" '${c.orange}')"
-
-        tooltip="$(tooltip_start '' 'TEMPERATURY')"
-        tooltip+=$'\n'"$(row 'CPU' "$cpu_temperature°C" '${c.violet}')"$'\n'
-        tooltip+="$(row 'GPU' "$gpu_temperature°C" '${c.blue}')"$'\n'
-        tooltip+="$(row 'NVMe' "$nvme_temperature°C" '${c.orange}')"$'\n'
-        tooltip+="$(row 'Najwyższa' "$maximum°C" '${c.yellow}')"
-        emit "$maximum" '' "$bars" "$tooltip" 75 90
-        ;;
-
       *)
-        printf 'Użycie: waybar-metric {cpu|memory|network|disk|gpu|temperature}\n' >&2
+        printf 'Użycie: waybar-metric {cpu|memory|network|disk|gpu}\n' >&2
         exit 2
         ;;
     esac
