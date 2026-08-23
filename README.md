@@ -13,14 +13,12 @@ nix build path:.#nixosConfigurations.laptop.config.system.build.toplevel
 sudo nixos-rebuild test --flake path:.#laptop
 ```
 
-Domyślny output `laptop` używa Ironbara. Waybar pozostaje jako wariant awaryjny
-i porównawczy `laptop-waybar`:
+Output `laptop` używa wyłącznie Ironbara. Historyczne wyniki Waybara i Noctalii
+pozostają w dokumentacji do porównań:
 
 ```bash
-make test-ironbar
+make test
 make benchmark SECONDS=120
-# tymczasowy powrót do Waybara
-make test-waybar
 ```
 
 Po sprawdzeniu konfiguracji:

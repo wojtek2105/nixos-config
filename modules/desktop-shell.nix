@@ -1,4 +1,4 @@
-{ desktopBar ? "waybar", pkgs, ... }:
+{ pkgs, ... }:
 
 let
   desktop-benchmark = pkgs.writeShellApplication {
@@ -16,13 +16,8 @@ let
         exit 2
       fi
 
-      variant=${desktopBar}
-      process_pattern='${
-        if desktopBar == "ironbar" then
-          "ironbar|\\.ironbar-wrappe|\\.ironbar-wrapped|swaync|\\.swaync-wrapped|\\.swaync-client-|awww-daemon|\\.awww-daemon-wr"
-        else
-          "waybar|\\.waybar-wrapped|swaync|\\.swaync-wrapped|\\.swaync-client-|awww-daemon|\\.awww-daemon-wr"
-      }'
+      variant=ironbar
+      process_pattern='ironbar|\.ironbar-wrappe|\.ironbar-wrapped|swaync|\.swaync-wrapped|\.swaync-client-|awww-daemon|\.awww-daemon-wr'
 
       cpu_snapshot() {
         awk '/^cpu / {

@@ -6,9 +6,9 @@ kończyć się `nix flake check` oraz pełnym buildem dotkniętych hostów.
 ## Najbliższe zadania
 
 - [ ] Aktywować i ręcznie sprawdzić bieżącą konfigurację na laptopie.
-- [x] Zmierzyć `laptop-ironbar` przez 120 sekund i porównać go z zapisanym
+- [x] Zmierzyć Ironbar przez 120 sekund i porównać go z zapisanym
       wynikiem Waybara oraz Noctalii.
-- [x] Wybrać Ironbar jako docelowy panel i zachować Waybara jako wariant awaryjny.
+- [x] Wybrać Ironbar jako jedyny docelowy panel i usunąć konfigurację Waybara.
 - [ ] Przetestować wklejanie tekstu i obrazów z historii schowka.
 - [ ] Przetestować jakość replay w dynamicznej grze przy 2560x1600.
 - [ ] Sprawdzić kolejność i synchronizację trzech ścieżek audio.

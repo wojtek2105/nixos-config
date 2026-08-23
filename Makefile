@@ -3,15 +3,13 @@ FLAKE ?= path:.
 KEEP ?= 4
 SYSTEM_PROFILE ?= /nix/var/nix/profiles/system
 
-.PHONY: help check build test test-waybar test-ironbar rollback boot switch generations gc benchmark
+.PHONY: help check build test rollback boot switch generations gc benchmark
 
 help:
 	@printf '%s\n' \
 		'make check     - sprawdź wszystkie wyjścia flake' \
 		'make build     - zbuduj system bez aktywacji' \
 		'make test      - aktywuj konfigurację do restartu' \
-		'make test-waybar   - aktywuj wariant Waybar do restartu' \
-		'make test-ironbar  - aktywuj wariant Ironbar do restartu' \
 		'make benchmark [SECONDS=120] - zmierz aktywny shell pulpitu' \
 		'make rollback  - wróć na żywo do systemu uruchomionego przy bootowaniu' \
 		'make boot      - ustaw konfigurację na następny start' \
@@ -27,20 +25,6 @@ build:
 
 test:
 	sudo nixos-rebuild test --flake $(FLAKE)\#$(HOST)
-
-test-waybar:
-	sudo nixos-rebuild test --flake $(FLAKE)\#laptop-waybar
-	@if systemctl --user --quiet is-active ironbar.service; then systemctl --user stop ironbar.service; fi
-	@pkill -x ironbar 2>/dev/null || true
-	@pkill -x .ironbar-wrappe 2>/dev/null || true
-	systemctl --user restart waybar.service
-
-test-ironbar:
-	sudo nixos-rebuild test --flake $(FLAKE)\#laptop
-	@if systemctl --user --quiet is-active waybar.service; then systemctl --user stop waybar.service; fi
-	@pkill -x waybar 2>/dev/null || true
-	@pkill -x .waybar-wrapped 2>/dev/null || true
-	systemctl --user restart ironbar.service
 
 benchmark:
 	desktop-benchmark $(or $(SECONDS),120)

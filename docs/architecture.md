@@ -2,19 +2,15 @@
 
 ## Flake
 
-`flake.nix` przypina zależności w `flake.lock` i udostępnia trzy nazwy wariantów tego
-samego hosta:
+`flake.nix` przypina zależności w `flake.lock` i udostępnia jeden docelowy output
+laptopa:
 
 ```text
 nixosConfigurations.laptop
-nixosConfigurations.laptop-ironbar
-nixosConfigurations.laptop-waybar
 ```
 
-Pierwszy jest stabilnym wariantem Ironbar, drugi jego zgodnym aliasem testowym,
-a trzeci zachowuje Waybara jako wariant awaryjny i porównawczy. Wszystkie
-korzystają z tych samych modułów systemowych, Home Managera i parametrów
-sprzętowych, więc benchmark panelu pozostaje porównywalny.
+Pulpit korzysta wyłącznie z Ironbara. Kod Waybara i Noctalii został usunięty,
+natomiast ich historyczne benchmarki pozostają zapisane w dokumentacji.
 
 Główne wejścia:
 
@@ -53,8 +49,7 @@ zestawu pakietów.
 │       ├── osd.nix
 │       ├── scripts.nix
 │       ├── theme.nix
-│       ├── waybar-metric.nix
-│       ├── waybar.nix
+│       ├── ironbar-metric.nix
 │       └── zen.nix
 └── docs/
 ```

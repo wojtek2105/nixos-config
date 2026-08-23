@@ -16,7 +16,7 @@ przez Hyprlanda jako `This config is a STUB`, aby nie mógł przejąć kolejnej 
 - Greetd i Tuigreet,
 - Foot,
 - Fuzzel,
-- Ironbar jako wariant domyślny oraz Waybar jako wariant awaryjny i porównawczy,
+- Ironbar jako jedyny panel pulpitu,
 - SwayNC jako usługa użytkownika systemd,
 - SwayOSD dla zmian głośności, mikrofonu i jasności,
 - Thunar,
@@ -72,7 +72,7 @@ Dark mode jest deklaratywny:
 - ikony `papirus-biscuit-dark`,
 - kursor `Bibata-Modern-Amber` w GTK i Hyprcursor.
 
-Foot, Fish/Tide, tmux, nvim, btop, Lazygit, Fuzzel, Waybar/Ironbar, MPV/uosc,
+Foot, Fish/Tide, tmux, nvim, btop, Lazygit, Fuzzel, Ironbar, MPV/uosc,
 SwayNC, Zen, Hyprland, Hyprlock, wlogout i wygaszacz korzystają z tej samej palety
 generowanej przez Home Managera.
 
@@ -82,9 +82,8 @@ zadeklarowanej dla hosta.
 
 ## Autostart sesji
 
-Usługi użytkownika systemd uruchamiają wybrany panel, SwayNC, SwayOSD, Awww i
-Hypridle. Warianty Waybar i Ironbar są wzajemnie konfliktowe, więc w sesji może
-działać tylko jeden z nich.
+Usługi użytkownika systemd uruchamiają Ironbar, SwayNC, SwayOSD, Awww i
+Hypridle.
 Awww rotuje cztery tapety Biscuit co pięć minut. Krótkotrwały timer używa
 przejścia `wave` o drobnej geometrii `12×12`, z liczbą klatek pobieraną z
 częstotliwości monitora; poza zmianą tapety nie wykonuje żadnej pracy.
@@ -159,11 +158,9 @@ strony nowej karty, ustawień, dodatków i menedżera haseł.
 
 ## Benchmark pulpitu
 
-Domyślny shell pulpitu opiera się na Ironbarze, SwayNC, SwayOSD i Awww zamiast
-pełnego shella Quickshell. Flake zachowuje równoległy wariant `laptop-waybar`
-z tymi samymi funkcjami jako awaryjny punkt odniesienia do benchmarków.
-Noctalia została usunięta z flake, ale jej ostatni porównywalny pomiar pozostaje
-zapisany jako historyczny punkt odniesienia:
+Shell pulpitu opiera się na Ironbarze, SwayNC, SwayOSD i Awww zamiast pełnego
+shella Quickshell. Waybar i Noctalia zostały usunięte z flake, ale ich ostatnie
+porównywalne pomiary pozostają zapisane jako historyczne punkty odniesienia:
 
 | Wariant | CPU systemu | CPU shella (1 wątek) | PSS shella | iGPU busy |
 | --- | ---: | ---: | ---: | ---: |
@@ -173,7 +170,7 @@ zapisany jako historyczny punkt odniesienia:
 | Ironbar + Biscuit, 2026-08-23 | 1,53% | 0,508% | 127,0 MiB | 4,20% |
 
 Na 16-wątkowym CPU wynik procesu shella odpowiada około 0,159% całego CPU dla
-historycznego Waybara, 0,232% dla Noctalii i 0,065% dla obecnego Waybara.
+historycznego Waybara, 0,232% dla Noctalii i 0,065% dla Waybara z Biscuit.
 Największą różnicę w pierwszym przebiegu pokazało obciążenie iGPU. Pierwsze dwa
 wyniki pochodzą z konfiguracji sprzed motywu Biscuit. Trzeci wiersz jest osobną,
 120-sekundową serią wykonaną po wdrożeniu Biscuit. Docker, Voxtype, bufor GPU
@@ -183,16 +180,16 @@ wyzerowany przed testem, więc przejście Awww nie wystąpiło podczas próbki.
 Laptop był podłączony do zasilacza, dlatego odczyt
 `battery_power_average_w=0.00` nie nadaje się do porównania.
 
-Względem zapisanego pomiaru Noctalii nowy Waybar osiągnął o 0,03 punktu
+Względem zapisanego pomiaru Noctalii Waybar z Biscuit osiągnął o 0,03 punktu
 procentowego niższe CPU całego systemu, o 72,0% niższe CPU procesów shella,
 o 2,2 MiB niższe PSS oraz o 70,5% niższe średnie obciążenie iGPU. PSS można
-traktować jako remis; różnice CPU i iGPU są na tyle duże, że w tej konfiguracji
-Waybar pozostaje korzystniejszym wyborem. Benchmark nie jest pomiarem
-laboratoryjnym, dlatego kolejne shelle należy sprawdzać na tym samym laptopie,
+traktować jako remis; był to wynik korzystniejszy od Noctalii. Benchmark nie
+jest pomiarem
+laboratoryjnym, dlatego kolejne pomiary należy wykonywać na tym samym laptopie,
 przy identycznym stanie usług i zasilania.
 
 Ironbar został zmierzony przez 120 sekund przy wyłączonych Waybarze, Dockerze i
-Voxtype. Względem obecnego Waybara jego CPU całego systemu było wyższe jedynie o
+Voxtype. Względem Waybara z Biscuit jego CPU całego systemu było wyższe jedynie o
 0,03 punktu procentowego, CPU stale działających procesów shella niższe o 51,2%,
 PSS wyższe o 2,1 MiB, a średnie obciążenie iGPU niższe o 36,5%. Względem
 Noctalii osiągnął takie samo CPU całego systemu, o 86,3% niższe CPU shella,
@@ -204,31 +201,26 @@ funkcjonalność przygotowanego panelu.
 Pomiar Ironbara:
 
 ```bash
-make test-ironbar
+make test
 # wyloguj się i zaloguj ponownie, odczekaj 2 minuty;
 # do porównania z zapisanym Waybarem pozostaw zasilacz podłączony
 make benchmark SECONDS=120 | tee /tmp/ironbar-biscuit.bench
-
-# tymczasowy powrót do wariantu Waybar
-make test-waybar
 ```
 
-Po aktywacji wariantu polecenie `desktop-benchmark` samo zapisuje
-`variant=ironbar` i uwzględnia Ironbar, SwayNC oraz Awww. Wynik Ironbara należy
-dopisać do tabeli dopiero po wykonaniu pełnej 120-sekundowej próbki w tych samych
-warunkach co zapisany pomiar Waybara.
+Polecenie `desktop-benchmark` zapisuje `variant=ironbar` i uwzględnia Ironbar,
+SwayNC oraz Awww. Kolejny wynik należy dopisać do tabeli dopiero po wykonaniu
+pełnej 120-sekundowej próbki w tych samych warunkach co zapisane pomiary.
 
 Najważniejszą wartością jest `system_cpu_percent`, ponieważ obejmuje także
 krótkotrwałe skrypty panelu. `resident_shell_cpu_percent` mierzy stale działający
-Waybar albo Ironbar wraz z SwayNC i Awww. `battery_power_average_w` jest
+Ironbar wraz z SwayNC i Awww. `battery_power_average_w` jest
 miarodajne po odłączeniu ładowarki, ale zapisany pomiar Waybara wykonano na
 zasilaczu. Do bezpośredniego porównania Ironbara należy więc pozostawić komputer
 podłączony i utrzymać tę samą jasność ekranu, profil zasilania, sieć, procesy w
 tle oraz stan bufora nagrywania.
 
-`make test`, `make test-waybar` i `make test-ironbar` aktywują konfigurację tylko
-do restartu. `make rollback` przywraca na żywo system uruchomiony podczas
-bootowania.
+`make test` aktywuje konfigurację tylko do restartu. `make rollback` przywraca
+na żywo system uruchomiony podczas bootowania.
 
 ## Blokada i bezczynność
 

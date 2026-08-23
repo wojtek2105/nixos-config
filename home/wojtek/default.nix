@@ -1,4 +1,4 @@
-{ desktopBar ? "waybar", inputs, pkgs, replayConfig, ... }:
+{ inputs, pkgs, replayConfig, ... }:
 
 let
   theme = import ./theme.nix { inherit inputs; };
@@ -604,18 +604,10 @@ in
     inputs.zen-browser.homeModules.twilight
     ./desktop.nix
     ./hyprland.nix
+    ./ironbar.nix
     ./notifications.nix
     ./osd.nix
     ./zen.nix
-  ] ++ [
-    (if desktopBar == "ironbar" then ./ironbar.nix else ./waybar.nix)
-  ];
-
-  assertions = [
-    {
-      assertion = builtins.elem desktopBar [ "waybar" "ironbar" ];
-      message = "desktopBar musi mieć wartość 'waybar' albo 'ironbar'.";
-    }
   ];
 
   home = {

@@ -5,7 +5,7 @@ let
   c = theme.colors;
 in
 pkgs.writeShellApplication {
-  name = "waybar-metric";
+  name = "ironbar-metric";
   runtimeInputs = with pkgs; [
     coreutils
     gawk
@@ -157,7 +157,7 @@ pkgs.writeShellApplication {
 
     case "$component" in
       cpu)
-        state_file="''${XDG_RUNTIME_DIR:?}/waybar-cpu.state"
+        state_file="''${XDG_RUNTIME_DIR:?}/ironbar-cpu.state"
         read -r _ user nice system idle iowait irq softirq steal _ < /proc/stat
         idle_all=$((idle + iowait))
         total=$((user + nice + system + idle + iowait + irq + softirq + steal))
@@ -258,7 +258,7 @@ pkgs.writeShellApplication {
             && read -r tx_bytes < "/sys/class/net/$interface/statistics/tx_bytes"
         fi
         now="$(date +%s)"
-        state_file="''${XDG_RUNTIME_DIR:?}/waybar-network.state"
+        state_file="''${XDG_RUNTIME_DIR:?}/ironbar-network.state"
         previous_rx=$rx_bytes
         previous_tx=$tx_bytes
         previous_time=$now
@@ -304,7 +304,7 @@ pkgs.writeShellApplication {
 
         read -r read_bytes written_bytes < <(disk_bytes_total)
         now="$(date +%s)"
-        state_file="''${XDG_RUNTIME_DIR:?}/waybar-disk.state"
+        state_file="''${XDG_RUNTIME_DIR:?}/ironbar-disk.state"
         previous_read=$read_bytes
         previous_written=$written_bytes
         previous_time=$now
@@ -370,7 +370,7 @@ pkgs.writeShellApplication {
         ;;
 
       *)
-        printf 'Użycie: waybar-metric {cpu|memory|network|disk|gpu}\n' >&2
+        printf 'Użycie: ironbar-metric {cpu|memory|network|disk|gpu}\n' >&2
         exit 2
         ;;
     esac

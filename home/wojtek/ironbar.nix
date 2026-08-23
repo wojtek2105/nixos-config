@@ -3,7 +3,7 @@
 let
   theme = import ./theme.nix { inherit inputs; };
   c = theme.colors;
-  waybarMetric = import ./waybar-metric.nix { inherit inputs pkgs; };
+  ironbarMetric = import ./ironbar-metric.nix { inherit inputs pkgs; };
 
   metric = {
     component,
@@ -16,7 +16,7 @@ let
     class = "island metric metric-${component}";
     tooltip = "#metric_${component}_tooltip";
     on_mouse_enter =
-      ''${pkgs.ironbar}/bin/ironbar var set metric_${component}_tooltip "$(${waybarMetric}/bin/waybar-metric ${component} tooltip)"'';
+      ''${pkgs.ironbar}/bin/ironbar var set metric_${component}_tooltip "$(${ironbarMetric}/bin/ironbar-metric ${component} tooltip)"'';
     on_click_left = "desktop-panel metrics";
     bar = [
       {
@@ -524,7 +524,7 @@ in
 {
   home.packages = [
     pkgs.ironbar
-    waybarMetric
+    ironbarMetric
   ];
 
   xdg.configFile = {
@@ -735,14 +735,9 @@ in
       Description = "Ironbar desktop panel";
       After = [ "graphical-session.target" ];
       PartOf = [ "graphical-session.target" ];
-      Conflicts = [ "waybar.service" ];
       ConditionEnvironment = "WAYLAND_DISPLAY";
     };
     Service = {
-      ExecStartPre = [
-        "-${pkgs.procps}/bin/pkill -x waybar"
-        "-${pkgs.procps}/bin/pkill -x .waybar-wrapped"
-      ];
       ExecStart = "${pkgs.ironbar}/bin/ironbar --config /home/wojtek/.config/ironbar/config.json";
       Restart = "on-failure";
       RestartSec = 2;
