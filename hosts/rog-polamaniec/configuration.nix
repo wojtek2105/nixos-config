@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ hostName, pkgs, userDescription, username, ... }:
 
 {
   imports = [
@@ -8,13 +8,14 @@
     ../../modules/desktop-shell.nix
     ../../modules/development.nix
     ../../modules/gaming.nix
-    ../../modules/hardware-amd-rog.nix
+    ../../modules/hardware-amd-gpu.nix
+    ../../modules/hardware-asus-laptop.nix
   ];
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  networking.hostName = "rog-polamaniec";
+  networking.hostName = hostName;
   networking.networkmanager.enable = true;
 
   services.logind.settings.Login = {
@@ -42,9 +43,9 @@
 
   console.keyMap = "pl2";
 
-  users.users.wojtek = {
+  users.users.${username} = {
     isNormalUser = true;
-    description = "Polamaniec";
+    description = userDescription;
     extraGroups = [
       "networkmanager"
       "wheel"

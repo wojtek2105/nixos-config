@@ -1,4 +1,4 @@
-{ lib, pkgs, ... }:
+{ lib, pkgs, username, ... }:
 
 {
   imports = [ ./development-core.nix ];
@@ -13,7 +13,7 @@
   # starting docker.service will pull in its required socket when needed.
   systemd.sockets.docker.wantedBy = lib.mkForce [ ];
 
-  users.users.wojtek.extraGroups = [ "docker" ];
+  users.users.${username}.extraGroups = [ "docker" ];
 
   environment.systemPackages = with pkgs; [
     docker-compose

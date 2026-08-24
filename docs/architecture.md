@@ -2,8 +2,8 @@
 
 ## Flake
 
-`flake.nix` przypina zależności w `flake.lock` i udostępnia jeden aktywny output
-sprzętowy:
+`flake.nix` przypina zależności w `flake.lock` i automatycznie udostępnia każdy
+katalog `hosts/<nazwa>/`, który zawiera `default.nix`. Obecnie dostępny jest:
 
 ```text
 nixosConfigurations.rog-polamaniec
@@ -21,8 +21,8 @@ Główne wejścia:
 - `zen-browser`,
 - przypięte źródła Biscuit dla nvim, GTK i pulpitu.
 
-Home Manager działa jako moduł NixOS. Użytkownik `wojtek` korzysta z globalnego
-zestawu pakietów.
+Home Manager działa jako moduł NixOS i korzysta z globalnego zestawu pakietów.
+Manifest hosta wybiera nazwę konta oraz profil z `home/<profil>/`.
 
 ## Układ katalogów
 
@@ -31,6 +31,7 @@ zestawu pakietów.
 ├── flake.nix
 ├── hosts/
 │   ├── rog-polamaniec/
+│   │   ├── default.nix
 │   │   ├── configuration.nix
 │   │   └── hardware-configuration.nix
 ├── modules/
@@ -40,7 +41,8 @@ zestawu pakietów.
 │   ├── development-core.nix
 │   ├── development.nix
 │   ├── gaming.nix
-│   └── hardware-amd-rog.nix
+│   ├── hardware-amd-gpu.nix
+│   └── hardware-asus-laptop.nix
 ├── home/
 │   └── wojtek/
 │       ├── default.nix
@@ -59,7 +61,7 @@ zestawu pakietów.
 
 ## Odpowiedzialność warstw
 
-- `hosts/rog-polamaniec/` zawiera sprzęt i parametry laptopa.
+- `hosts/rog-polamaniec/` zawiera manifest, sprzęt i parametry laptopa.
 - `modules/` zawiera współdzielone funkcje systemowe.
 - `home/wojtek/` zawiera przenośne ustawienia sesji użytkownika.
 - `docs/` dokumentuje zachowanie, obsługę i plan rozwoju.

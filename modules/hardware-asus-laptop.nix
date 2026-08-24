@@ -6,14 +6,6 @@
   boot.kernelPackages = pkgs.linuxPackages_latest;
   boot.kernelModules = [ "asus-armoury" ];
 
-  # Ensure the real KMS driver is ready before greetd starts Hyprland.
-  boot.initrd.kernelModules = [ "amdgpu" ];
-
-  hardware.graphics = {
-    enable = true;
-    enable32Bit = true;
-  };
-
   services.asusd.enable = true;
   services.upower.enable = true;
   services.power-profiles-daemon.enable = true;
@@ -24,10 +16,4 @@
     # Keep the application available without the broken autostart derivation.
     autoStart = false;
   };
-
-  environment.systemPackages = with pkgs; [
-    libva-utils
-    radeontop
-    vulkan-tools
-  ];
 }

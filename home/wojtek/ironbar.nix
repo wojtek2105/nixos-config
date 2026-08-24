@@ -1,4 +1,4 @@
-{ desktopFeatures, inputs, lib, pkgs, ... }:
+{ backlightDevice, config, desktopFeatures, inputs, lib, pkgs, ... }:
 
 let
   theme = import ./theme.nix { inherit inputs; };
@@ -8,6 +8,8 @@ let
   amdGpuEnabled = desktopFeatures.amdGpu or false;
   dockerEnabled = desktopFeatures.docker or false;
   laptopEnabled = desktopFeatures.laptop or false;
+  homeDirectory = config.home.homeDirectory;
+  username = config.home.username;
 
   metric = {
     component,
@@ -34,7 +36,7 @@ let
       }
       {
         type = "cairo";
-        path = "/home/wojtek/.config/ironbar/${component}.lua";
+        path = "${homeDirectory}/.config/ironbar/${component}.lua";
         frequency = interval;
         inherit width;
         height = 23;
@@ -152,8 +154,8 @@ let
         type = "volume";
         name = "volume";
         class = "island status status-first";
-        format = "{icon}  {percentage}%";
-        mute_format = "󰝟  mute";
+        format = "{icon} {percentage}%";
+        mute_format = "󰝟 mute";
         max_volume = 100;
         show_sinks = true;
         show_sources = false;
@@ -294,7 +296,7 @@ let
         mode = {
           type = "systemd";
           subsystem = "backlight";
-          name = "amdgpu_bl2";
+          name = backlightDevice;
         };
         tooltip = "Jasność ekranu\nScroll: zmień o 5%";
       }
@@ -967,7 +969,7 @@ in
 
       .status {
         margin-left: 0;
-        padding: 0 7px;
+        padding: 0 5px;
         border-left-color: alpha(@line, 0.34);
         border-right: none;
         border-radius: 0;
@@ -982,14 +984,14 @@ in
       }
 
       #volume {
-        min-width: 58px;
+        min-width: 54px;
         color: @text;
         border-left-color: alpha(@line, 0.62);
         border-radius: 9px 0 0 9px;
       }
 
       #network {
-        min-width: 32px;
+        min-width: 38px;
         padding: 0;
         color: @success;
         font-family: "${theme.fonts.interface}";
@@ -999,7 +1001,7 @@ in
       #network button,
       #network .icon,
       #network .text-icon {
-        min-width: 32px;
+        min-width: 38px;
         min-height: 28px;
         margin: 0;
         padding: 0;
@@ -1025,8 +1027,8 @@ in
       #network.profile-wifi_connected_excellent { color: @success; }
 
       #bluetooth {
-        min-width: 32px;
-        padding: 0 6px;
+        min-width: 38px;
+        padding: 0;
         color: @info;
         font-family: "${theme.fonts.monospace}";
         font-size: 18px;
@@ -1034,7 +1036,8 @@ in
       }
 
       #bluetooth label {
-        min-width: 20px;
+        min-width: 38px;
+        min-height: 28px;
         margin: 0;
         padding: 0;
         font-family: "${theme.fonts.monospace}";
@@ -1043,8 +1046,8 @@ in
       }
 
       #brightness {
-        min-width: 58px;
-        padding: 0 6px;
+        min-width: 54px;
+        padding: 0 5px;
         color: @thermal;
       }
 
@@ -1066,7 +1069,8 @@ in
       }
 
       #battery {
-        min-width: 58px;
+        min-width: 56px;
+        padding: 0 3px 0 5px;
         color: @success;
         border-right: 1px solid alpha(@line, 0.62);
         border-radius: 0 9px 9px 0;
@@ -1268,11 +1272,11 @@ in
       ConditionEnvironment = "WAYLAND_DISPLAY";
     };
     Service = {
-      ExecStart = "${pkgs.ironbar}/bin/ironbar --config /home/wojtek/.config/ironbar/config.json";
+      ExecStart = "${pkgs.ironbar}/bin/ironbar --config ${homeDirectory}/.config/ironbar/config.json";
       Restart = "on-failure";
       RestartSec = 2;
       Environment = [
-        "PATH=/etc/profiles/per-user/wojtek/bin:/home/wojtek/.nix-profile/bin:/run/current-system/sw/bin"
+        "PATH=/etc/profiles/per-user/${username}/bin:${homeDirectory}/.nix-profile/bin:/run/current-system/sw/bin"
         "LC_ALL=pl_PL.UTF-8"
       ];
     };

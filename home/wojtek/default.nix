@@ -1,4 +1,4 @@
-{ desktopFeatures, inputs, lib, pkgs, replayConfig, ... }:
+{ config, desktopFeatures, inputs, lib, pkgs, replayConfig, username, ... }:
 
 let
   theme = import ./theme.nix { inherit inputs; };
@@ -396,27 +396,67 @@ let
 
       # TTE expresses most motion as distance or delay per rendered frame.
       # Normalize it to wall-clock time so a 240 Hz monitor is smoother, not
-      # twice as fast as the laptop panel, then slow the effects by 6x.
+      # twice as fast as the laptop panel. Keep the effects at native speed.
       animation_speed() {
         awk -v value="$1" -v fps="$refresh_rate" \
-          'BEGIN { printf "%.4f", value * 60 / fps / 6.0 }'
+          'BEGIN { printf "%.4f", value * 60 / fps }'
       }
 
       animation_frames() {
         awk -v value="$1" -v fps="$refresh_rate" \
           'BEGIN {
-            frames = value * fps / 60 * 6.0
+            frames = value * fps / 60
             if (frames < 1) frames = 1
             printf "%d", frames + 0.5
           }'
       }
 
-      effects=(bouncyballs rain rings scattered slide wipe)
+      effects=(
+        beams
+        binarypath
+        blackhole
+        bouncyballs
+        bubbles
+        burn
+        colorshift
+        crumble
+        decrypt
+        errorcorrect
+        expand
+        fireworks
+        highlight
+        laseretch
+        matrix
+        middleout
+        orbittingvolley
+        overflow
+        pour
+        print
+        rain
+        randomsequence
+        rings
+        scattered
+        slice
+        slide
+        smoke
+        spotlights
+        spray
+        swarm
+        sweep
+        synthgrid
+        thunderstorm
+        unstable
+        vhstape
+        waves
+        wipe
+      )
 
       while true; do
-        effect="''${effects[RANDOM % ''${#effects[@]}]}"
-        effect_args=()
-        case "$effect" in
+        mapfile -t shuffled_effects < <(printf '%s\n' "''${effects[@]}" | shuf)
+
+        for effect in "''${shuffled_effects[@]}"; do
+          effect_args=()
+          case "$effect" in
           bouncyballs)
             effect_args=(
               --ball-delay "$(animation_frames 4)"
@@ -463,26 +503,27 @@ let
               --final-gradient-stops ${c.violet} ${c.accent} ${c.orange} ${c.bright}
             )
             ;;
-        esac
+          esac
 
-        tte --input-file "''${XDG_CONFIG_HOME:-$HOME/.config}/screensaver/wojtech.txt" \
-          --frame-rate "$refresh_rate" \
-          --canvas-width 0 \
-          --canvas-height 0 \
-          --anchor-canvas c \
-          --anchor-text c \
-          --reuse-canvas \
-          --no-eol \
-          --no-restore-cursor \
-          "$effect" "''${effect_args[@]}" &
-        effect_pid=$!
+          tte --input-file "''${XDG_CONFIG_HOME:-$HOME/.config}/screensaver/wojtech.txt" \
+            --frame-rate "$refresh_rate" \
+            --canvas-width 0 \
+            --canvas-height 0 \
+            --anchor-canvas c \
+            --anchor-text c \
+            --reuse-canvas \
+            --no-eol \
+            --no-restore-cursor \
+            "$effect" "''${effect_args[@]}" &
+          effect_pid=$!
 
-        while kill -0 "$effect_pid" 2>/dev/null; do
-          if read -r -n 1 -t 0.2; then
-            exit 0
-          fi
+          while kill -0 "$effect_pid" 2>/dev/null; do
+            if read -r -n 1 -t 0.2; then
+              exit 0
+            fi
+          done
+          wait "$effect_pid" || true
         done
-        wait "$effect_pid" || true
       done
     '';
   };
@@ -519,8 +560,8 @@ in
   ];
 
   home = {
-    username = "wojtek";
-    homeDirectory = "/home/wojtek";
+    inherit username;
+    homeDirectory = "/home/${username}";
     stateVersion = "26.05";
 
     packages =
@@ -709,7 +750,7 @@ in
       replay.record_options.audio_track_item false default_input
       replay.turn_on_replay_automatically_mode dont_turn_on_automatically
       replay.restart_replay_on_save false
-      replay.save_directory /home/wojtek/Videos/Replays
+      replay.save_directory ${config.home.homeDirectory}/Videos/Replays
       replay.container mp4
       replay.time ${toString replayConfig.seconds}
       replay.replay_storage ram

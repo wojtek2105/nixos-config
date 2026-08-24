@@ -9,13 +9,27 @@ Obecnie repozytorium zawiera jeden gotowy do aktywacji host:
 - konfiguracja: `hosts/rog-polamaniec/configuration.nix`,
 - sprzęt: `hosts/rog-polamaniec/hardware-configuration.nix`,
 - dodatkowe funkcje: Docker, gaming, aplikacje osobiste i profil laptopa,
-- dodatkowy moduł: `modules/hardware-amd-rog.nix`.
+- moduł GPU: `modules/hardware-amd-gpu.nix`,
+- moduł laptopa: `modules/hardware-asus-laptop.nix`.
 
-Laptop to ASUS ROG Zephyrus G14 GA402RK. Moduł sprzętowy używa najnowszego
-jądra z przypiętego `nixpkgs`, ładuje sterownik `asus-armoury` oraz uruchamia
-`asusd`; polecenie `asusctl` i ROG Control Center są dostępne deklaratywnie.
+Laptop to ASUS ROG Zephyrus G14 GA402RK. Moduł AMD zapewnia grafikę i wczesne
+ładowanie `amdgpu`. Niezależny moduł ASUS używa najnowszego jądra z przypiętego
+`nixpkgs`, ładuje `asus-armoury` oraz uruchamia `asusd`; polecenie `asusctl`
+i ROG Control Center są dostępne deklaratywnie.
 
-To jedyny host wystawiony przez flake i jedyny katalog w `hosts/`, który jest
-przeznaczony do wersjonowania. Pozostałe, lokalnie tworzone katalogi hostów są
-ignorowane przez Git. Sekrety, hasła, profile Wi-Fi i klucze SSH pozostają poza
-repozytorium.
+Flake automatycznie wystawia katalogi `hosts/<nazwa>/` zawierające `default.nix`.
+Allowlista w `.gitignore` decyduje, które hosty i profile użytkowników mogą być
+wersjonowane. Sekrety, hasła, profile Wi-Fi i klucze SSH pozostają poza repo.
+
+## Nowy host i użytkownik
+
+1. Skopiuj katalog istniejącego hosta do `hosts/<nowy-host>/` i wygeneruj dla
+   niego właściwy `hardware-configuration.nix`.
+2. W jego `default.nix` zmień `username`, funkcje pulpitu oraz — na laptopie —
+   `backlightDevice`. Nazwa hosta wynika automatycznie z nazwy katalogu.
+3. Aby skopiować również profil użytkownika, skopiuj `home/wojtek/` do
+   `home/<username>/`. Plików wewnątrz nie trzeba zmieniać.
+4. Alternatywnie nie kopiuj profilu i ustaw `homeProfile = "wojtek"`; nowe konto
+   użyje wtedy istniejącej konfiguracji Home Managera.
+5. Dodaj nowy host i użytkownika do allowlist w `.gitignore`, a następnie do
+   indeksu Git, ponieważ flake oparty na repo nie widzi plików nieśledzonych.

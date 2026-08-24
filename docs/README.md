@@ -10,6 +10,8 @@ Ten katalog opisuje stan konfiguracji, sposób jej obsługi oraz plan rozbudowy.
 - [Skróty klawiszowe](keybindings.md) — kompletna mapa skrótów.
 - [Replay](replay.md) — konfiguracja bufora GPU Screen Recorder.
 - [Host](hosts.md) — konfiguracja laptopa ROG.
+- [Nowy host i użytkownik](new-host.md) — kompletna instrukcja kopiowania,
+  adaptacji sprzętu, profilu Home Managera i instalacji.
 - [Plan rozbudowy](roadmap.md) — kolejne etapy rozwoju konfiguracji.
 - [Źródła](sources.md) — upstreamy i dokumentacja techniczna.
 

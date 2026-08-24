@@ -1,4 +1,4 @@
-{ desktopFeatures, inputs, lib, pkgs, ... }:
+{ backlightDevice, desktopFeatures, inputs, lib, pkgs, ... }:
 
 let
   theme = import ./theme.nix { inherit inputs; };
@@ -132,8 +132,8 @@ in
           bind_exec(mod .. " + SHIFT + R", "gsr-ui-cli toggle-replay")
         '')
         (lib.optionalString laptopEnabled ''
-          bind_exec("XF86MonBrightnessUp", "swayosd-client --brightness=+5 --device=amdgpu_bl2", { locked = true, repeating = true })
-          bind_exec("XF86MonBrightnessDown", "swayosd-client --brightness=-5 --device=amdgpu_bl2", { locked = true, repeating = true })
+          bind_exec("XF86MonBrightnessUp", "swayosd-client --brightness=+5 --device=${backlightDevice}", { locked = true, repeating = true })
+          bind_exec("XF86MonBrightnessDown", "swayosd-client --brightness=-5 --device=${backlightDevice}", { locked = true, repeating = true })
         '')
       ]
       (builtins.readFile ./hyprland.lua);

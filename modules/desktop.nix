@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, username, ... }:
 
 {
   programs.hyprland = {
@@ -11,7 +11,7 @@
     settings = {
       initial_session = {
         command = "${pkgs.uwsm}/bin/uwsm start -e -D Hyprland hyprland.desktop";
-        user = "wojtek";
+        user = username;
       };
 
       default_session = {
