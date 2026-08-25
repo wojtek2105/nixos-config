@@ -1,0 +1,24 @@
+SCENE 22 — MEDIA DEVIL AFTER MIDNIGHT
+
+Original visual language: unmistakable Chainsaw Man anime/manga cinematic with
+canonical Makima, Denji and Power in default Public Safety wardrobe, exact
+faces, hair, eyes and attitudes. Preserve kinetic dark comedy, urban grime and
+dramatic manga composition without generic anime styling or graphic gore.
+
+Inside an abandoned midnight cinema, show only the playback half of the media
+stack with three major props. First, one finished library reel arrives. Second,
+one BAZARR subtitle desk binds a missing subtitle strip to that same reel while
+Power reacts with theatrical frustration. Third, one PLEX projector plays the
+correctly subtitled film; a small integrated TAUTULLI gauge reports only this
+session and whether Plex is direct-playing or transcoding. Denji relaxes as the
+projection becomes smooth, while Makima calmly verifies the green session.
+
+The visible flow is only finished library file -> Bazarr subtitles -> Plex
+playback/transcode -> Tautulli observation. Do not add Overseerr, Sonarr,
+Radarr, Prowlarr, qBittorrent, download queues or a wall of media posters.
+
+Exactly one crossover: a small canonical Pal figurine sits on the projector
+housing. Gather all three characters, reel, subtitle desk, projector, gauge and
+figurine naturally to the right of centre. Cinema seats, aisles, projector
+shadows and structural voids form one continuous anime panorama with coherent
+perspective and restrained practical light.

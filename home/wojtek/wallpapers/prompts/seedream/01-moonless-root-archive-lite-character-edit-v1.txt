@@ -1,0 +1,7 @@
+Use Image 2 only as the design reference for the elf mage in Image 1. Give the
+mage the same balanced face, vivid green eyes, clearly visible long pointed ears,
+silver twin-tail hairstyle, small gold earrings and simple ivory robe with gold
+trim. Retain her pose, size, hands and staff. Preserve the complete environment
+from Image 1 exactly, including its dark lighting, archive cabinet, roots, brass
+mechanism and the exact readable labels "flake.lock", "main" and "signed".
+Transfer no scenery, wheel, writing or other objects from Image 2.

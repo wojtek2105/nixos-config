@@ -1,0 +1,17 @@
+GEMINI PRO 32:9 MATTE CONTRACT — this section overrides only the canvas-fill
+instruction in the global contract.
+
+Return the model's native 6336x2688 21:9 canvas, but author the complete actual
+wallpaper as one centered 6336x1782 pixel 32:9 image strip spanning the full
+width. Place that strip from y=453 through y=2234. Reserve exactly 453 pixels
+above it and exactly 453 pixels below it as perfectly uniform solid #000000
+removable matte. The two matte bands contain no texture, objects, lighting,
+noise, gradient, glow, border decoration or scene continuation. There are no
+side mattes.
+
+The 32:9 artwork itself fills its complete strip and remains one uninterrupted
+camera view. Its top and bottom edges are real scene edges; all complete heads,
+hair, hands, action, technical props and focal lighting fit safely inside them.
+The matte boundaries are straight horizontal production boundaries outside the
+artwork, not architecture and not part of the world. Do not add any left/right
+division inside the 32:9 artwork.

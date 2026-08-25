@@ -5,6 +5,127 @@ let
   c = theme.colors;
   s = theme.semantic;
   ironbarMetric = import ./ironbar-metric.nix { inherit inputs pkgs; };
+  metricPopupRefresh = pkgs.writeShellApplication {
+    name = "ironbar-metric-popup-refresh";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.ironbar
+      pkgs.util-linux
+      ironbarMetric
+    ];
+    text = ''
+      state_file="''${XDG_RUNTIME_DIR:?}/ironbar-metric-popup.state"
+      lock_file="''${XDG_RUNTIME_DIR:?}/ironbar-metric-popup.lock"
+      exec 9>"$lock_file"
+
+      while true; do
+        # Popup values should feel live without keeping a collector running
+        # after hover ends or spawning helpers at the Cairo redraw rate.
+        sleep 2
+
+        token=""
+        component=""
+        [[ -r "$state_file" ]] \
+          && read -r token component < "$state_file" \
+          || exit 0
+        case "$component" in
+          cpu|memory|network|disk|gpu) ;;
+          *) exit 0 ;;
+        esac
+
+        if ! tooltip="$(ironbar-metric "$component" tooltip)"; then
+          continue
+        fi
+
+        # Serialize the final state check with hover enter/exit. A collector
+        # from an older popup must never overwrite a newly selected metric.
+        flock 9
+        current_token=""
+        current_component=""
+        [[ -r "$state_file" ]] \
+          && read -r current_token current_component < "$state_file" \
+          || true
+        if [[ "$current_token" != "$token" \
+          || "$current_component" != "$component" ]]; then
+          flock -u 9
+          exit 0
+        fi
+        ironbar var set "metric_''${component}_tooltip" "$tooltip"
+        flock -u 9
+      done
+    '';
+  };
+  metricPopupControl = pkgs.writeShellApplication {
+    name = "ironbar-metric-popup";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.ironbar
+      pkgs.systemd
+      pkgs.util-linux
+      ironbarMetric
+    ];
+    text = ''
+      action="''${1:-}"
+      component="''${2:-}"
+      guard_file="''${XDG_RUNTIME_DIR:?}/ironbar-metric-popup.guard"
+      state_file="''${XDG_RUNTIME_DIR:?}/ironbar-metric-popup.state"
+      lock_file="''${XDG_RUNTIME_DIR:?}/ironbar-metric-popup.lock"
+      refresh_service="ironbar-metric-popup-refresh.service"
+      exec 9>"$lock_file"
+
+      hold_popup() {
+        printf 'hold-%s-%s\n' "$$" "$(date +%s%N)" > "$guard_file"
+      }
+
+      case "$action" in
+        show)
+          case "$component" in
+            cpu|memory|network|disk|gpu) ;;
+            *) exit 2 ;;
+          esac
+          # Invalidate a pending close before collecting tooltip data. This
+          # prevents an older mouse-exit event from hiding the new popup.
+          flock 9
+          hold_popup
+          active_token="show-$$-$(date +%s%N)"
+          printf '%s %s\n' "$active_token" "$component" > "$state_file"
+          ironbar var set "metric_''${component}_tooltip" \
+            "$(ironbar-metric "$component" tooltip)"
+          ironbar bar main show-popup "metric-$component"
+          systemctl --user restart --no-block "$refresh_service"
+          flock -u 9
+          ;;
+        hold)
+          # Entering the popup cancels the close scheduled while crossing the
+          # six-pixel gap between the bar and the popup surface.
+          flock 9
+          hold_popup
+          flock -u 9
+          ;;
+        close)
+          token="close-$$-$(date +%s%N)"
+          flock 9
+          printf '%s\n' "$token" > "$guard_file"
+          flock -u 9
+          # A short grace period lets the cursor cross the popup gap without
+          # making the panel feel sticky after a real mouse exit.
+          sleep 0.18
+          flock 9
+          current=""
+          [[ -r "$guard_file" ]] && read -r current < "$guard_file" || true
+          if [[ "$current" == "$token" ]]; then
+            printf 'closed\n' > "$state_file"
+            systemctl --user stop --no-block "$refresh_service"
+            ironbar bar main hide-popup
+          fi
+          flock -u 9
+          ;;
+        *)
+          exit 2
+          ;;
+      esac
+    '';
+  };
   amdGpuEnabled = desktopFeatures.amdGpu or false;
   dockerEnabled = desktopFeatures.docker or false;
   laptopEnabled = desktopFeatures.laptop or false;
@@ -22,24 +143,29 @@ let
     name = "metric-${component}";
     class = "island metric metric-${component}${lib.optionalString last " metric-last"}";
     disable_popup = true;
-    on_mouse_enter = ''
-      ${pkgs.ironbar}/bin/ironbar var set metric_${component}_tooltip "$(${ironbarMetric}/bin/ironbar-metric ${component} tooltip)" \
-        && ${pkgs.ironbar}/bin/ironbar bar main show-popup metric-${component}
-    '';
-    on_mouse_exit = "${pkgs.ironbar}/bin/ironbar bar main hide-popup";
-    on_click_left = "desktop-panel metrics";
     bar = [
       {
-        type = "label";
-        class = "metric-icon";
-        label = icon;
-      }
-      {
-        type = "cairo";
-        path = "${homeDirectory}/.config/ironbar/${component}.lua";
-        frequency = interval;
-        inherit width;
-        height = 23;
+        type = "button";
+        class = "metric-button";
+        on_click = "!desktop-panel metrics";
+        # The stable button and popup share a cancellable close guard so the
+        # cursor can cross the gap without closing the details underneath it.
+        on_mouse_enter = "${metricPopupControl}/bin/ironbar-metric-popup show ${component}";
+        on_mouse_exit = "${metricPopupControl}/bin/ironbar-metric-popup close";
+        widgets = [
+          {
+            type = "label";
+            class = "metric-icon";
+            label = icon;
+          }
+          {
+            type = "cairo";
+            path = "${homeDirectory}/.config/ironbar/${component}.lua";
+            frequency = interval;
+            inherit width;
+            height = 23;
+          }
+        ];
       }
     ];
     popup = [
@@ -48,6 +174,8 @@ let
         class = "metric-tooltip metric-tooltip-${component}";
         label = "#metric_${component}_tooltip";
         justify = "left";
+        on_mouse_enter = "${metricPopupControl}/bin/ironbar-metric-popup hold";
+        on_mouse_exit = "${metricPopupControl}/bin/ironbar-metric-popup close";
       }
     ];
   };
@@ -64,9 +192,13 @@ let
       metric_network_tooltip = "";
       metric_disk_tooltip = "";
       metric_gpu_tooltip = "";
+      docker_tooltip = "";
     };
     popup_gap = 6;
-    popup_autohide = true;
+    # GTK autohide grabs pointer focus and creates a show/close loop for popups
+    # opened from hover. Metrics close themselves after a real mouse exit;
+    # click-opened native popups close when toggled or replaced by another one.
+    popup_autohide = false;
     margin = {
       top = 4;
       bottom = 0;
@@ -93,7 +225,9 @@ let
         component = "memory";
         icon = "";
         interval = 3000;
-        width = 15;
+        # RAM usage, logical ZRAM fill and real compression savings. Reading
+        # procfs/sysfs every three seconds is cheap and starts no helper daemon.
+        width = 51;
       })
       (metric {
         component = "network";
@@ -112,6 +246,9 @@ let
       (metric {
         component = "gpu";
         icon = "󰢮";
+        # The Cairo widget checks runtime_status on every redraw, but samples
+        # the hardware only every 7 seconds while it is active. This leaves a
+        # full window for the driver's 5-second runtime autosuspend.
         interval = 2000;
         width = 51;
       })
@@ -122,8 +259,13 @@ let
         class = "island docker";
         cmd = "docker-status label";
         mode = "poll";
-        interval = 10000;
-        tooltip = "{{poll:15000:docker-status tooltip}}";
+        # Docker is started manually, so a one-minute label refresh is enough.
+        # Container stats are more expensive and are fetched only on hover.
+        interval = 60000;
+        tooltip = "#docker_tooltip";
+        on_mouse_enter = ''
+          ${pkgs.ironbar}/bin/ironbar var set docker_tooltip "$(docker-status tooltip)"
+        '';
         on_click_left = "desktop-panel docker";
       }
     ];
@@ -133,7 +275,9 @@ let
         type = "clock";
         name = "clock";
         class = "island center-item center-first";
-        format = "󰥔  %H:%M";
+        # Pango targets the time directly; styling only the outer GTK button is
+        # overridden by the clock's internal label in Ironbar 0.19.
+        format = ''<span foreground="#${c.subtle}" size="x-large" weight="bold">󰥔</span>  <span foreground="#${c.bright}" font_family="${theme.fonts.monospace}" size="large" weight="heavy">%H:%M</span>'';
         format_popup = "󰃭  %A, %d %B %Y";
         locale = "pl_PL";
         show_week_numbers = false;
@@ -155,7 +299,7 @@ let
         name = "volume";
         class = "island status status-first";
         format = "{icon} {percentage}%";
-        mute_format = "󰝟 mute";
+        mute_format = "󰖁 mute";
         max_volume = 100;
         show_sinks = true;
         show_sources = false;
@@ -165,17 +309,17 @@ let
         on_scroll_up = "swayosd-client --output-volume=+5 --max-volume=100";
         on_scroll_down = "swayosd-client --output-volume=-5 --max-volume=100";
         icons = {
-          volume = "";
-          muted = "󰝟";
+          volume = "󰕾";
+          muted = "󰖁";
         };
         profiles = {
           low = {
             when = 33.33;
-            icons.volume = "";
+            icons.volume = "󰕿";
           };
           medium = {
             when = 66.66;
-            icons.volume = "";
+            icons.volume = "󰖀";
           };
         };
       }
@@ -183,7 +327,7 @@ let
         type = "network_manager";
         name = "network";
         class = "island status network";
-        icon_size = 17;
+        icon_size = 19;
         justify = "center";
         types_whitelist = [ "wifi" "ethernet" ];
         interface_blacklist = [ "lo" ];
@@ -272,7 +416,7 @@ let
         type = "bluetooth";
         name = "bluetooth";
         class = "island status${lib.optionalString (!laptopEnabled) " status-last"}";
-        icon_size = 18;
+        icon_size = 19;
         disable_popup = true;
         tooltip = "Bluetooth\nKliknij, aby otworzyć panel TUI";
         on_click_left = "desktop-panel bluetooth";
@@ -304,7 +448,7 @@ let
         type = "battery";
         name = "battery";
         class = "island status status-last";
-        icon_size = 17;
+        icon_size = 18;
         justify = "center";
         format = "{percentage}%";
         profiles = {
@@ -324,7 +468,7 @@ let
       {
         type = "tray";
         name = "tray";
-        icon_size = 15;
+        icon_size = 17;
         prefer_theme_icons = true;
       }
       {
@@ -347,10 +491,12 @@ let
         on_click_right = "swaync-client -d -sw";
         icons = {
           closed_none = "";
-          closed_some = "󱅫";
+          # Two en-spaces reserve exactly one 18 px badge beside the bell. CSS
+          # centres the resulting bell/badge pair as a single 36 px group.
+          closed_some = "  ";
           closed_dnd = "󰂛";
           open_none = "󰍡";
-          open_some = "󱥁";
+          open_some = "󰍡  ";
           open_dnd = "󰂛";
         };
       }
@@ -364,7 +510,7 @@ let
     local palette = {
       track = "${c.muted}",
       cpu = { "${c.violet}", "${c.yellow}" },
-      memory = { "${c.accent}" },
+      memory = { "${c.accent}", "${c.blue}", "${c.green}" },
       network = { "${c.green}", "${c.violet}" },
       disk = { "${c.orange}", "${c.green}", "${c.violet}" },
       gpu = { "${c.blue}", "${c.magenta}", "${c.yellow}" },
@@ -372,7 +518,9 @@ let
 
     local symbols = {
       cpu = { "󰓅", "" },
-      memory = { "󰓅" },
+      -- Nerd Font archive and compression glyphs keep ZRAM consistent with
+      -- the icon-only visual language used by every other metric.
+      memory = { "󰓅", "", "" },
       network = { "", "" },
       disk = { "󰓅", "", "" },
       gpu = { "󰓅", "", "" },
@@ -476,6 +624,31 @@ let
       return (total - available) * 100 / total
     end
 
+    local zram_disksize_paths = shell_paths("/sys/block/zram*/disksize")
+
+    local function zram_percentages()
+      local logical_total, logical_used, physical_used = 0, 0, 0
+      for _, disksize_path in ipairs(zram_disksize_paths) do
+        local directory = disksize_path:match("^(.*)/disksize$")
+        local disksize = read_number(disksize_path)
+        local mm_stat = directory and read_line(directory .. "/mm_stat") or nil
+        if disksize > 0 and mm_stat then
+          local original, _, physical = mm_stat:match("^(%d+)%s+(%d+)%s+(%d+)")
+          logical_total = logical_total + disksize
+          logical_used = logical_used + (tonumber(original) or 0)
+          physical_used = physical_used + (tonumber(physical) or 0)
+        end
+      end
+
+      if logical_total == 0 then return nil, nil end
+      local usage = logical_used * 100 / logical_total
+      local savings = 0
+      if logical_used > 0 then
+        savings = math.max(0, (logical_used - physical_used) * 100 / logical_used)
+      end
+      return clamp(usage), clamp(savings)
+    end
+
     local function default_interface()
       local file = io.open("/proc/net/route", "r")
       if not file then return nil end
@@ -542,6 +715,8 @@ let
         scale_time = nil,
         scale_hold_until = 0,
         scale_last_write = nil,
+        gpu_values = nil,
+        gpu_next_probe = 0,
       }
 
       local function adaptive_ceiling(rate, floor, maximum, now)
@@ -597,7 +772,10 @@ let
         end
 
         if component == "memory" then
-          return { clamp(memory_percent()) }
+          local ram = clamp(memory_percent())
+          local zram_usage, zram_savings = zram_percentages()
+          if zram_usage then return { ram, zram_usage, zram_savings } end
+          return { ram }
         end
 
         if component == "network" then
@@ -645,22 +823,39 @@ let
         end
 
         if component == "gpu" and gpu_path then
-          local usage = read_number(gpu_path .. "/gpu_busy_percent")
-          local used = read_number(gpu_path .. "/mem_info_vram_used")
-          local vram = gpu_vram_total > 0 and used * 100 / gpu_vram_total or 0
-          local temperature = maximum_temperature(gpu_temperature_paths)
-          return { clamp(usage), clamp(vram), clamp(temperature) }
+          local runtime_status = read_line(gpu_path .. "/power/runtime_status")
+          if runtime_status and runtime_status ~= "active" then
+            state.gpu_values = nil
+            state.gpu_next_probe = 0
+            return {}, true
+          end
+
+          if not state.gpu_values or now >= state.gpu_next_probe then
+            local usage = read_number(gpu_path .. "/gpu_busy_percent")
+            local used = read_number(gpu_path .. "/mem_info_vram_used")
+            local vram = gpu_vram_total > 0 and used * 100 / gpu_vram_total or 0
+            local temperature = maximum_temperature(gpu_temperature_paths)
+            state.gpu_values = {
+              clamp(usage),
+              clamp(vram),
+              clamp(temperature),
+            }
+            state.gpu_next_probe = now + 7
+          end
+
+          return state.gpu_values, false
         end
 
         return { 0 }
       end
 
       return function(cr, width, height)
-        local current = values()
+        local current, gpu_suspended = values()
         local colors = palette[component] or { "${c.foreground}" }
         local bar_width = 15
         local gap = 3
-        local bar_height = height - 2
+        local bar_inset = 3
+        local bar_height = math.max(height - 2 * bar_inset, 1)
         local track_r, track_g, track_b = rgb(palette.track)
         local base_r, base_g, base_b = rgb("${c.background}")
         local bright_r, bright_g, bright_b = rgb("${c.bright}")
@@ -671,20 +866,44 @@ let
           { 0, 0.65 },
         }
 
+        if component == "gpu" and gpu_suspended then
+          local sleep_r, sleep_g, sleep_b = rgb("${c.subtle}")
+          rounded_rectangle(cr, 1, bar_inset, width - 2, bar_height, 4)
+          cr:set_source_rgba(track_r, track_g, track_b, 0.12)
+          cr:fill()
+
+          local sleep_symbol = "Zz"
+          cr:select_font_face(
+            "${theme.fonts.monospace}",
+            cairo.FontSlant.NORMAL,
+            cairo.FontWeight.BOLD
+          )
+          cr:set_font_size(12)
+          local sleep_extents = cr:text_extents(sleep_symbol)
+          cr:move_to(
+            (width - sleep_extents.width) / 2 - sleep_extents.x_bearing,
+            (height - sleep_extents.height) / 2 - sleep_extents.y_bearing
+          )
+          cr:set_source_rgba(sleep_r, sleep_g, sleep_b, 0.88)
+          cr:show_text(sleep_symbol)
+          return
+        end
+
         for index, value in ipairs(current) do
+          local displayed_value = math.floor(clamp(value))
           local x = (index - 1) * (bar_width + gap)
-          rounded_rectangle(cr, x, 1, bar_width, bar_height, 3)
+          rounded_rectangle(cr, x, bar_inset, bar_width, bar_height, 3)
           cr:set_source_rgba(track_r, track_g, track_b, 0.22)
           cr:fill()
 
-          local fill = bar_height * clamp(value) / 100
+          local fill = bar_height * displayed_value / 100
           if fill > 0 then
             fill = math.max(fill, 2)
             local red, green, blue = rgb(colors[index] or colors[#colors])
             rounded_rectangle(
               cr,
               x,
-              1 + bar_height - fill,
+              bar_inset + bar_height - fill,
               bar_width,
               fill,
               3
@@ -702,7 +921,7 @@ let
           cr:set_font_size(12)
           local extents = cr:text_extents(symbol)
           local symbol_x = x + (bar_width - extents.width) / 2 - extents.x_bearing
-          local symbol_y = 1 + (bar_height - extents.height) / 2 - extents.y_bearing
+          local symbol_y = bar_inset + (bar_height - extents.height) / 2 - extents.y_bearing
           cr:set_source_rgba(base_r, base_g, base_b, 0.94)
           for _, offset in ipairs(outline) do
             cr:move_to(symbol_x + offset[1], symbol_y + offset[2])
@@ -744,6 +963,7 @@ in
       @define-color violet #${c.violet};
       @define-color blue #${c.blue};
       @define-color green #${c.green};
+      @define-color olive #${c.olive};
       @define-color yellow #${c.yellow};
       @define-color orange #${c.orange};
       @define-color red #${c.red};
@@ -788,7 +1008,7 @@ in
         min-height: 28px;
         padding: 0 8px;
         color: @text;
-        background-color: alpha(@panel, 0.95);
+        background-color: alpha(@panel, 0.90);
         border: 1px solid alpha(@line, 0.62);
         border-radius: 9px;
         box-shadow: 0 2px 6px alpha(@base, 0.42);
@@ -796,89 +1016,131 @@ in
 
       .island:hover {
         color: @bright;
-        background-color: alpha(@panel-hover, 0.98);
+        background-color: alpha(@panel-hover, 0.95);
         border-color: alpha(@active, 0.76);
       }
 
       #workspace-island {
         padding: 0 5px;
-        background-color: alpha(@panel, 0.97);
+        background-color: alpha(@panel, 0.92);
         border-color: alpha(@line, 0.72);
       }
 
       #workspace-island .item {
-        min-width: 20px;
-        min-height: 20px;
-        margin: 4px 1px;
+        /* 22 px circle + 2 × 3 px margins = the island's 28 px content.
+           At 11 px CommitMono a tabular digit advances about 6.5 px, leaving
+           (22 - 6.5) / 2 = 7.75 px on each horizontal side. */
+        min-width: 22px;
+        min-height: 22px;
+        margin: 3px 1px;
         padding: 0;
-        color: alpha(@subtext, 0.46);
+        color: alpha(@text, 0.78);
         background: transparent;
         border: none;
         border-radius: 99px;
         box-shadow: none;
-        font-family: "${theme.fonts.sans}";
-        font-size: 10px;
-        font-weight: 700;
+        font-family: "${theme.fonts.interface}";
+        font-size: 11px;
+        font-weight: 800;
         font-feature-settings: "tnum" 1;
       }
 
-      #workspace-island .item:not(.inactive) {
+      #workspace-island .item.inactive {
+        color: alpha(@subtext, 0.68);
+        background: transparent;
+      }
+
+      #workspace-island .item:not(.inactive):not(.visible):not(.urgent) {
         color: @subtext;
         background: transparent;
         border: none;
         box-shadow: none;
-        font-size: 10px;
+        font-size: 11px;
       }
 
-      #workspace-island .item.visible {
-        color: @bright;
+      #workspace-island .item.visible:not(.focused):not(.urgent) {
+        color: @base;
+        background: @olive;
+        box-shadow: inset 0 0 0 1px alpha(@bright, 0.10);
+        font-weight: 800;
       }
 
       #workspace-island .item.focused {
-        min-width: 20px;
-        min-height: 20px;
-        margin: 4px 1px;
+        min-width: 22px;
+        min-height: 22px;
+        margin: 3px 1px;
         color: @base;
         background: @active;
         border: none;
         border-radius: 99px;
         box-shadow: inset 0 0 0 1px alpha(@bright, 0.10);
-        font-size: 10px;
-        font-weight: 800;
+        font-size: 11px;
+        font-weight: 900;
       }
 
       #workspace-island .item label {
-        min-width: 20px;
+        /* A 20 px line box plus 2 px top padding fills the 22 px circle. The
+           asymmetric padding moves the glyph's optical centre down by 1 px. */
+        min-width: 22px;
         min-height: 20px;
         margin: 0;
-        padding: 0;
-        font-family: "${theme.fonts.sans}";
+        padding: 2px 0 0;
+        font-family: "${theme.fonts.monospace}";
+        font-weight: 800;
         font-feature-settings: "tnum" 1;
       }
 
       #workspace-island .item.urgent {
         color: @base;
         background: @critical;
+        box-shadow: inset 0 0 0 1px alpha(@bright, 0.16);
         font-size: 11px;
+        font-weight: 900;
       }
 
-      #workspace-island .item:hover {
+      #workspace-island .item:not(.focused):not(.visible):not(.urgent):hover {
         color: @bright;
-        background: transparent;
+        background: alpha(@surface, 0.72);
         border: none;
+        box-shadow: inset 0 0 0 1px alpha(@line, 0.42);
       }
 
-      #workspace-island .item.focused:hover {
+      #workspace-island .item.visible:not(.focused):not(.urgent):hover {
+        color: @base;
+        background: @yellow;
+      }
+
+      #workspace-island .item.focused:not(.urgent):hover {
         color: @base;
         background: @bright;
       }
 
+      #workspace-island .item.urgent:hover {
+        color: @base;
+        background: @critical;
+        box-shadow: inset 0 0 0 2px alpha(@bright, 0.24);
+      }
+
       .metric {
         padding: 0 5px;
-        background-color: alpha(@panel, 0.95);
+        background-color: alpha(@panel, 0.90);
         border-color: alpha(@line, 0.62);
         border-radius: 0;
         box-shadow: none;
+      }
+
+      .metric .metric-button {
+        min-height: 28px;
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .metric .metric-button:hover {
+        background: transparent;
       }
 
       .metric-icon,
@@ -943,7 +1205,7 @@ in
       }
 
       .metric:hover {
-        background-color: alpha(@panel-hover, 0.98);
+        background-color: alpha(@panel-hover, 0.95);
       }
 
       #docker { color: @text; }
@@ -954,8 +1216,20 @@ in
         color: @bright;
         border-right: none;
         border-radius: 9px 0 0 9px;
-        font-size: 11.5px;
+        font-family: "${theme.fonts.interface}";
+        font-size: 12px;
         font-weight: 700;
+      }
+
+      #clock label {
+        margin: 0;
+        padding: 0;
+        color: @bright;
+        font-family: "${theme.fonts.monospace}";
+        font-size: 12px;
+        font-weight: 900;
+        font-feature-settings: "tnum" 1;
+        letter-spacing: 0.3px;
       }
 
       #screenshot {
@@ -974,7 +1248,7 @@ in
         border-right: none;
         border-radius: 0;
         box-shadow: none;
-        font-size: 11.5px;
+        font-size: 12.5px;
         font-weight: 600;
       }
 
@@ -988,6 +1262,16 @@ in
         color: @text;
         border-left-color: alpha(@line, 0.62);
         border-radius: 9px 0 0 9px;
+      }
+
+      #volume .sink {
+        min-width: 54px;
+        margin: 0;
+        padding: 0;
+        font-family: "${theme.fonts.monospace}";
+        font-size: 12.5px;
+        font-weight: 700;
+        font-feature-settings: "tnum" 1;
       }
 
       #network {
@@ -1006,7 +1290,7 @@ in
         margin: 0;
         padding: 0;
         font-family: "${theme.fonts.interface}";
-        font-size: 18px;
+        font-size: 19px;
         font-weight: 500;
       }
 
@@ -1031,7 +1315,7 @@ in
         padding: 0;
         color: @info;
         font-family: "${theme.fonts.monospace}";
-        font-size: 18px;
+        font-size: 19px;
         font-weight: 800;
       }
 
@@ -1041,7 +1325,7 @@ in
         margin: 0;
         padding: 0;
         font-family: "${theme.fonts.monospace}";
-        font-size: 18px;
+        font-size: 19px;
         font-weight: 800;
       }
 
@@ -1052,28 +1336,50 @@ in
       }
 
       #brightness .icon {
-        min-width: 16px;
-        margin: 0 2px 0 0;
+        min-width: 18px;
+        margin: 0 -3px 0 2px;
         padding: 0;
         font-family: "${theme.fonts.interface}";
-        font-size: 17px;
+        font-size: 18px;
         font-weight: 600;
       }
 
       #brightness .label {
-        min-width: 32px;
+        min-width: 31px;
         margin: 0;
         padding: 0;
-        font-size: 11.5px;
+        font-size: 12.5px;
         font-weight: 700;
       }
 
       #battery {
-        min-width: 56px;
-        padding: 0 3px 0 5px;
+        min-width: 54px;
+        padding: 0 5px;
         color: @success;
         border-right: 1px solid alpha(@line, 0.62);
         border-radius: 0 9px 9px 0;
+      }
+
+      #battery .contents,
+      #battery .icon,
+      #battery .label {
+        margin: 0;
+        padding: 0;
+      }
+
+      #battery .contents {
+        min-width: 54px;
+      }
+
+      #battery .icon {
+        min-width: 18px;
+      }
+
+      #battery .label {
+        min-width: 31px;
+        font-size: 12.5px;
+        font-weight: 700;
+        font-feature-settings: "tnum" 1;
       }
 
       #battery.profile-warning {
@@ -1087,25 +1393,39 @@ in
         border-color: alpha(@critical, 0.76);
       }
 
-      #notifications { color: @active; }
+      #notifications {
+        min-width: 56px;
+        padding: 0;
+        color: @active;
+      }
+
+      #notifications .button {
+        min-width: 56px;
+        min-height: 28px;
+        margin: 0;
+        padding: 0;
+      }
 
       #caffeine {
-        min-width: 28px;
-        padding: 0 6px;
+        min-width: 40px;
+        padding: 0;
         font-family: "${theme.fonts.monospace}";
-        font-size: 18px;
+        font-size: 20px;
         font-weight: 700;
       }
 
       #caffeine button,
       #caffeine label {
-        min-width: 18px;
+        min-width: 40px;
         margin: 0;
         padding: 0;
       }
 
       #notifications label {
-        font-size: 16px;
+        margin: 0;
+        padding: 0;
+        font-family: "${theme.fonts.monospace}";
+        font-size: 18px;
       }
 
       #tray {
@@ -1114,20 +1434,34 @@ in
       }
 
       #tray .item {
-        min-width: 22px;
+        min-width: 17px;
         min-height: 28px;
         margin-left: 5px;
-        padding: 0 4px;
+        padding: 0 7px;
         color: @text;
-        background-color: alpha(@panel, 0.95);
+        background-color: alpha(@panel, 0.90);
         border: 1px solid alpha(@line, 0.62);
         border-radius: 9px;
         box-shadow: 0 2px 6px alpha(@base, 0.42);
       }
 
+      #tray .item > box,
+      #tray .item image,
+      #tray .item picture {
+        min-width: 17px;
+        min-height: 17px;
+        margin: 0;
+        padding: 0;
+      }
+
+      #tray .item label {
+        margin: 0;
+        padding: 0;
+      }
+
       #tray .item:hover {
         color: @bright;
-        background-color: alpha(@panel-hover, 0.98);
+        background-color: alpha(@panel-hover, 0.95);
         border-color: alpha(@active, 0.76);
       }
 
@@ -1143,14 +1477,22 @@ in
       }
 
       #notifications .count {
-        min-width: 10px;
-        min-height: 10px;
+        /* 14 px content + 2 × 1 px padding + 2 × 1 px border = 18 px.
+           The 5 px vertical margins centre it exactly in the 28 px button;
+           a 10 px right margin centres it beside the reserved 18 px icon. */
+        min-width: 14px;
+        min-height: 14px;
+        margin: 5px 10px 5px 0;
         padding: 1px;
-        color: @bright;
+        color: @base;
         background: @active;
+        border: 1px solid alpha(@base, 0.92);
         border-radius: 99px;
-        font-size: 7px;
-        font-weight: 700;
+        box-shadow: none;
+        font-family: "${theme.fonts.interface}";
+        font-size: 10px;
+        font-weight: 900;
+        font-feature-settings: "tnum" 1;
       }
 
       tooltip,
@@ -1174,13 +1516,21 @@ in
       }
 
       .popup .metric-tooltip {
-        min-width: 240px;
-        padding: 1px 2px;
+        min-width: 250px;
+        padding: 3px 4px 3px 10px;
         color: @text;
+        border-left: 3px solid alpha(@line, 0.92);
+        border-radius: 3px;
         font-family: "${theme.fonts.monospace}";
-        font-size: 10.5px;
+        font-size: 11px;
         font-weight: 500;
       }
+
+      .popup .metric-tooltip-cpu { border-left-color: #${theme.metricPopup.cpu}; }
+      .popup .metric-tooltip-memory { border-left-color: #${theme.metricPopup.memory}; }
+      .popup .metric-tooltip-network { border-left-color: #${theme.metricPopup.positive}; }
+      .popup .metric-tooltip-disk { border-left-color: #${theme.metricPopup.disk}; }
+      .popup .metric-tooltip-gpu { border-left-color: #${theme.metricPopup.gpu}; }
 
       .popup {
         padding: 10px;
@@ -1262,6 +1612,18 @@ in
     "ironbar/network.lua".text = metricLoader "network";
     "ironbar/disk.lua".text = metricLoader "disk";
     "ironbar/gpu.lua".text = metricLoader "gpu";
+  };
+
+  systemd.user.services.ironbar-metric-popup-refresh = {
+    Unit = {
+      Description = "Refresh the visible Ironbar metric popup";
+      After = [ "ironbar.service" ];
+      PartOf = [ "ironbar.service" ];
+    };
+    Service = {
+      Type = "simple";
+      ExecStart = "${metricPopupRefresh}/bin/ironbar-metric-popup-refresh";
+    };
   };
 
   systemd.user.services.ironbar = {

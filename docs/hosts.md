@@ -8,7 +8,12 @@ Obecnie repozytorium zawiera jeden gotowy do aktywacji host:
 - hostname: `rog-polamaniec`,
 - konfiguracja: `hosts/rog-polamaniec/configuration.nix`,
 - sprzęt: `hosts/rog-polamaniec/hardware-configuration.nix`,
-- dodatkowe funkcje: Docker, gaming, aplikacje osobiste i profil laptopa,
+- dodatkowe funkcje: Docker, gaming, nagrywanie, aplikacje osobiste i profil laptopa,
+- diagnostyka GPU na żądanie jest wyłączona w manifeście, bo codzienne metryki
+  zapewniają Ironbar i btop,
+- opcjonalny benchmark schedulerów jest wyłączony, więc stress-ng,
+  SuperTuxKart i schedulery testowe nie trafiają z jego powodu do codziennego
+  closure,
 - moduł GPU: `modules/hardware-amd-gpu.nix`,
 - moduł laptopa: `modules/hardware-asus-laptop.nix`.
 
@@ -25,7 +30,7 @@ wersjonowane. Sekrety, hasła, profile Wi-Fi i klucze SSH pozostają poza repo.
 
 1. Skopiuj katalog istniejącego hosta do `hosts/<nowy-host>/` i wygeneruj dla
    niego właściwy `hardware-configuration.nix`.
-2. W jego `default.nix` zmień `username`, funkcje pulpitu oraz — na laptopie —
+2. W jego `default.nix` zmień `username`, mapę `features` oraz — na laptopie —
    `backlightDevice`. Nazwa hosta wynika automatycznie z nazwy katalogu.
 3. Aby skopiować również profil użytkownika, skopiuj `home/wojtek/` do
    `home/<username>/`. Plików wewnątrz nie trzeba zmieniać.

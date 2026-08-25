@@ -1,23 +1,9 @@
-{ lib, pkgs, username, ... }:
-
 {
-  imports = [ ./development-core.nix ];
-
-  virtualisation.docker = {
-    enable = true;
-    enableOnBoot = false;
-  };
-
-  # NixOS enables docker.socket even with enableOnBoot = false, which starts
-  # dockerd as soon as a client touches the socket. Keep Docker fully manual;
-  # starting docker.service will pull in its required socket when needed.
-  systemd.sockets.docker.wantedBy = lib.mkForce [ ];
-
-  users.users.${username}.extraGroups = [ "docker" ];
-
-  environment.systemPackages = with pkgs; [
-    docker-compose
-    lazydocker
-    lazyssh
+  # Compatibility aggregate for hosts that want the complete development
+  # stack. New manifests import development-core.nix and gate docker.nix with
+  # `features.docker`, so disabling Docker also removes its packages.
+  imports = [
+    ./development-core.nix
+    ./docker.nix
   ];
 }

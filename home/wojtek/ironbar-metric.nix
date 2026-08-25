@@ -3,6 +3,7 @@
 let
   theme = import ./theme.nix { inherit inputs; };
   c = theme.colors;
+  p = theme.metricPopup;
 in
 pkgs.writeShellApplication {
   name = "ironbar-metric";
@@ -62,18 +63,42 @@ pkgs.writeShellApplication {
     row() {
       local label="$1"
       local value="$2"
-      local color="''${3:-${c.bright}}"
+      local color="''${3:-${p.value}}"
+      local weight="''${4:-bold}"
       local padded_label padded_value
       padded_label="$(pad_right "$label" 16)"
       padded_value="$(pad_left "$value" 12)"
-      printf '<span foreground="#${c.subtle}">%s</span><span foreground="#%s"><b>%s</b></span>' \
-        "$(markup_escape "$padded_label")" "$color" "$(markup_escape "$padded_value")"
+      printf '<span foreground="#${p.label}" weight="500">%s</span><span foreground="#%s" weight="%s">%s</span>' \
+        "$(markup_escape "$padded_label")" "$color" "$weight" "$(markup_escape "$padded_value")"
+    }
+
+    secondary_row() {
+      row "$1" "$2" "''${3:-${p.secondary}}" 600
+    }
+
+    detail_row() {
+      row "$1" "$2" "''${3:-${p.label}}" 500
     }
 
     tooltip_start() {
-      local color="''${3:-${c.bright}}"
-      printf '<span font_family="${theme.fonts.monospace}"><span foreground="#%s" size="large" weight="bold">%s</span><span foreground="#${c.bright}" size="large" weight="bold">  %s</span>\n' \
+      local color="''${3:-${p.value}}"
+      printf '<span font_family="${theme.fonts.monospace}" line_height="1.5"><span foreground="#%s" size="large" weight="bold">%s</span><span foreground="#${c.bright}" size="large" weight="bold">  %s</span>\n' \
         "$color" "$(markup_escape "$1")" "$(markup_escape "$2")"
+    }
+
+    status_color() {
+      local value="''${1:-0}"
+      local normal="$2"
+      local warning_at="''${3:-75}"
+      local critical_at="''${4:-90}"
+
+      if (( value >= critical_at )); then
+        printf '%s\n' '${p.critical}'
+      elif (( value >= warning_at )); then
+        printf '%s\n' '${p.warning}'
+      else
+        printf '%s\n' "$normal"
+      fi
     }
 
     emit() {
@@ -244,15 +269,17 @@ pkgs.writeShellApplication {
         level=$usage
         (( cpu_temperature > level )) && level=$cpu_temperature
         bars="$(gauge "$usage" '${c.violet}')$(gauge "$cpu_temperature" '${c.yellow}' '°')"
+        usage_color="$(status_color "$usage" '${p.cpu}')"
+        temperature_color="$(status_color "$cpu_temperature" '${p.thermal}')"
 
-        tooltip="$(tooltip_start '' 'PROCESOR · CPU / °C' '${c.violet}')"$'\n'
-        tooltip+="$(row 'Użycie' "$usage%" '${c.violet}')"$'\n'
-        tooltip+="$(row 'Temperatura' "$cpu_temperature°C" '${c.yellow}')"$'\n'
-        tooltip+="$(row 'Taktowanie' "$frequency_display")"$'\n'
-        tooltip+="$(row 'Load · 1 min' "$load_1")"$'\n'
-        tooltip+="$(row 'Load · 5 min' "$load_5")"$'\n'
-        tooltip+="$(row 'Load · 15 min' "$load_15")"$'\n'
-        tooltip+="$(row 'Wątki' "$(nproc)")"
+        tooltip="$(tooltip_start '' 'PROCESOR · CPU / °C' '${p.cpu}')"$'\n'
+        tooltip+="$(row 'Użycie' "$usage%" "$usage_color")"$'\n'
+        tooltip+="$(row 'Temperatura' "$cpu_temperature°C" "$temperature_color")"$'\n'
+        tooltip+="$(secondary_row 'Taktowanie' "$frequency_display")"$'\n'
+        tooltip+="$(secondary_row 'Load · 1 min' "$load_1")"$'\n'
+        tooltip+="$(detail_row 'Load · 5 min' "$load_5")"$'\n'
+        tooltip+="$(detail_row 'Load · 15 min' "$load_15")"$'\n'
+        tooltip+="$(detail_row 'Wątki' "$(nproc)")"
         emit "$level" '' "$bars" "$tooltip"
         ;;
 
@@ -277,24 +304,96 @@ pkgs.writeShellApplication {
         available_display="$(awk -v value="$available" 'BEGIN { printf "%.1f GiB", value / 1048576 }')"
         swap_display="$(awk -v used="$swap_used" -v total="$swap_total" \
           'BEGIN { printf "%.1f / %.1f GiB", used / 1048576, total / 1048576 }')"
+
+        zram_total=0
+        zram_original=0
+        zram_compressed=0
+        zram_physical=0
+        zram_algorithm=""
+        for device in /sys/block/zram*; do
+          [[ -r "$device/disksize" && -r "$device/mm_stat" ]] || continue
+          read -r device_total < "$device/disksize" || continue
+          [[ "$device_total" =~ ^[0-9]+$ ]] || continue
+          (( device_total > 0 )) || continue
+
+          device_original=0
+          device_compressed=0
+          device_physical=0
+          read -r device_original device_compressed device_physical _ < "$device/mm_stat" \
+            || continue
+          [[ "$device_original" =~ ^[0-9]+$ ]] || device_original=0
+          [[ "$device_compressed" =~ ^[0-9]+$ ]] || device_compressed=0
+          [[ "$device_physical" =~ ^[0-9]+$ ]] || device_physical=0
+
+          zram_total=$((zram_total + device_total))
+          zram_original=$((zram_original + device_original))
+          zram_compressed=$((zram_compressed + device_compressed))
+          zram_physical=$((zram_physical + device_physical))
+
+          if [[ -z "$zram_algorithm" && -r "$device/comp_algorithm" ]]; then
+            zram_algorithm="$(sed -n 's/.*\[\([^]]*\)\].*/\1/p' "$device/comp_algorithm")"
+          fi
+        done
+
+        if (( zram_total > 0 )); then
+          zram_percentage=$((zram_original * 100 / zram_total))
+          (( zram_percentage > 100 )) && zram_percentage=100
+          zram_logical_display="$(numfmt --to=iec-i --suffix=B "$zram_original" 2>/dev/null || printf '0 B')"
+          zram_total_display="$(numfmt --to=iec-i --suffix=B "$zram_total" 2>/dev/null || printf '0 B')"
+          zram_physical_display="$(numfmt --to=iec-i --suffix=B "$zram_physical" 2>/dev/null || printf '0 B')"
+          zram_display="$zram_logical_display / $zram_total_display"
+          if (( zram_original > 0 )); then
+            zram_savings=$(((zram_original - zram_physical) * 100 / zram_original))
+            (( zram_savings < 0 )) && zram_savings=0
+            (( zram_savings > 100 )) && zram_savings=100
+          else
+            zram_savings=0
+          fi
+          if (( zram_original > 0 && zram_compressed > 0 )); then
+            zram_ratio="$(awk -v original="$zram_original" -v compressed="$zram_compressed" \
+              'BEGIN { printf "%.2f×", original / compressed }')"
+          else
+            zram_ratio="—"
+          fi
+          [[ -n "$zram_algorithm" ]] || zram_algorithm="n/d"
+        fi
+
         level=$percentage
         bars="$(gauge "$percentage" '${c.accent}')"
         memory_title='PAMIĘĆ · RAM'
-        if (( swap_total > 0 )); then
+        if (( zram_total > 0 )); then
+          (( zram_percentage > level )) && level=$zram_percentage
+          bars+="$(gauge "$zram_percentage" '${c.blue}' '')"
+          bars+="$(gauge "$zram_savings" '${c.green}' '')"
+          memory_title+=' / ZRAM'
+        elif (( swap_total > 0 )); then
           (( swap_percentage > level )) && level=$swap_percentage
-          bars+="$(gauge "$swap_percentage" '${c.blue}' 'S')"
+          bars+="$(gauge "$swap_percentage" '${c.blue}' '')"
           memory_title+=' / SWAP'
         fi
+        memory_color="$(status_color "$percentage" '${p.memory}')"
+        swap_color="$(status_color "$swap_percentage" '${p.upload}')"
 
-        tooltip="$(tooltip_start '' "$memory_title" '${c.accent}')"$'\n'
-        tooltip+="$(row 'Użycie' "$percentage%" '${c.accent}')"$'\n'
-        tooltip+="$(row 'Zajęte' "$used_display")"$'\n'
-        tooltip+="$(row 'Dostępne' "$available_display" '${c.green}')"$'\n'
-        tooltip+="$(row 'Łącznie' "$total_display")"
-        if (( swap_total > 0 )); then
-          tooltip+=$'\n'"$(row 'Swap' "$swap_display")"$'\n'
-          tooltip+="$(row 'Swap użycie' "$swap_percentage%" '${c.blue}')"
+        tooltip="$(tooltip_start '' "$memory_title" '${p.memory}')"$'\n'
+        tooltip+="$(row 'Użycie' "$percentage%" "$memory_color")"$'\n'
+        tooltip+="$(row 'Dostępne' "$available_display" '${p.positive}')"$'\n'
+        tooltip+="$(secondary_row 'Zajęte' "$used_display")"$'\n'
+        if (( zram_total > 0 )); then
+          zram_color="$(status_color "$zram_percentage" '${p.gpu}')"
+          (( zram_original > 0 )) \
+            && savings_color='${p.positive}' \
+            || savings_color='${p.label}'
+          tooltip+="$(row 'ZRAM użycie' "$zram_percentage%" "$zram_color")"$'\n'
+          tooltip+="$(row 'Oszczędność' "$zram_savings%" "$savings_color")"$'\n'
+          tooltip+="$(secondary_row 'ZRAM logiczne' "$zram_display")"$'\n'
+          tooltip+="$(secondary_row 'ZRAM w RAM' "$zram_physical_display")"$'\n'
+          tooltip+="$(detail_row 'Kompresja' "$zram_ratio")"$'\n'
+          tooltip+="$(detail_row 'Algorytm' "$zram_algorithm")"$'\n'
+        elif (( swap_total > 0 )); then
+          tooltip+="$(row 'Swap użycie' "$swap_percentage%" "$swap_color")"$'\n'
+          tooltip+="$(detail_row 'Swap' "$swap_display")"$'\n'
         fi
+        tooltip+="$(detail_row 'Łącznie' "$total_display")"
         emit "$level" '' "$bars" "$tooltip"
         ;;
 
@@ -341,12 +440,12 @@ pkgs.writeShellApplication {
           fi
         )"
 
-        tooltip="$(tooltip_start '󰓅' 'SIEĆ · ↓ / ↑' '${c.green}')"
-        tooltip+=$'\n'"$(row 'Interfejs' "''${interface:-brak}")"$'\n'
-        tooltip+="$(row 'Adres IPv4' "''${ip_address:-brak}")"$'\n'
-        tooltip+="$(row 'Pobieranie' "$rx_display" '${c.green}')"$'\n'
-        tooltip+="$(row 'Wysyłanie' "$tx_display" '${c.violet}')"$'\n'
-        tooltip+="$(row 'Skala wykresu' "$network_scale_display" '${c.muted}')"
+        tooltip="$(tooltip_start '󰓅' 'SIEĆ · ↓ / ↑' '${p.positive}')"
+        tooltip+=$'\n'"$(row 'Pobieranie' "$rx_display" '${p.positive}')"$'\n'
+        tooltip+="$(row 'Wysyłanie' "$tx_display" '${p.upload}')"$'\n'
+        tooltip+="$(secondary_row 'Interfejs' "''${interface:-brak}")"$'\n'
+        tooltip+="$(detail_row 'Adres IPv4' "''${ip_address:-brak}")"$'\n'
+        tooltip+="$(detail_row 'Skala wykresu' "$network_scale_display")"
         emit "$level" '󰓅' "$bars" "$tooltip" 101 101
         ;;
 
@@ -381,21 +480,36 @@ pkgs.writeShellApplication {
         disk_scale="$(adaptive_scale disk 104857600)"
         disk_scale_display="$(numfmt --to=iec-i --suffix=B/s "$disk_scale" 2>/dev/null || printf '100 MiB/s')"
         bars="$(gauge "$percentage" '${c.orange}')$(gauge "$read_percentage" '${c.green}' '↓')$(gauge "$write_percentage" '${c.violet}' '↑')"
+        disk_usage_color="$(status_color "$percentage" '${p.disk}' 80 92)"
 
-        tooltip="$(tooltip_start '󰋊' 'DYSK · % / ↓ / ↑' '${c.orange}')"
-        tooltip+=$'\n'"$(row 'Punkt montowania' '/')"$'\n'
-        tooltip+="$(row 'Użycie' "$percentage%" '${c.orange}')"$'\n'
-        tooltip+="$(row 'Odczyt' "$read_display" '${c.green}')"$'\n'
-        tooltip+="$(row 'Zapis' "$write_display" '${c.violet}')"$'\n'
-        tooltip+="$(row 'Skala wykresu' "$disk_scale_display" '${c.muted}')"$'\n'
-        tooltip+="$(row 'Zajęte' "$used_display")"$'\n'
-        tooltip+="$(row 'Wolne' "$available_display" '${c.green}')"$'\n'
-        tooltip+="$(row 'Łącznie' "$total_display")"
+        tooltip="$(tooltip_start '󰋊' 'DYSK · % / ↓ / ↑' '${p.disk}')"
+        tooltip+=$'\n'"$(row 'Użycie' "$percentage%" "$disk_usage_color")"$'\n'
+        tooltip+="$(row 'Wolne' "$available_display" '${p.positive}')"$'\n'
+        tooltip+="$(row 'Odczyt' "$read_display" '${p.positive}')"$'\n'
+        tooltip+="$(row 'Zapis' "$write_display" '${p.upload}')"$'\n'
+        tooltip+="$(secondary_row 'Zajęte' "$used_display")"$'\n'
+        tooltip+="$(detail_row 'Łącznie' "$total_display")"$'\n'
+        tooltip+="$(detail_row 'Punkt montowania' '/')"$'\n'
+        tooltip+="$(detail_row 'Skala wykresu' "$disk_scale_display")"
         emit "$percentage" '󰋊' "$bars" "$tooltip" 80 92
         ;;
 
       gpu)
         select_amd_gpu
+        gpu_runtime_status=""
+        if [[ -n "$gpu_card" && -r "$gpu_card/power/runtime_status" ]]; then
+          read -r gpu_runtime_status < "$gpu_card/power/runtime_status" || true
+        fi
+        if [[ -n "$gpu_runtime_status" && "$gpu_runtime_status" != active ]]; then
+          bars='<span foreground="#${c.subtle}" size="large" weight="bold">Zz</span>'
+          tooltip="$(tooltip_start '󰢮' 'GPU · UŚPIONA' '${p.gpu}')"$'\n'
+          tooltip+="$(row 'Stan' 'uśpiona (D3)' '${p.positive}')"$'\n'
+          tooltip+="$(secondary_row 'Metryki' 'wstrzymane')"$'\n'
+          tooltip+="$(detail_row 'Wybudzenie' 'automatyczne')"
+          emit 0 '󰢮' "$bars" "$tooltip"
+          exit 0
+        fi
+
         usage=0
         vram_used=0
         gpu_temperature=0
@@ -418,13 +532,16 @@ pkgs.writeShellApplication {
         (( vram_percentage > level )) && level=$vram_percentage
         (( gpu_temperature > level )) && level=$gpu_temperature
         bars="$(gauge "$usage" '${c.blue}')$(gauge "$vram_percentage" '${c.magenta}' 'V')$(gauge "$gpu_temperature" '${c.yellow}' '°')"
+        gpu_usage_color="$(status_color "$usage" '${p.gpu}')"
+        vram_color="$(status_color "$vram_percentage" '${p.vram}')"
+        gpu_temperature_color="$(status_color "$gpu_temperature" '${p.thermal}')"
 
-        tooltip="$(tooltip_start '󰢮' 'GPU · RDZEŃ / VRAM / °C' '${c.blue}')"
-        tooltip+=$'\n'"$(row 'Użycie rdzenia' "$usage%" '${c.blue}')"$'\n'
-        tooltip+="$(row 'VRAM' "$vram_percentage%" '${c.magenta}')"$'\n'
-        tooltip+="$(row 'VRAM zajęte' "$vram_used_display")"$'\n'
-        tooltip+="$(row 'VRAM łącznie' "$vram_total_display")"$'\n'
-        tooltip+="$(row 'Temperatura' "$gpu_temperature°C" '${c.yellow}')"
+        tooltip="$(tooltip_start '󰢮' 'GPU · RDZEŃ / VRAM / °C' '${p.gpu}')"
+        tooltip+=$'\n'"$(row 'Użycie rdzenia' "$usage%" "$gpu_usage_color")"$'\n'
+        tooltip+="$(row 'Temperatura' "$gpu_temperature°C" "$gpu_temperature_color")"$'\n'
+        tooltip+="$(row 'VRAM' "$vram_percentage%" "$vram_color")"$'\n'
+        tooltip+="$(secondary_row 'VRAM zajęte' "$vram_used_display")"$'\n'
+        tooltip+="$(detail_row 'VRAM łącznie' "$vram_total_display")"
         emit "$level" '󰢮' "$bars" "$tooltip"
         ;;
 

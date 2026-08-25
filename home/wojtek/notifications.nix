@@ -23,8 +23,7 @@ in
       control-center-margin-right = 6;
       notification-window-width = 360;
       control-center-width = 360;
-      control-center-height = -1;
-      fit-to-screen = false;
+      fit-to-screen = true;
       hide-on-clear = true;
       hide-on-action = true;
       relative-timestamps = true;
@@ -46,6 +45,7 @@ in
           clear-all-button = true;
           button-text = "Wyczyść wszystko";
         };
+        notifications.vexpand = true;
       };
     };
 

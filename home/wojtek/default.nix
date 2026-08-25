@@ -4,16 +4,246 @@ let
   theme = import ./theme.nix { inherit inputs; };
   c = theme.colors;
   scripts = import ./scripts.nix { inherit pkgs; };
+  amdGpuEnabled = desktopFeatures.amdGpu or false;
   dockerEnabled = desktopFeatures.docker or false;
-  gamingEnabled = desktopFeatures.gaming or false;
-  personalAppsEnabled = desktopFeatures.personalApps or false;
+  screenRecordingEnabled = desktopFeatures.screenRecording or false;
+  personalApps = desktopFeatures.personalApps or { };
+  discordEnabled = personalApps.discord or false;
+  easyeffectsEnabled = personalApps.easyeffects or false;
+  plexampEnabled = personalApps.plexamp or false;
+  btopPackage =
+    if amdGpuEnabled then
+      pkgs.btop.override { rocmSupport = true; }
+    else
+      pkgs.btop;
+
+  # Keep the searchable help menu aligned with every user-facing binding.
+  # Host-specific entries follow the same desktopFeatures flags as Hyprland.
+  shortcut = key: description: { inherit key description; };
+  renderShortcuts = shortcuts:
+    lib.concatMapStringsSep "\n"
+      (item: "entry ${lib.escapeShellArg item.key} ${lib.escapeShellArg item.description}")
+      shortcuts;
+
+  systemShortcuts = [
+    (shortcut "Super+Enter" "Uruchom terminal Foot")
+    (shortcut "Super+Space" "Otwórz launcher aplikacji Fuzzel")
+    (shortcut "Super+B" "Pokaż istniejące okno Zen albo uruchom przeglądarkę")
+    (shortcut "Super+E" "Uruchom Yazi w osobnym oknie Foot")
+    (shortcut "Super+Alt+E" "Uruchom awaryjny menedżer plików Thunar")
+    (shortcut "Super+N" "Pokaż lub ukryj centrum powiadomień SwayNC")
+    (shortcut "Super+L" "Zablokuj sesję przez Hyprlock")
+    (shortcut "Super+Escape" "Otwórz menu zasilania Wleave")
+    (shortcut "Super+Shift+E" "Otwórz menu zasilania (alias)")
+    (shortcut "Super+Shift+V" "Wybierz wpis historii schowka i wklej go")
+    (shortcut "Super+F1" "Otwórz to centrum skrótów")
+  ]
+  ++ lib.optionals plexampEnabled [
+    (shortcut "Super+M" "Uruchom odtwarzacz Plexamp")
+  ]
+  ++ lib.optionals easyeffectsEnabled [
+    (shortcut "Super+Shift+A" "Uruchom efekty dźwięku EasyEffects")
+  ];
+
+  windowShortcuts = [
+    (shortcut "Super+Q / Super+C" "Zamknij aktywne okno")
+    (shortcut "Super+T" "Przełącz aktywne okno między floating i tiling")
+    (shortcut "Super+F" "Przełącz maksymalizację z widocznymi panelami")
+    (shortcut "Super+Shift+F" "Przełącz pełny ekran bez paneli")
+    (shortcut "Super+P" "Przełącz pseudotile aktywnego okna")
+    (shortcut "Super+S" "Zmień kierunek następnego podziału dwindle")
+    (shortcut "Super+strzałki" "Przenieś fokus między oknami")
+    (shortcut "Super+Shift+strzałki" "Przenieś aktywne okno")
+    (shortcut "Super+LPM" "Przeciągnij aktywne okno")
+    (shortcut "Super+PPM" "Zmień rozmiar aktywnego okna")
+    (shortcut "Super+Tab" "Przejdź do następnego używanego pulpitu")
+    (shortcut "Super+Shift+Tab" "Przejdź do poprzedniego używanego pulpitu")
+    (shortcut "Super+1…0" "Przejdź do pulpitu 1–10")
+    (shortcut "Super+Shift+1…0" "Przenieś okno na pulpit 1–10")
+  ];
+
+  captureShortcuts = [
+    (shortcut "Print" "Wybierz okno lub obszar i otwórz edytor Satty")
+    (shortcut "Shift+Print" "Przechwyć aktywne okno i otwórz Satty")
+    (shortcut "Ctrl+Print" "Przechwyć cały ekran i otwórz Satty")
+    (shortcut "Super+Shift+S" "Otwórz menu trybu zrzutu ekranu")
+    (shortcut "Super+Ctrl+S" "Uruchom animowany wygaszacz WOJTECH")
+    (shortcut "Satty: Enter" "Zapisz PNG, skopiuj do schowka i zamknij edytor")
+    (shortcut "Satty: Esc" "Anuluj edycję i zamknij bez zapisu")
+    (shortcut "Satty: PPM" "Zapisz, skopiuj i zamknij edytor")
+  ]
+  ++ lib.optionals screenRecordingEnabled [
+    (shortcut "Alt+Z" "Pokaż lub ukryj nakładkę GPU Screen Recorder")
+    (shortcut "Super+G" "Pokaż lub ukryj nakładkę GSR (alias)")
+    (shortcut "Super+Shift+R" "Włącz lub wyłącz bufor replay")
+    (shortcut "Super+R" "Zapisz ostatnie ${toString replayConfig.seconds} s replay")
+  ];
+
+  mediaShortcuts = [
+    (shortcut "Głośniej / ciszej" "Zmień głośność wyjścia o 5% i pokaż OSD")
+    (shortcut "Wycisz głośniki" "Przełącz wyciszenie wyjścia i pokaż OSD")
+    (shortcut "Wycisz mikrofon" "Przełącz wyciszenie mikrofonu i pokaż OSD")
+    (shortcut "Play/Pause" "Wstrzymaj lub wznów odtwarzanie przez Playerctl")
+    (shortcut "Następny / poprzedni" "Zmień utwór przez Playerctl")
+  ]
+  ++ lib.optionals (desktopFeatures.laptop or false) [
+    (shortcut "Jaśniej / ciemniej" "Zmień jasność ekranu o 5% i pokaż OSD")
+  ];
+
+  yaziShortcuts = [
+    (shortcut "Enter" "Otwórz plik albo wejdź do katalogu")
+    (shortcut "h / l lub ← / →" "Przejdź do katalogu nadrzędnego / podrzędnego")
+    (shortcut "j / k lub ↓ / ↑" "Wybierz następny / poprzedni plik")
+    (shortcut "H / L" "Wróć / przejdź dalej w historii katalogów")
+    (shortcut "Spacja" "Zaznacz plik i przejdź do następnego")
+    (shortcut "v / V" "Rozpocznij zaznaczanie / odznaczanie zakresu")
+    (shortcut "y / x" "Skopiuj / wytnij zaznaczone pliki")
+    (shortcut "p" "Wklej do wskazanego lub bieżącego katalogu")
+    (shortcut "d / D" "Przenieś do kosza / usuń bezpowrotnie")
+    (shortcut "a" "Utwórz plik; zakończ nazwę /, aby utworzyć katalog")
+    (shortcut "r" "Zmień nazwę; przy wielu plikach użyj Neovim")
+    (shortcut "." "Pokaż lub ukryj pliki ukryte")
+    (shortcut "f" "Skocz do pliku zaczynającego się od wybranego znaku")
+    (shortcut "F" "Filtruj ciągle i automatycznie wejdź w jednoznaczny wynik")
+    (shortcut "s / S" "Szukaj nazw przez fd / treści przez ripgrep")
+    (shortcut "z / Z" "Skocz przez fzf / historię katalogów Zoxide")
+    (shortcut "g c" "Pokaż pliki zmienione w bieżącym repozytorium Git")
+    (shortcut "Ctrl+D" "Porównaj zaznaczony plik ze wskazanym i skopiuj patch")
+    (shortcut "Tab" "Pokaż szczegółowe informacje o pliku")
+    (shortcut "w" "Pokaż menedżer zadań Yazi")
+    (shortcut "M" "Zamontuj, odmontuj lub wysuń nośnik")
+    (shortcut "c m" "Zmień uprawnienia zaznaczonych plików")
+    (shortcut "c l / c L" "Utwórz dowiązanie bezwzględne / względne")
+    (shortcut "T" "Pokaż lub ukryj panel podglądu")
+    (shortcut "t p" "Zmaksymalizuj lub przywróć panel podglądu")
+    (shortcut "+ / -" "Powiększ lub pomniejsz podgląd obrazu")
+    (shortcut "t t" "Otwórz nową kartę w bieżącym katalogu")
+    (shortcut "[ / ]" "Przejdź do poprzedniej / następnej karty")
+    (shortcut "1…9" "Przejdź bezpośrednio do wybranej karty")
+    (shortcut "q" "Zamknij Yazi; wrapper y może przejąć bieżący katalog")
+    (shortcut "F1 / ~" "Otwórz pełną, kontekstową pomoc Yazi")
+  ];
+
+  tmuxShortcuts = [
+    (shortcut "Ctrl+B" "Prefiks tmux; naciśnij go przed kolejnym klawiszem")
+    (shortcut "Ctrl+B, c" "Utwórz nowe okno")
+    (shortcut "Ctrl+B, n / p" "Przejdź do następnego / poprzedniego okna")
+    (shortcut "Ctrl+B, 0…9" "Przejdź do okna o podanym numerze")
+    (shortcut "Ctrl+B, ," "Zmień nazwę bieżącego okna")
+    (shortcut "Ctrl+B, &" "Zamknij bieżące okno z potwierdzeniem")
+    (shortcut "Ctrl+B, %" "Podziel panel pionowo na lewą i prawą część")
+    (shortcut "Ctrl+B, \"" "Podziel panel poziomo na górną i dolną część")
+    (shortcut "Ctrl+B, strzałki" "Przenieś fokus do sąsiedniego panelu")
+    (shortcut "Ctrl+B, Ctrl+strzałki" "Zmień rozmiar bieżącego panelu")
+    (shortcut "Ctrl+B, z" "Powiększ lub przywróć bieżący panel")
+    (shortcut "Ctrl+B, x" "Zamknij bieżący panel z potwierdzeniem")
+    (shortcut "Ctrl+B, [" "Wejdź do trybu kopiowania z klawiszami Vi")
+    (shortcut "Ctrl+B, d" "Odłącz klienta od sesji")
+    (shortcut "Ctrl+B, s" "Pokaż i wybierz sesję")
+    (shortcut "Ctrl+B, w" "Pokaż drzewo okien i paneli")
+    (shortcut "Ctrl+B, ?" "Pokaż pełną listę aktywnych skrótów tmux")
+    (shortcut "Mysz" "Wybieraj okna i panele, przewijaj oraz zmieniaj podział")
+  ];
+
+  neovimShortcuts = [
+    (shortcut "i / a" "Wejdź w tryb Insert przed / za kursorem")
+    (shortcut "Esc" "Wróć do trybu Normal")
+    (shortcut "h j k l" "Przesuń kursor w lewo, dół, górę i prawo")
+    (shortcut "w / b / e" "Skocz do następnego / poprzedniego słowa / końca słowa")
+    (shortcut "0 / ^ / $" "Skocz na początek / pierwszy znak / koniec wiersza")
+    (shortcut "gg / G" "Skocz na początek / koniec pliku")
+    (shortcut "Ctrl+D / Ctrl+U" "Przewiń o pół ekranu w dół / górę")
+    (shortcut "v / V / Ctrl+V" "Zaznacz znaki / wiersze / blok kolumnowy")
+    (shortcut "y / d / c" "Kopiuj / usuń / zmień według następnego ruchu")
+    (shortcut "yy / dd / cc" "Kopiuj / usuń / zmień cały wiersz")
+    (shortcut "p / P" "Wklej za / przed kursorem")
+    (shortcut "u / Ctrl+R" "Cofnij / ponów zmianę")
+    (shortcut "." "Powtórz ostatnią zmianę")
+    (shortcut "/tekst" "Wyszukaj tekst do przodu")
+    (shortcut "n / N" "Przejdź do następnego / poprzedniego wyniku")
+    (shortcut ":w / :q / :wq" "Zapisz / zamknij / zapisz i zamknij")
+    (shortcut ":e plik" "Otwórz plik w bieżącym buforze")
+    (shortcut ":sp / :vsp" "Podziel okno poziomo / pionowo")
+    (shortcut "Ctrl+W, h/j/k/l" "Przenieś fokus między oknami Neovim")
+    (shortcut "Ctrl+W, q / o" "Zamknij okno / pozostaw tylko bieżące")
+    (shortcut ":tabnew / gt / gT" "Utwórz kartę / przejdź dalej / wróć")
+    (shortcut ":terminal" "Otwórz terminal w buforze")
+    (shortcut ":help temat" "Otwórz dokumentację wybranego polecenia")
+    (shortcut ":map" "Pokaż aktywne mapowania klawiszy")
+  ];
+
+  powerShortcuts = [
+    (shortcut "l" "Zablokuj sesję")
+    (shortcut "u" "Uśpij komputer")
+    (shortcut "e" "Wyloguj użytkownika")
+    (shortcut "r" "Uruchom komputer ponownie")
+    (shortcut "s" "Wyłącz komputer")
+    (shortcut "Esc" "Zamknij menu zasilania bez wykonywania akcji")
+  ];
 
   tideDefaults = pkgs.runCommand "tide-declarative-defaults.fish" { } ''
-    sed -E 's/^(tide_[^ ]+)(.*)$/set -U \1\2/' \
+    # Global variables live only in the current shell. Universal variables
+    # would rewrite fish_variables every time an interactive shell starts.
+    sed -E 's/^(tide_[^ ]+)(.*)$/set -g \1\2/' \
       ${pkgs.fishPlugins.tide}/share/fish/vendor_functions.d/tide/configure/icons.fish \
       ${pkgs.fishPlugins.tide}/share/fish/vendor_functions.d/tide/configure/configs/rainbow.fish \
       > "$out"
   '';
+
+  power-menu = pkgs.writeShellApplication {
+    name = "power-menu";
+    runtimeInputs = with pkgs; [
+      hyprland
+      jq
+      wleave
+    ];
+    text = ''
+      monitor_row="$({
+        hyprctl monitors -j \
+          | jq -r '
+              (map(select(.focused == true)) + .)[0]
+              | if . == null then
+                  empty
+                else
+                  [
+                    ((.width / (.scale // 1)) | floor),
+                    ((.height / (.scale // 1)) | floor)
+                  ]
+                  | @tsv
+                end
+            '
+      } 2>/dev/null || true)"
+
+      logical_width=1280
+      logical_height=800
+      if IFS=$'\t' read -r detected_width detected_height <<< "$monitor_row" \
+        && [[ "$detected_width" =~ ^[0-9]+$ ]] \
+        && [[ "$detected_height" =~ ^[0-9]+$ ]] \
+        && (( detected_width >= 800 && detected_height >= 480 )); then
+        logical_width="$detected_width"
+        logical_height="$detected_height"
+      fi
+
+      # Keep one calm, centered row: use 84% x 32% on smaller outputs and cap
+      # it at 1240 x 320 logical pixels so large monitors do not create tiles.
+      panel_width=$((logical_width * 84 / 100))
+      panel_height=$((logical_height * 32 / 100))
+      (( panel_width > 1240 )) && panel_width=1240
+      (( panel_height > 320 )) && panel_height=320
+      margin_x=$(((logical_width - panel_width) / 2))
+      margin_y=$(((logical_height - panel_height) / 2))
+
+      # Wleave 0.7.x lets the compositor choose the output and does not accept
+      # wlogout's --no-span/--primary-monitor flags; either flag aborts startup.
+      exec wleave \
+        --buttons-per-row 5 \
+        --column-spacing 16 \
+        --margin-left "$margin_x" \
+        --margin-right "$margin_x" \
+        --margin-top "$margin_y" \
+        --margin-bottom "$margin_y"
+    '';
+  };
 
   clipboard-history = pkgs.writeShellApplication {
     name = "clipboard-history";
@@ -179,40 +409,196 @@ let
     '';
   };
 
-  hypr-bindings = pkgs.writeShellApplication {
-    name = "hypr-bindings";
+  gsr-control = pkgs.writeShellApplication {
+    name = "gsr-control";
     runtimeInputs = with pkgs; [
-      fuzzel
-      gawk
-      hyprland
+      coreutils
+      gpu-screen-recorder-ui
+      libnotify
+      procps
+      util-linux
     ];
     text = ''
-      hyprctl binds | awk '
-        function append(current, value) {
-          return current == "" ? value : current "+" value
-        }
-        function modifiers(mask, result) {
-          if (int(mask / 64) % 2) result = append(result, "SUPER")
-          if (int(mask / 8) % 2) result = append(result, "ALT")
-          if (int(mask / 4) % 2) result = append(result, "CTRL")
-          if (int(mask / 1) % 2) result = append(result, "SHIFT")
-          return result
-        }
-        /^[[:space:]]*modmask:/ { mask = $2 }
-        /^[[:space:]]*key:/ { key = $2 }
-        /^[[:space:]]*dispatcher:/ { dispatcher = $2 }
-        /^[[:space:]]*arg:/ {
-          $1 = ""
-          sub(/^[[:space:]]+/, "")
-          argument = $0
-        }
-        /^$/ && key != "" {
-          combo = modifiers(mask)
-          if (combo != "") combo = combo "+"
-          printf "%-24s %s %s\n", combo key, dispatcher, argument
-          mask = key = dispatcher = argument = ""
-        }
-      ' | sort -u | fuzzel --dmenu --prompt "Skróty: " --width 72 --lines 20
+      action="''${1:-}"
+      case "$action" in
+        replay-save|toggle-replay|toggle-show) ;;
+        *)
+          printf 'Użycie: gsr-control {toggle-show|toggle-replay|replay-save}\n' >&2
+          exit 2
+          ;;
+      esac
+
+      # Serialize a cold start so two shortcuts cannot launch competing UIs.
+      lock_file="''${XDG_RUNTIME_DIR:?}/gsr-control.lock"
+      exec 9>"$lock_file"
+      flock 9
+
+      if ! pgrep -x gsr-ui >/dev/null; then
+        gsr-ui launch-hide >/dev/null 2>&1 &
+
+        started=false
+        for _ in {1..80}; do
+          if pgrep -x gsr-ui >/dev/null; then
+            # The process appears before its control socket is always ready.
+            sleep 0.35
+            started=true
+            break
+          fi
+          sleep 0.05
+        done
+
+        if [[ "$started" != true ]]; then
+          notify-send --urgency=critical \
+            "GPU Screen Recorder" \
+            "Nie udało się uruchomić nakładki."
+          exit 1
+        fi
+      fi
+
+      if ! gsr-ui-cli "$action"; then
+        notify-send --urgency=critical \
+          "GPU Screen Recorder" \
+          "Nakładka działa, ale nie przyjęła akcji: $action."
+        exit 1
+      fi
+    '';
+  };
+
+  shortcut-menu = pkgs.writeShellApplication {
+    name = "shortcut-menu";
+    runtimeInputs = [ pkgs.fuzzel ];
+    text = ''
+      entry() {
+        printf '%-29s  %s\n' "$1" "$2"
+      }
+
+      show_system() {
+        ${renderShortcuts systemShortcuts}
+      }
+
+      show_windows() {
+        ${renderShortcuts windowShortcuts}
+      }
+
+      show_capture() {
+        ${renderShortcuts captureShortcuts}
+      }
+
+      show_media() {
+        ${renderShortcuts mediaShortcuts}
+      }
+
+      show_yazi() {
+        ${renderShortcuts yaziShortcuts}
+      }
+
+      show_tmux() {
+        ${renderShortcuts tmuxShortcuts}
+      }
+
+      show_neovim() {
+        ${renderShortcuts neovimShortcuts}
+      }
+
+      show_power() {
+        ${renderShortcuts powerShortcuts}
+      }
+
+      heading() {
+        printf '── %s ──\n' "$1"
+      }
+
+      show_all() {
+        heading "SYSTEM I APLIKACJE"
+        show_system
+        heading "OKNA I PULPITY"
+        show_windows
+        heading "ZRZUTY, SCHOWEK I NAGRYWANIE"
+        show_capture
+        heading "MULTIMEDIA I LAPTOP"
+        show_media
+        heading "YAZI"
+        show_yazi
+        heading "TMUX"
+        show_tmux
+        heading "NEOVIM"
+        show_neovim
+        heading "MENU ZASILANIA"
+        show_power
+      }
+
+      show_list() {
+        local title="$1"
+        local renderer="$2"
+
+        "$renderer" | fuzzel \
+          --dmenu \
+          --only-match \
+          --prompt "$title  ›  " \
+          --width 92 \
+          --lines 24 \
+          >/dev/null
+      }
+
+      show_category() {
+        case "$1" in
+          system) show_list "System i aplikacje" show_system ;;
+          windows) show_list "Okna i pulpity" show_windows ;;
+          capture) show_list "Zrzuty, schowek i nagrywanie" show_capture ;;
+          media) show_list "Multimedia i laptop" show_media ;;
+          yazi) show_list "Yazi" show_yazi ;;
+          tmux) show_list "tmux" show_tmux ;;
+          nvim|neovim) show_list "Neovim" show_neovim ;;
+          power) show_list "Menu zasilania" show_power ;;
+          all) show_list "Wszystkie skróty" show_all ;;
+          *)
+            printf 'Użycie: shortcut-menu [system|windows|capture|media|yazi|tmux|nvim|power|all]\n' >&2
+            return 2
+            ;;
+        esac
+      }
+
+      if [[ -n "''${1:-}" ]]; then
+        show_category "$1" || status=$?
+        exit "''${status:-0}"
+      fi
+
+      while true; do
+        category="$({
+          printf '%s\n' \
+            '󰣇  System i aplikacje' \
+            '󰖲  Okna i pulpity' \
+            '󰄀  Zrzuty, schowek i nagrywanie' \
+            '󰋋  Multimedia i laptop' \
+            '󰇥  Yazi' \
+            '  tmux' \
+            '  Neovim' \
+            '󰐥  Menu zasilania' \
+            '󰈙  Wszystkie skróty'
+        } | fuzzel \
+          --dmenu \
+          --only-match \
+          --minimal-lines \
+          --prompt 'Pomoc  ›  ' \
+          --width 46 \
+          --lines 9)" || exit 0
+
+        case "$category" in
+          *"System i aplikacje") section=system ;;
+          *"Okna i pulpity") section=windows ;;
+          *"Zrzuty, schowek i nagrywanie") section=capture ;;
+          *"Multimedia i laptop") section=media ;;
+          *"Yazi") section=yazi ;;
+          *"tmux") section=tmux ;;
+          *"Neovim") section=nvim ;;
+          *"Menu zasilania") section=power ;;
+          *"Wszystkie skróty") section=all ;;
+          *) continue ;;
+        esac
+
+        show_category "$section" || true
+        exit 0
+      done
     '';
   };
 
@@ -323,7 +709,7 @@ let
     runtimeInputs = [
       inputs.wlctl.packages.${pkgs.stdenv.hostPlatform.system}.default
       pkgs.bluetui
-      pkgs.btop
+      btopPackage
       pkgs.foot
       pkgs.util-linux
       pkgs.wiremix
@@ -371,17 +757,21 @@ let
     runtimeInputs = with pkgs; [
       coreutils
       gawk
-      scripts.display-refresh-rate
+      scripts.screensaver-refresh-rate
       terminaltexteffects
     ];
     text = ''
       cleanup() {
-        printf '\033[?25h'
+        printf '\033[?1003l\033[?1006l\033[?25h'
         jobs -pr | xargs -r kill 2>/dev/null || true
       }
       trap cleanup EXIT INT TERM HUP
 
-      printf '\033]11;#${c.background}\007\033[2J\033[H\033[?25l'
+      # Ask Foot to report every pointer movement using SGR mouse sequences.
+      # The foreground read below can then dismiss the saver on either keyboard
+      # or pointer activity without relying on Hypridle's synthetic resume event
+      # emitted while this fullscreen window is being mapped.
+      printf '\033]11;#${c.background}\007\033[2J\033[H\033[?25l\033[?1003h\033[?1006h'
 
       wait_for_terminal_resize() {
         local deadline=$((SECONDS + 2))
@@ -392,11 +782,10 @@ let
 
       wait_for_terminal_resize
 
-      refresh_rate="$(display-refresh-rate)"
-
       # TTE expresses most motion as distance or delay per rendered frame.
-      # Normalize it to wall-clock time so a 240 Hz monitor is smoother, not
-      # twice as fast as the laptop panel. Keep the effects at native speed.
+      # Normalize it to wall-clock time so a higher refresh rate is smoother,
+      # not faster. The selected rate is refreshed between effects so plugging
+      # or unplugging external power takes effect without restarting the saver.
       animation_speed() {
         awk -v value="$1" -v fps="$refresh_rate" \
           'BEGIN { printf "%.4f", value * 60 / fps }'
@@ -455,6 +844,7 @@ let
         mapfile -t shuffled_effects < <(printf '%s\n' "''${effects[@]}" | shuf)
 
         for effect in "''${shuffled_effects[@]}"; do
+          refresh_rate="$(screensaver-refresh-rate)"
           effect_args=()
           case "$effect" in
           bouncyballs)
@@ -568,15 +958,17 @@ in
       (with pkgs; [
         cliphist
         clipboard-history
-        hypr-bindings
         playerctl
+        power-menu
         screenshot-menu
         screensaver
+        shortcut-menu
         desktop-panel
         wl-clipboard
-        wlogout
       ])
-      ++ lib.optionals personalAppsEnabled [ pkgs.discord ]
+      ++ [ scripts.zen-run-or-raise ]
+      ++ lib.optionals discordEnabled [ pkgs.discord ]
+      ++ lib.optionals screenRecordingEnabled [ gsr-control ]
       ++ lib.optionals dockerEnabled [ docker-status ];
 
     sessionVariables = {
@@ -592,12 +984,15 @@ in
 
   programs.btop = {
     enable = true;
+    package = btopPackage;
     settings = {
       color_theme = "biscuit";
       theme_background = false;
       truecolor = true;
       rounded_corners = true;
       vim_keys = true;
+      show_gpu_info = "Auto";
+      shown_gpus = "amd";
     };
   };
 
@@ -617,51 +1012,51 @@ in
     interactiveShellInit = ''
       set -g fish_greeting
 
-      set -U _tide_color_dark_blue ${c.violet}
-      set -U _tide_color_dark_green ${c.green}
-      set -U _tide_color_gold ${c.yellow}
-      set -U _tide_color_green ${c.green}
-      set -U _tide_color_light_blue ${c.blue}
+      set -g _tide_color_dark_blue ${c.violet}
+      set -g _tide_color_dark_green ${c.green}
+      set -g _tide_color_gold ${c.yellow}
+      set -g _tide_color_green ${c.green}
+      set -g _tide_color_light_blue ${c.blue}
       source ${tideDefaults}
 
-      set -U tide_left_prompt_items pwd git newline character
-      set -U tide_right_prompt_items status cmd_duration jobs nix_shell time
-      set -U tide_cmd_duration_threshold 1000
-      set -U tide_cmd_duration_icon '󱎫'
-      set -U tide_git_icon ''
-      set -U tide_prompt_add_newline_before true
-      set -U tide_time_format '%H:%M'
+      set -g tide_left_prompt_items pwd git newline character
+      set -g tide_right_prompt_items status cmd_duration jobs nix_shell time
+      set -g tide_cmd_duration_threshold 1000
+      set -g tide_cmd_duration_icon '󱎫'
+      set -g tide_git_icon ''
+      set -g tide_prompt_add_newline_before true
+      set -g tide_time_format '%H:%M'
 
       # Biscuit de Mar Dark powerline palette.
-      set -U tide_pwd_bg_color ${c.accent}
-      set -U tide_pwd_color_anchors ${c.bright}
-      set -U tide_pwd_color_dirs ${c.bright}
-      set -U tide_pwd_color_truncated_dirs ${c.subtle}
-      set -U tide_git_bg_color ${c.green}
-      set -U tide_git_bg_color_unstable ${c.yellow}
-      set -U tide_git_bg_color_urgent ${c.orange}
-      set -U tide_git_color_branch ${c.background}
-      set -U tide_git_color_conflicted ${c.background}
-      set -U tide_git_color_dirty ${c.background}
-      set -U tide_git_color_operation ${c.background}
-      set -U tide_git_color_staged ${c.background}
-      set -U tide_git_color_stash ${c.background}
-      set -U tide_git_color_untracked ${c.background}
-      set -U tide_git_color_upstream ${c.background}
-      set -U tide_status_bg_color ${c.surface}
-      set -U tide_status_bg_color_failure ${c.red}
-      set -U tide_status_color ${c.green}
-      set -U tide_status_color_failure ${c.bright}
-      set -U tide_cmd_duration_bg_color ${c.yellow}
-      set -U tide_cmd_duration_color ${c.background}
-      set -U tide_jobs_bg_color ${c.selection}
-      set -U tide_jobs_color ${c.foreground}
-      set -U tide_nix_shell_bg_color ${c.violet}
-      set -U tide_nix_shell_color ${c.bright}
-      set -U tide_time_bg_color ${c.selection}
-      set -U tide_time_color ${c.foreground}
-      set -U tide_prompt_color_frame_and_connection ${c.muted}
-      set -U tide_prompt_color_separator_same_color ${c.subtle}
+      set -g tide_pwd_bg_color ${c.accent}
+      set -g tide_pwd_color_anchors ${c.bright}
+      set -g tide_pwd_color_dirs ${c.bright}
+      set -g tide_pwd_color_truncated_dirs ${c.subtle}
+      set -g tide_git_bg_color ${c.green}
+      set -g tide_git_bg_color_unstable ${c.yellow}
+      set -g tide_git_bg_color_urgent ${c.orange}
+      set -g tide_git_color_branch ${c.background}
+      set -g tide_git_color_conflicted ${c.background}
+      set -g tide_git_color_dirty ${c.background}
+      set -g tide_git_color_operation ${c.background}
+      set -g tide_git_color_staged ${c.background}
+      set -g tide_git_color_stash ${c.background}
+      set -g tide_git_color_untracked ${c.background}
+      set -g tide_git_color_upstream ${c.background}
+      set -g tide_status_bg_color ${c.surface}
+      set -g tide_status_bg_color_failure ${c.red}
+      set -g tide_status_color ${c.green}
+      set -g tide_status_color_failure ${c.bright}
+      set -g tide_cmd_duration_bg_color ${c.yellow}
+      set -g tide_cmd_duration_color ${c.background}
+      set -g tide_jobs_bg_color ${c.selection}
+      set -g tide_jobs_color ${c.foreground}
+      set -g tide_nix_shell_bg_color ${c.violet}
+      set -g tide_nix_shell_color ${c.bright}
+      set -g tide_time_bg_color ${c.selection}
+      set -g tide_time_color ${c.foreground}
+      set -g tide_prompt_color_frame_and_connection ${c.muted}
+      set -g tide_prompt_color_separator_same_color ${c.subtle}
     '';
   };
 
@@ -729,7 +1124,7 @@ in
     '';
   };
 
-  xdg.configFile."gpu-screen-recorder/config_ui" = lib.mkIf gamingEnabled {
+  xdg.configFile."gpu-screen-recorder/config_ui" = lib.mkIf screenRecordingEnabled {
     text = ''
       main.wayland_warning_shown true
       main.hotkeys_enable_option disable_hotkeys
@@ -769,93 +1164,194 @@ in
                            ▀▀▀▀▀▀
   '';
 
-  # wlogout 1.2.x expects consecutive JSON objects, not a JSON array.
-  xdg.configFile."wlogout/layout".text = builtins.concatStringsSep "\n" (map builtins.toJSON [
-    {
-      label = "lock";
-      action = "hyprlock";
-      text = "Zablokuj";
-      keybind = "l";
-    }
-    {
-      label = "suspend";
-      action = "systemctl suspend";
-      text = "Uśpij";
-      keybind = "u";
-    }
-    {
-      label = "logout";
-      action = "hyprctl dispatch exit";
-      text = "Wyloguj";
-      keybind = "e";
-    }
-    {
-      label = "reboot";
-      action = "systemctl reboot";
-      text = "Uruchom ponownie";
-      keybind = "r";
-    }
-    {
-      label = "shutdown";
-      action = "systemctl poweroff";
-      text = "Wyłącz";
-      keybind = "s";
-    }
-  ]) + "\n";
+  # Wleave stays on-demand: service mode saves a small amount of launch time,
+  # but would add an unnecessary resident GTK process to the idle session.
+  programs.wleave = {
+    enable = true;
+    settings = {
+      "button-layout" = "grid";
+      "buttons-per-row" = "1/1";
+      "column-spacing" = "16px";
+      "row-spacing" = "16px";
+      "margin-left" = "8%";
+      "margin-right" = "8%";
+      "margin-top" = "34%";
+      "margin-bottom" = "34%";
+      "close-on-lost-focus" = true;
+      "show-keybinds" = true;
+      "no-version-info" = true;
+      "delay-command-ms" = 100;
+      buttons = [
+        {
+          label = "lock";
+          action = "${pkgs.hyprlock}/bin/hyprlock";
+          text = "Zablokuj";
+          keybind = "l";
+          icon = "${pkgs.wleave}/share/wleave/icons/lock.svg";
+        }
+        {
+          label = "suspend";
+          action = "${pkgs.systemd}/bin/systemctl suspend";
+          text = "Uśpij";
+          keybind = "u";
+          icon = "${pkgs.wleave}/share/wleave/icons/suspend.svg";
+        }
+        {
+          label = "logout";
+          action = "${pkgs.uwsm}/bin/uwsm stop";
+          text = "Wyloguj";
+          keybind = "e";
+          icon = "${pkgs.wleave}/share/wleave/icons/logout.svg";
+        }
+        {
+          label = "reboot";
+          action = "${pkgs.systemd}/bin/systemctl reboot";
+          text = "Uruchom ponownie";
+          keybind = "r";
+          icon = "${pkgs.wleave}/share/wleave/icons/reboot.svg";
+        }
+        {
+          label = "shutdown";
+          action = "${pkgs.systemd}/bin/systemctl poweroff";
+          text = "Wyłącz";
+          keybind = "s";
+          icon = "${pkgs.wleave}/share/wleave/icons/shutdown.svg";
+        }
+      ];
+    };
+    style = ''
+      * {
+        font-family: "${theme.fonts.interface}";
+      }
 
-  xdg.configFile."wlogout/style.css".text = ''
-    * {
-      background-image: none;
-      font-family: "${theme.fonts.interface}";
-      font-size: 15px;
-      font-weight: 600;
-    }
+      window {
+        background-color: alpha(#${c.background}, 0.92);
+      }
 
-    window {
-      background: alpha(#${c.background}, 0.88);
-    }
+      button {
+        color: #${c.foreground};
+        background-color: alpha(#${c.surface}, 0.98);
+        border: 2px solid alpha(#${c.muted}, 0.68);
+        border-radius: 20px;
+        margin: 0;
+        padding: 18px 14px;
+        box-shadow: 0 10px 32px alpha(#${c.background}, 0.76);
+        outline-style: none;
+        transition: 150ms ease-in-out;
+      }
 
-    button {
-      color: #${c.foreground};
-      background-color: alpha(#${c.surface}, 0.96);
-      border: 1px solid alpha(#${c.muted}, 0.72);
-      border-radius: 18px;
-      margin: 12px;
-      background-repeat: no-repeat;
-      background-position: center;
-      background-size: 72px;
-      box-shadow: 0 8px 28px alpha(#${c.background}, 0.70);
-      transition: 150ms ease-in-out;
-    }
+      button image {
+        -gtk-icon-size: 68px;
+      }
 
-    button:hover,
-    button:focus {
-      color: #${c.bright};
-      background-color: #${c.selection};
-      border-color: #${c.accent};
-      box-shadow: inset 0 -4px #${c.accent};
-    }
+      button label.action-name {
+        color: #${c.foreground};
+        font-size: 16px;
+        font-weight: 700;
+      }
 
-    #lock {
-      background-image: url("${pkgs.wlogout}/share/wlogout/icons/lock.png");
-    }
+      button label.keybind {
+        color: #${c.subtle};
+        font-family: "${theme.fonts.monospace}";
+        font-size: 13px;
+        font-weight: 700;
+        opacity: 0.78;
+      }
 
-    #suspend {
-      background-image: url("${pkgs.wlogout}/share/wlogout/icons/suspend.png");
-    }
+      button:hover,
+      button:focus,
+      button:active {
+        background-color: #${c.selection};
+      }
 
-    #logout {
-      background-image: url("${pkgs.wlogout}/share/wlogout/icons/logout.png");
-    }
+      button:hover label.action-name,
+      button:focus label.action-name,
+      button:active label.action-name {
+        color: #${c.bright};
+      }
 
-    #reboot {
-      background-image: url("${pkgs.wlogout}/share/wlogout/icons/reboot.png");
-    }
+      button:hover label.keybind,
+      button:focus label.keybind,
+      button:active label.keybind {
+        opacity: 1;
+      }
 
-    #shutdown {
-      background-image: url("${pkgs.wlogout}/share/wlogout/icons/shutdown.png");
-    }
-  '';
+      #lock {
+        color: #${c.violet};
+      }
+
+      #lock:hover,
+      #lock:focus,
+      #lock:active {
+        border-color: #${c.violet};
+        box-shadow: inset 0 -4px #${c.violet};
+      }
+
+      #lock label.keybind {
+        color: #${c.violet};
+      }
+
+      #suspend {
+        color: #${c.green};
+      }
+
+      #suspend:hover,
+      #suspend:focus,
+      #suspend:active {
+        border-color: #${c.green};
+        box-shadow: inset 0 -4px #${c.green};
+      }
+
+      #suspend label.keybind {
+        color: #${c.green};
+      }
+
+      #logout {
+        color: #${c.accent};
+      }
+
+      #logout:hover,
+      #logout:focus,
+      #logout:active {
+        border-color: #${c.accent};
+        box-shadow: inset 0 -4px #${c.accent};
+      }
+
+      #logout label.keybind {
+        color: #${c.accent};
+      }
+
+      #reboot {
+        color: #${c.orange};
+      }
+
+      #reboot:hover,
+      #reboot:focus,
+      #reboot:active {
+        border-color: #${c.orange};
+        box-shadow: inset 0 -4px #${c.orange};
+      }
+
+      #reboot label.keybind {
+        color: #${c.orange};
+      }
+
+      #shutdown {
+        color: #${c.red};
+      }
+
+      #shutdown:hover,
+      #shutdown:focus,
+      #shutdown:active {
+        border-color: #${c.red};
+        box-shadow: inset 0 -4px #${c.red};
+      }
+
+      #shutdown label.keybind {
+        color: #${c.red};
+      }
+    '';
+  };
 
   xdg.userDirs = {
     enable = true;

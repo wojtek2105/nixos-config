@@ -1,0 +1,22 @@
+SCENE 18 — OFFSITE UNDER FIRST SNOW
+
+Original visual language: authentic Valheim low-poly painterly game art with
+rough timber, stone, cold weather, survival tools and original fully clothed
+Viking characters. Richer light and texture may polish it, but preserve the
+recognizable Valheim geometry and atmosphere.
+
+Use exactly three major props. First, a Proxmox Backup Server loom accepts one
+VM snapshot chest and visibly combines deduplication with a compact retention
+rack. Second, a longship carries one encrypted offsite chest. Third, an isolated
+test hut contains the restored VM miniature, one checksum seal and one service
+lamp. An anxious archivist becomes relieved only when both seal and lamp turn
+healthy. The visible flow is only snapshot -> PBS/retention -> offsite copy ->
+isolated restore and service test. Short runes may read "PBS", "offsite",
+"restore" and "OK" on physical objects. No extra backup copies, modern rack,
+dashboard or untested decorative chest.
+
+Exactly one crossover: Ciri's swallow medallion is carved on the offsite chest.
+Gather characters, three props, tracked chest and carving naturally to the
+right of centre. Snowy shore, longhouse and black pines form one continuous
+Valheim landscape across the panorama with coherent low-poly geometry and
+painterly winter light.

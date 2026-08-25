@@ -7,6 +7,12 @@ Ten katalog opisuje stan konfiguracji, sposób jej obsługi oraz plan rozbudowy.
 - [Architektura](architecture.md) — struktura flake, moduły i przepływ opcji.
 - [Obsługa systemu](operations.md) — sprawdzanie, budowanie, aktywacja i diagnostyka.
 - [Pulpit](desktop.md) — Hyprland, aplikacje, dark mode i usługi sesji.
+- [Granie i GameMode](gaming.md) — ustawienie opcji uruchamiania Steam,
+  weryfikacja GameMode oraz wariant z Gamescope.
+- [Benchmarki](benchmarks.md) — historyczne wyniki pulpitu oraz powtarzalne
+  porównanie EEVDF, bpfland, LAVD i Flash dla CPU, z opcjonalną diagnostyką GPU.
+- [Wyniki benchmarków](benchmark-results/README.md) — katalog raportów Markdown,
+  CSV, metadanych i pełnych logów z kolejnych sesji.
 - [Skróty klawiszowe](keybindings.md) — kompletna mapa skrótów.
 - [Replay](replay.md) — konfiguracja bufora GPU Screen Recorder.
 - [Host](hosts.md) — konfiguracja laptopa ROG.

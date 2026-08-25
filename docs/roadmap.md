@@ -13,7 +13,14 @@ kończyć się `nix flake check` oraz pełnym buildem dotkniętych hostów.
 - [ ] Przetestować jakość replay w dynamicznej grze przy 2560x1600.
 - [ ] Sprawdzić kolejność i synchronizację trzech ścieżek audio.
 - [ ] Usunąć przejściowe aliasy skrótów po utrwaleniu nowego układu.
-- [ ] Okresowo sprawdzać listę pakietów i usuwać nieużywane zależności.
+- [x] Przeprowadzić audyt pakietów, wydzielić opcjonalne funkcje i usunąć
+      domyślne narzędzia diagnostyczne GPU; audyt okresowo powtarzać.
+
+## Znane problemy
+
+- Poprawka wygaszacza ignorująca fałszywe wznowienie przy otwarciu okna czeka
+  na aktywację i ręczne potwierdzenie. Trzeba również sprawdzić późniejszą
+  blokadę oraz wyłączenie ekranu na zasilaczu i baterii.
 
 ## Osobny host PC
 
@@ -24,9 +31,13 @@ kończyć się `nix flake check` oraz pełnym buildem dotkniętych hostów.
 
 ## Pulpit
 
+- [ ] Automatycznie przełączać częstotliwość odświeżania wbudowanego monitora:
+      60 Hz podczas pracy z baterii i maksymalna dostępna wartość po podłączeniu
+      zasilania zewnętrznego.
 - [ ] Wybrać pełnego klienta kalendarza z obsługą CalDAV.
 - [ ] Rozważyć scratchpad dla terminala lub odtwarzacza muzyki.
-- [ ] Dodać czytelne opisy skrótów bezpośrednio do konfiguracji Hyprlanda.
+- [x] Dodać przeszukiwalne centrum skrótów z czytelnymi opisami pulpitu,
+      nagrywania, Yazi, tmux, Neovim i menu zasilania.
 
 ## Replay
 
@@ -36,6 +47,8 @@ kończyć się `nix flake check` oraz pełnym buildem dotkniętych hostów.
 
 ## Utrzymanie
 
+- [ ] Przeprowadzić pełny przegląd i porządki w całym `nixos-config`: usunąć
+      zbędne pliki, nieużywaną konfigurację, martwy kod i pozostałe śmieci.
 - [ ] Dodać formatter Nix i kontrolę formatowania.
 - [ ] Dodać automatyczne sprawdzanie flake w CI po udostępnieniu repozytorium Git.
 - [ ] Wprowadzić deklaratywne zarządzanie sekretami przed dodaniem jakichkolwiek

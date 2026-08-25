@@ -3,7 +3,7 @@
 Deklaratywna konfiguracja NixOS dla hosta `rog-polamaniec`, oparta na flakes,
 Home Managerze i Hyprlandzie.
 
-Repozytorium źródłowe: `https://gitea.wardyn.dev/wojtek/nix-config.git`.
+Repozytorium źródłowe: `https://github.com/wojtek2105/nixos-config.git`.
 
 ## Szybki start
 
@@ -13,13 +13,16 @@ nix build path:.#nixosConfigurations.rog-polamaniec.config.system.build.toplevel
 sudo nixos-rebuild test --flake path:.#rog-polamaniec
 ```
 
-Output `rog-polamaniec` używa wyłącznie Ironbara. Historyczne wyniki Waybara i
-Noctalii pozostają w dokumentacji do porównań:
+Output `rog-polamaniec` używa wyłącznie Ironbara:
 
 ```bash
 make test
-make benchmark SECONDS=120
 ```
+
+Historyczne wyniki porównania Ironbara, Waybara i Noctalii oraz uruchamiany na
+żądanie benchmark schedulerów znajdują się w
+[docs/benchmarks.md](docs/benchmarks.md). Narzędzia pomiarowe nie trafiają do
+aktywnej konfiguracji systemu.
 
 Po sprawdzeniu konfiguracji:
 

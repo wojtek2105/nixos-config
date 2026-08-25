@@ -46,6 +46,10 @@ in
         "browser.theme.toolbar-theme" = 0;
         "layout.css.prefers-color-scheme.content-override" = 0;
         "ui.systemUsesDarkTheme" = 1;
+        # Restore the session structure immediately, but defer page processes
+        # and network work until a regular or pinned tab is selected.
+        "browser.sessionstore.restore_on_demand" = true;
+        "browser.sessionstore.restore_pinned_tabs_on_demand" = true;
         "zen.urlbar.behavior" = "float";
         "zen.view.compact.enable-at-startup" = false;
       };

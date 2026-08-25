@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This repository defines one NixOS system through a flake. `flake.nix` declares `rog-polamaniec` under `nixosConfigurations`, while `flake.lock` pins the `nixpkgs` revision. Machine-specific settings live in `hosts/rog-polamaniec/configuration.nix`; generated hardware settings belong in `hosts/rog-polamaniec/hardware-configuration.nix`. Reusable concerns live in `modules/`: `common.nix` provides baseline packages and locale settings, while `desktop.nix`, `development.nix`, and `gaming.nix` group optional capabilities. Keep secrets and machine credentials out of Nix files and Git.
+This repository defines one NixOS system through a flake. `flake.nix` declares `rog-polamaniec` under `nixosConfigurations`, while `flake.lock` pins the `nixpkgs` revision. Machine-specific settings live in `hosts/rog-polamaniec/configuration.nix`; generated hardware settings belong in `hosts/rog-polamaniec/hardware-configuration.nix`. Reusable concerns live in `modules/`: `common.nix` provides baseline packages and locale settings, while small modules such as `desktop.nix`, `docker.nix`, `gaming.nix`, and `screen-recording.nix` group optional capabilities. Keep secrets and machine credentials out of Nix files and Git.
 
 ## Build, Test, and Development Commands
 
@@ -13,6 +13,10 @@ This repository defines one NixOS system through a flake. `flake.nix` declares `
 - `nix flake update` refreshes locked inputs; review `flake.lock` changes carefully.
 
 Run commands from the repository root.
+
+The user owns all build and test execution. Do not run validation commands such
+as `nix flake check`, `nix build`, or `nixos-rebuild`; after making changes,
+only report the commands the user may run and wait for their validation.
 
 ## Coding Style & Naming Conventions
 

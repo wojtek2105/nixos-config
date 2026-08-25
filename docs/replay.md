@@ -1,8 +1,9 @@
 # Replay
 
 GPU Screen Recorder UI zapewnia pełnoekranową nakładkę podobną do ShadowPlay.
-Nakładka startuje ukryta razem z Hyprlandem. Bufor jest domyślnie wyłączony i nie
-koduje obrazu, dopóki użytkownik go nie uruchomi.
+Nakładka nie zajmuje pamięci po zalogowaniu: pierwszy skrót uruchamia ją ukrytą,
+czeka na gotowość i dopiero wykonuje wybraną akcję. Bufor jest domyślnie
+wyłączony i nie koduje obrazu, dopóki użytkownik go nie uruchomi.
 
 ## Sterowanie
 
@@ -23,7 +24,7 @@ gsr-ui-cli --help
 ## Profil laptopa
 
 - natywna rozdzielczość ekranu `2560x1600`,
-- źródło obrazu `eDP-2`, zgodne z nazwą matrycy zgłaszaną przez GSR,
+- źródło obrazu `focused_monitor`, wybierające monitor aktywny przy starcie bufora,
 - 60 FPS,
 - bufor 120 sekund w RAM,
 - HEVC/H.265,
@@ -46,15 +47,18 @@ Pliki są zapisywane w `~/Videos/Replays`.
 
 ## Implementacja deklaratywna
 
-- pakiet: `modules/gaming.nix`,
+- pakiet: `modules/screen-recording.nix`,
 - profil laptopa: `hosts/rog-polamaniec/configuration.nix`,
-- autostart i skróty: `home/wojtek/hyprland.nix`,
+- kontroler uruchamiania na żądanie: `gsr-control` w `home/wojtek/default.nix`,
+- skróty: `home/wojtek/hyprland.nix`,
 - konfiguracja nakładki: `home/wojtek/default.nix`.
 
 Plik `~/.config/gpu-screen-recorder/config_ui` jest generowany przez Home Manager.
 Oficjalne globalne skróty UI są wyłączone, aby nakładka nie przechwytywała całej
 klawiatury i nie kolidowała ze zrzutami ekranu Hyprlanda. Te same akcje wywołuje
-Hyprland przez `gsr-ui-cli`.
+Hyprland przez `gsr-control`, który po uruchomieniu UI deleguje je do
+`gsr-ui-cli`. Blokada w katalogu runtime zapobiega uruchomieniu dwóch nakładek,
+gdy kilka skrótów zostanie użytych podczas zimnego startu.
 
 Sama nakładka działa przez XWayland i upstream ostrzega, że nie wszystkie jej
 elementy są idealnie obsługiwane na Waylandzie. Nie oznacza to braku obsługi

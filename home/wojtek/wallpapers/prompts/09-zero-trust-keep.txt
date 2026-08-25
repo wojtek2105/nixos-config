@@ -1,0 +1,18 @@
+SCENE 09 — ZERO TRUST KEEP
+
+Original visual language: The Witcher 3 game cinematic using canonical Ciri,
+Yennefer and Geralt in their recognizable default game wardrobe and equipment.
+
+Use three major props. One Authentik identity gate accepts Ciri's hardware MFA
+key and issues Yennefer one short-lived violet seal with a visibly narrow scope.
+That seal opens only one least-privilege corridor guarded by Geralt, then fades
+and expires at its end. One stolen old seal fails at the identity gate. The
+visible flow is only access request -> Authentik/MFA -> scoped short token ->
+allowed corridor or expiry. Do not add Keycloak, Authelia, OAuth diagrams or a
+catalog of identity products.
+
+Exactly one crossover: the hardware key is engraved with Frieren's staff
+silhouette. Gather the complete trio, identity gate, scoped corridor, failed
+old seal and key naturally to the right of centre. The keep's halls, stairs and
+barred recesses form one continuous architectural space across the panorama,
+sharing perspective, material scale and practical light.

@@ -1,0 +1,17 @@
+SCENE 04 — REFLOG BY RIVER STONES
+
+Original visual language: quiet, melancholic Frieren anime background art.
+Frieren, Fern and Stark remain canonical and wear their default travel gear.
+
+At a moonless river, Frieren retrieves one lost memory stone from a false
+current, Fern seals the recovered branch and Stark builds a stable bank. A
+short sequence of wet stones physically forms Git reflog history. Use only the
+small engravings "HEAD@{1}", "b15c017" and "rescue". A tempting stone marked
+"reset --hard" disappears beneath a waterfall, while the recovered stone joins
+a newly signed branch. No diagrams or floating arrows.
+
+Exactly one crossover: a subtle Solo Leveling shadow crown appears only as a
+reflection in the recovered wet stone. Gather all three characters, the
+complete recovery path and reflection naturally to the right of centre. One
+continuous riverbank of black water, reeds and low rocks crosses the full
+panorama with coherent perspective and faint bounced violet and amber light.

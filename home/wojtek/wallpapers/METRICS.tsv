@@ -1,0 +1,4 @@
+scene	aspect	dimensions	black_point_pct	exact_black_pct	near_black_pct	mean_luma_pct	status
+14	16x9	2560x1440	3.25	35.13	58.73	4.31	OK
+14	21x9	3440x1440	3.75	40.40	62.54	3.41	OK
+14	32x9	5120x1440	2.00	37.34	63.42	3.06	OK

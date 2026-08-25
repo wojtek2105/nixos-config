@@ -1,0 +1,21 @@
+SCENE 08 — LOGWOOD TRACE
+
+Original visual language: The Witcher 3 game cinematic with canonical game
+Yennefer and Geralt, never television likenesses. Preserve Yennefer's raven
+curls, violet eyes, black-and-white default wardrobe and obsidian star;
+preserve Geralt's white hair, scars, cat eyes, armor, medallion and two swords.
+
+In a dark forest, one failing request begins as a tiny OpenTelemetry trace-id
+rune. It binds three types of spoor: Prometheus metric beads, Loki log cuts in
+bark and a Tempo trace thread. One compact Grafana-like alchemical instrument
+correlates them into the same narrow gate; a small Sentry case folio records the
+resulting exception and context. Yennefer identifies the real bottleneck,
+Geralt removes it, then the same instrument turns healthy green. A loud red
+alert leading to an empty hollow is the false lead, so volume alone never wins.
+This is one request-to-diagnosis-to-fix-to-verification story, not five logos.
+
+Exactly one crossover: a small recognizable Pal plush is tied behind Roach's
+saddle. Gather Yennefer, Geralt, the three signals, false lead, real bottleneck
+and plush naturally to the right of centre. Twisted trunks and roots continue
+through one uninterrupted Witcher 3 forest panorama with consistent materials,
+fog, perspective and camera language.

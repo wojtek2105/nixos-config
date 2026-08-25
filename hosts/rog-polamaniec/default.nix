@@ -14,31 +14,50 @@
   # Aby użyć istniejącego profilu bez kopiowania, można odkomentować np.:
   # homeProfile = "wojtek";
 
-  # Funkcje interfejsu użytkownika zależne od możliwości danego komputera.
-  # `true` włącza daną integrację w konfiguracji Home Managera użytkownika.
-  desktopFeatures = {
+  # Jedna mapa możliwości steruje zarówno modułami NixOS, jak i odpowiadającą
+  # im integracją Home Managera. Wyłączenie funkcji usuwa więc także pakiety,
+  # zamiast jedynie ukrywać jej elementy pulpitu.
+  features = {
     # Pokazuje w Ironbarze metryki rdzenia GPU, VRAM-u i temperatury AMD.
     # Nie instaluje sterownika — konfiguracja sprzętu pozostaje w module hosta.
-    amdGpu = true;
+    amdGpuMetrics = true;
 
-    # Dodaje do pulpitu status Dockera, panel lazydocker i powiązane skróty.
-    # Nie uruchamia automatycznie demona Docker.
+    # Instaluje ręcznie uruchamiany Docker, Compose, lazydocker i lazyssh oraz
+    # dodaje status i panel Dockera do pulpitu. Daemon nie startuje przy boot.
     docker = true;
 
-    # Włącza integrację GPU Screen Recorder: replay, autostart UI i skróty.
-    # Pakiety oraz ustawienia systemowe do gier nadal zapewnia modules/gaming.nix.
+    # Instaluje Steam, Proton-GE, Gamescope i GameMode wraz z potrzebnymi
+    # bibliotekami grafiki i dźwięku 32-bit oraz uruchamia scheduler SCX
+    # nastawiony na responsywny pulpit i stabilne czasy klatek.
     gaming = true;
+
+    # Instaluje GPU Screen Recorder i dodaje skróty replay. UI uruchamia się
+    # dopiero przy pierwszym użyciu, więc nie zajmuje pamięci po zalogowaniu.
+    screenRecording = true;
+
+    # Narzędzia vainfo, radeontop i vulkaninfo są potrzebne tylko przy ręcznej
+    # diagnostyce GPU. Btop i Ironbar pokrywają codzienny monitoring.
+    hardwareDiagnostics = false;
+
+    # Opcjonalny harness porównujący EEVDF, bpfland, LAVD i Flash. Włączenie
+    # instaluje narzędzia testowe, ale nie uruchamia usługi ani benchmarku.
+    # Na co dzień pozostaje false; bez instalacji można użyć aplikacji flake.
+    schedulerBenchmark = false;
 
     # Dodaje elementy laptopowe: baterię, jasność i klawisze regulacji ekranu.
     laptop = true;
 
-    # Włącza prywatne aplikacje i skróty, np. Discord, Plexamp i EasyEffects.
-    personalApps = true;
+    # Każdą większą aplikację można wyłączyć niezależnie bez zmiany profilu.
+    personalApps = {
+      discord = true;
+      easyeffects = true;
+      plexamp = true;
+    };
   };
 
   # Nazwa urządzenia podświetlenia w /sys/class/backlight. Sprawdzisz ją przez:
   #   brightnessctl --list
-  # Wartość jest używana tylko wtedy, gdy `desktopFeatures.laptop = true`.
+  # Wartość jest używana tylko wtedy, gdy `features.laptop = true`.
   backlightDevice = "amdgpu_bl2";
 
   # Źródło obrazu dla replay GPU Screen Recorder.

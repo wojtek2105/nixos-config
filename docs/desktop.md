@@ -14,18 +14,49 @@ przez Hyprlanda jako `This config is a STUB`, aby nie mógł przejąć kolejnej 
 
 - Hyprland uruchamiany przez UWSM,
 - Greetd i Tuigreet,
+- Wleave jako uruchamiane na żądanie menu zasilania,
 - Foot,
 - Fuzzel,
 - Ironbar jako jedyny panel pulpitu,
 - SwayNC jako usługa użytkownika systemd,
 - SwayOSD dla zmian głośności, mikrofonu i jasności,
-- Thunar,
+- Yazi jako domyślny menedżer plików oraz Thunar jako awaryjny interfejs GUI,
 - Hyprlock i Hypridle,
 - Awww jako backend tapety,
 - MPV z uosc i thumbfast jako lekki podgląd obrazów i odtwarzacz wideo,
 - Zen Twilight jako domyślna przeglądarka.
 - animowany wygaszacz inspirowany Omarchy, z napisem `WOJTECH`.
 - CommitMono Nerd Font z kolorowymi emoji.
+
+## Wejście i zakończenie sesji
+
+Greetd zachowuje automatyczne uruchomienie pierwszej sesji po starcie systemu.
+Po świadomym wylogowaniu pokazuje Tuigreet na czystym VT1, bez komunikatów
+bootowania rysowanych na formularzu. Widok ma jeden zwarty kontener o szerokości
+54 znaków: najpierw tytuł i sekwencję `RED > GREEN > REFACTOR` z nazwą hosta,
+potem polską datę z godziną, użytkownika i pole hasła z widocznymi kropkami.
+Paleta 16 kolorów konsoli pochodzi bezpośrednio z `theme.nix`, dlatego role ANSI
+Tuigreet odpowiadają rzeczywistym barwom Biscuit: róż prowadzi fokus i skróty,
+żółty opisuje czas oraz pola, a czarne tło utrzymuje niski poziom jasności.
+
+Za formularzem płynie spokojna animacja `matrix` inspirowana cyklem TDD:
+zielone czoła strumieni oznaczają przechodzący test, róż aktywny etap, a ciemny
+czerwono-brązowy ślad wcześniejszy błąd. Działa przy 12 FPS, z krótkimi
+strumieniami i wolnym ruchem, wyłącznie gdy Tuigreet faktycznie czeka po
+wylogowaniu; nie dodaje procesu do normalnej sesji ani do autologowania.
+Tuigreet udostępnia również wybór użytkownika, sesji i polecenia oraz menu
+wyłączenia i restartu pod `F12`.
+
+`Super+Escape` i `Super+Shift+E` uruchamiają wrapper `power-menu`, który otwiera
+Wleave na aktualnie aktywnym monitorze. Pięć równych kafli mieści się w jednym,
+wycentrowanym rzędzie zajmującym na mniejszych ekranach około 84% szerokości i
+32% wysokości; na dużych wyjściach rozmiar jest ograniczony do `1240×320`
+logicznych pikseli. Każdy kafel stale pokazuje opis i klawisz akcji. Fokus ma
+kolor funkcji: fiolet dla blokady, zieleń dla uśpienia, róż dla wylogowania,
+pomarańcz dla restartu i czerwień dla wyłączenia. `Esc` zawsze zamyka widok bez
+akcji. Wylogowanie zatrzymuje sesję przez `uwsm stop`, dzięki czemu aplikacje i
+jednostki użytkownika kończą się przed kompozytorem, a Greetd może bezpiecznie
+wrócić do Tuigreet.
 
 ## Terminal i powłoka
 
@@ -37,7 +68,16 @@ przez Hyprlanda jako `This config is a STUB`, aby nie mógł przejąć kolejnej 
 
 Konfiguracja nie korzysta z Fishera ani instalatorów uruchamianych poza Nixem.
 Tide pochodzi z `pkgs.fishPlugins.tide`, a jego powerline'owy motyw Biscuit de
-Mar Dark jest generowany przez Home Manager.
+Mar Dark jest generowany przez Home Manager. Ustawienia promptu mają zasięg
+bieżącej powłoki, więc start nowego Fisha nie zapisuje ponownie uniwersalnych
+zmiennych w `fish_variables`.
+
+`Super+F1` otwiera przeszukiwalne centrum pomocy Fuzzel. Najpierw wybiera się
+sekcję pulpitu albo aplikację, a następnie otrzymuje opisaną mapę klawiszy.
+Menu obejmuje wszystkie deklarowane skróty Hyprlanda, w tym opcjonalny GPU
+Screen Recorder i klawisze laptopa, oraz najważniejsze mapy Yazi, tmux, Neovim
+i Wleave. Te same widoki można wywołać z terminala, np. przez
+`shortcut-menu yazi`, `shortcut-menu tmux` albo `shortcut-menu nvim`.
 
 ## Skalowanie
 
@@ -47,10 +87,11 @@ Animacje Hyprlanda są synchronizowane przez kompozytor z aktywnym trybem
 monitora. Awww odczytuje przy uruchomieniu rzeczywiste `refreshRate` z
 `hyprctl monitors -j`; laptop używa więc 120 Hz, a przyszły monitor 240 Hz
 automatycznie dostanie przejście 240 FPS bez parametru specyficznego dla hosta.
-Tekstowy wygaszacz używa tej samej częstotliwości, ale prędkości ruchu i czasy
-trwania efektów są przeliczane względem liczby klatek. Dzięki temu 240 Hz daje
-większą płynność, a nie dwa razy szybszą animację; tempo jest celowo spowolnione
-około 6 razy względem domyślnych efektów TTE.
+Tekstowy wygaszacz używa pełnej częstotliwości monitora przy zasilaniu
+zewnętrznym, a na baterii ogranicza renderowanie do 60 FPS. Stan zasilania jest
+sprawdzany ponownie między efektami. Prędkości ruchu i czasy trwania są
+przeliczane względem wybranej liczby klatek, więc zmienia się płynność i pobór
+energii, ale nie tempo animacji.
 
 XWayland nie skaluje aplikacji bitmapowo (`force_zero_scaling = true`). Steam
 dostaje własną skalę interfejsu 2× przez `STEAM_FORCE_DESKTOPUI_SCALING`, dzięki
@@ -74,27 +115,55 @@ Dark mode jest deklaratywny:
 - ikony `papirus-biscuit-dark`,
 - kursor `Bibata-Modern-Amber` w GTK i Hyprcursor.
 
-Foot, Fish/Tide, tmux, nvim, btop, Lazygit, Fuzzel, Ironbar, MPV/uosc,
-SwayNC, Zen, Hyprland, Hyprlock, wlogout i wygaszacz korzystają z tej samej palety
+Foot, Fish/Tide, tmux, nvim, btop, Lazygit, Yazi, Fuzzel, Ironbar, MPV/uosc,
+SwayNC, Zen, Hyprland, Hyprlock, Wleave i wygaszacz korzystają z tej samej palety
 generowanej przez Home Managera.
 
-Awww ustawia przypiętą w `flake.lock` tapetę `4-copper-arc.png` z adaptacji
-Biscuit dla Omarchy. Przejście tapety używa częstotliwości odświeżania
-zadeklarowanej dla hosta.
+Awww jest przygotowany na nową kolekcję Biscuit OLED v3. Po pełnym resecie nie
+ma jeszcze zaakceptowanej sceny; trzy listy rotatora wskazują tymczasowo na
+techniczne, czyste czarne fallbacki o właściwych proporcjach. Docelowe 22
+tapety dzielą się na Frieren, Wiedźmina 3, Palworld, V Rising, Valheim i
+Chainsaw Man, zachowując oryginalny język wizualny każdego świata. Cały core
+sceny skupia się w prawym 36% źródła, natomiast dodatkowa szerokość monitorów
+ultrawide odsłania foreground, midground i background tej samej lokacji.
+Perspektywa, materiały, AO/GI i słabsze światło odbite pozostają ciągłe; nie ma
+gradientowej maski, blurra ani doklejonej czerni. Spokojna góra nie konkuruje z
+Ironbarem, a małe źródła światła utrzymują niski średni poziom jasności OLED.
+Kierunek artystyczny opisuje
+[wallpapers/CONCEPTS.md](../home/wojtek/wallpapers/CONCEPTS.md), natomiast
+[wallpapers/INVENTORY.md](../home/wojtek/wallpapers/INVENTORY.md) przechowuje
+zweryfikowane szczegóły każdego pliku.
+
+Każda scena ma zsynchronizowane warianty 32:9 DQHD `5120×1440`, 21:9 UWQHD
+`3440×1440` i 16:9 WQHD `2560×1440`. Przy każdym uruchomieniu rotatora skrypt
+odczytuje rzeczywistą geometrię aktywnych wyjść z Hyprlanda i osobno przekazuje
+do Awww najbliższą rodzinę proporcji. Monitor 16:9 dostaje wyłącznie plik z
+`16x9/`, ultrawide około 3440:1440 plik z `21x9/`, a 32:9 plik z `32x9/`.
+Indeks sceny pozostaje wspólny, dlatego różne monitory pokazują jednocześnie
+ten sam motyw w prawidłowym kadrze. Każde wyjście używa również własnej
+rzeczywistej częstotliwości odświeżania przejścia.
 
 ## Autostart sesji
 
 Usługi użytkownika systemd uruchamiają Ironbar, SwayNC, SwayOSD, Awww i
 Hypridle.
-Awww rotuje cztery tapety Biscuit co pięć minut. Krótkotrwały timer używa
-przejścia `wave` o drobnej geometrii `12×12`, z liczbą klatek pobieraną z
-częstotliwości monitora; poza zmianą tapety nie wykonuje żadnej pracy.
-Hyprland po starcie sesji ustawia tapetę przez działający daemon Awww oraz
-uruchamia:
+Awww rotuje aktualnie dostępne tapety Biscuit co pięć minut. Krótkotrwały timer przeplata fale,
+okrągłe rozwinięcia i zwinięcia oraz ukośne odsłonięcia; kierunek, punkt startu
+i geometria fali zmieniają się deterministycznie razem z indeksem tapety.
+Zwykły `fade` nie jest używany. Każde przejście trwa 2,4 sekundy, ma łagodne
+wyhamowanie i pobiera liczbę klatek osobno z pełnej częstotliwości każdego
+monitora; poza
+zmianą tapety daemon nie wykonuje pracy animacji. Pierwsze wywołanie następuje
+dwie sekundy po starcie sesji, gdy daemon Awww jest już gotowy; ponieważ
+wcześniej nie dostał obrazu, pierwsza tapeta rozwija się okręgiem od środka.
+Hyprland uruchamia również:
 
 - obserwatory tekstu i obrazów dla `cliphist`,
-- agent uwierzytelniania Polkit,
-- ukrytą nakładkę GPU Screen Recorder UI.
+- agent uwierzytelniania Polkit.
+
+GPU Screen Recorder UI uruchamia się dopiero przy pierwszym skrócie nagrywania.
+Eliminuje to stały koszt procesu po zalogowaniu, a `gsr-control` serializuje zimny
+start i przekazuje żądaną akcję, gdy nakładka jest gotowa.
 
 Sterownik `amdgpu` jest ładowany już w initrd. Zapobiega to wyścigowi podczas
 startu, w którym Hyprland widział tylko `simpledrm` i kończył pracę komunikatem
@@ -106,9 +175,13 @@ startu, w którym Hyprland widział tylko `simpledrm` i kończył pracę komunik
   prawdziwe, ciągłe i zaokrąglone pionowe słupki z odstępami; każda grupa ma
   jedną dużą ikonę zasobu, a proste znaki w słupkach opisują ich znaczenie:
   użycie/temperaturę, pobieranie/wysyłanie, odczyt/zapis oraz rdzeń/VRAM; CPU
-  pokazuje użycie/temperaturę, RAM pamięć oraz
-  opcjonalny swap tylko wtedy, gdy jest skonfigurowany, sieć
+  pokazuje użycie/temperaturę, a grupa pamięci ma osobne słupki użycia RAM,
+  logicznego zapełnienia ZRAM i rzeczywistej oszczędności dzięki kompresji; sieć
   pobieranie/wysyłanie, dysk zajętość/odczyt/zapis, a GPU rdzeń/VRAM/temperaturę,
+- widget GPU sprawdza stan runtime PM bez wybudzania karty; gdy dGPU jest
+  uśpiona, nie odczytuje jej czujników ani VRAM-u i zamiast słupków pokazuje
+  `Zz`; podczas aktywności próbkuje sprzęt najwyżej co 7 sekund, pozostawiając
+  sterownikowi pełne okno na autosuspend,
 - transfer sieci i dysku ma adaptacyjną, wspólną dla obu kierunków skalę z
   minimum odpowiednio 10 MiB/s i 100 MiB/s; zakres rośnie natychmiast z 25%
   zapasu, utrzymuje szczyt przez 30 sekund, a następnie opada łagodnie z
@@ -119,14 +192,33 @@ startu, w którym Hyprland widział tylko `simpledrm` i kończył pracę komunik
   wyraźnymi separatorami w kolorze funkcji, zachowując osobne kliknięcia i
   szczegóły; RAM ma jednoznaczną ikonę modułu pamięci, a powtarzalny symbol
   użycia jest taki sam dla CPU, RAM, zajętości dysku i rdzenia GPU,
-- każdy zasób ma osobny natywny tooltip Ironbara o stałej szerokości i z
-  monospace, po jednym parametrze w wierszu; dane są odświeżane co 10 sekund,
-  ponieważ IPC popupów modułu `custom` w Ironbarze 0.19 nie działa poprawnie,
+- popup pamięci rozróżnia dane logicznie zapisane w ZRAM od fizycznie zajętego
+  RAM-u oraz pokazuje procent oszczędności, współczynnik kompresji i aktywny
+  algorytm; odczytuje lekkie liczniki kernela z sysfs bez dodatkowego demona,
+- każdy zasób ma osobny popup Ironbara o stałej szerokości i z monospace, po
+  jednym parametrze w wierszu; szczegóły są pobierane przy najechaniu i podczas
+  widocznego popupu odświeżane co 2 sekundy, natomiast dedykowany proces
+  odświeżający kończy pracę natychmiast po jego zamknięciu; wartości są
+  pogrubione i
+  oznaczone semantycznymi kolorami z oficjalnej
+  palety Biscuit de Mar Dark; interlinia 1,5 i kolejność od danych bieżących do
+  informacji statycznych tworzą wyraźną hierarchię, a mniej istotne wiersze
+  mają słabszy kontrast; autohide GTK jest wyłączony, ponieważ jego przejęcie
+  wskaźnika tworzyło pętlę mapowania popupu co 250 ms; nieruchomy przycisk
+  metryki i powierzchnia popupu współdzielą token anulujący zamknięcie, a 180 ms
+  zwłoki służy wyłącznie przejściu przez odstęp między nimi; szczegóły pozostają
+  stabilne pod kursorem i znikają dopiero po opuszczeniu obu obszarów,
 - workspaces pokazują kompaktowe numery tylko dla istniejących pulpitów ze
   wszystkich monitorów, więc ich liczba odpowiada pulpitom rzeczywiście
   używanym i nie pozwala przeoczyć pozostawionego okna; bieżący pulpit pozostaje
-  widoczny również wtedy, gdy jest chwilowo pusty, aktywny numer ma różowe koło
-  z ciemnym tekstem, a stan pilny osobny, wyraźny akcent Biscuit,
+  widoczny również wtedy, gdy jest chwilowo pusty; pogrubione tabularne cyfry
+  CommitMono są centrowane w polu `22×22 px` z jednoliniową korektą optyczną;
+  aktywny numer ma różowe koło z ciemnym tekstem, workspace widoczny na innym
+  monitorze jest oliwkowy, nieaktywny
+  ulubiony pozostaje czytelnie przygaszony, a stan pilny ma czerwony akcent;
+  Codex wysyła `BEL` po zakończeniu tury lub przy prośbie o akceptację, a Foot
+  przekazuje go do Hyprlanda jako pilność nieaktywnego okna bez dźwięku;
+  żądania aktywacji nie przejmują fokusu ani nie zmieniają workspace,
 - sieć, Bluetooth, jasność, głośność, bateria, workspaces, tray, zegar,
   caffeine i powiadomienia używają natywnych modułów Ironbara; własne pozostają
   tylko wielowartościowe wykresy Cairo, Docker i akcje screenshotów,
@@ -135,7 +227,8 @@ startu, w którym Hyprland widział tylko `simpledrm` i kończył pracę komunik
   zarezerwowane dla aktywnego pulpitu, ostrzeżenia i stanu krytycznego,
 - pusty zasobnik systemowy nie rysuje tła ani pustej wyspy; jego lekkie karty
   pojawiają się dopiero razem z ikonami aplikacji,
-- kliknięcie wskaźników zasobów otwiera `btop` w pływającym oknie Foot,
+- najechanie na wskaźniki zasobów pokazuje szczegóły w popupie, a kliknięcie
+  otwiera `btop` z obsługą GPU AMD przez ROCm SMI w pływającym oknie Foot,
 - kliknięcie dźwięku, Wi-Fi albo Bluetooth otwiera pływający panel TUI w Foot:
   `wiremix`, `wlctl` albo `bluetui`; `wlctl` zachowuje sposób obsługi znany z
   Impali, lecz komunikuje się z używanym już przez system NetworkManagerem,
@@ -144,13 +237,25 @@ startu, w którym Hyprland widział tylko `simpledrm` i kończył pracę komunik
   działające NetworkManager i BlueZ,
 - wskaźnik Dockera pokazuje aktywne i wszystkie kontenery, ostrzega o błędach
   oraz `unhealthy`, a tooltip zawiera CPU i RAM kontenerów; kliknięcie otwiera
-  `lazydocker` w tym samym systemie pojedynczego panelu,
+  `lazydocker` w tym samym systemie pojedynczego panelu; lekka etykieta jest
+  odświeżana raz na minutę, natomiast szczegóły i statystyki są pobierane
+  dopiero przy najechaniu,
+- wyspy panelu mają 90% krycia, a workspace 92%; delikatnie odsłania to tapetę,
+  podczas gdy hover podnosi krycie do 95% i zachowuje czytelność aktywnej sekcji,
 - Docker nie startuje przy bootowaniu ani przez socket activation; daemon jest
   uruchamiany wyłącznie ręcznie poleceniem `sudo systemctl start docker`,
 - kliknięcie zegara otwiera prosty, natywny kalendarz Ironbara bez osobnego
-  procesu w tle; przyszła aplikacja CalDAV pozostanie osobnym, pełnym klientem,
-- ikona powiadomień otwiera lekkie centrum SwayNC; prawy klik przełącza DND,
-  a panel zawiera wyłącznie nagłówek, czyszczenie i listę powiadomień,
+  procesu w tle; godzina ma osobny jasny span Pango `large`, ciężką wagę i
+  tabularne cyfry CommitMono, natomiast przygaszona ikona `x-large` równoważy
+  jej wysokość; kalendarz zamyka się ponownym kliknięciem zegara albo otwarciem
+  innego popupu, a przyszła aplikacja CalDAV pozostanie osobnym klientem,
+- ikona powiadomień otwiera lekkie centrum SwayNC na pełną wysokość między
+  Ironbarem a dolnym marginesem; prawy klik przełącza DND; przy pustej kolejce
+  dzwonek jest wyśrodkowany, a gdy są powiadomienia,
+  przesuwa się w lewo i tworzy z licznikiem wyśrodkowaną parę; badge `18×18 px`
+  jest wyśrodkowany pionowo i ma ciemny border zamiast jasnej obwódki;
+  licznik używa pogrubionej ciemnej cyfry na różowym badge'u
+  Biscuit, a panel zawiera wyłącznie nagłówek, czyszczenie i listę powiadomień,
 - powiadomienia pojawiają się pod panelem w prawym górnym rogu jako karty z
   ikoną, tytułem, treścią, krótkim czasem względnym i kolorem ważności,
 - przycisk aparatu pozwala krótkim lewym kliknięciem wskazać całe okno, a
@@ -162,9 +267,25 @@ startu, w którym Hyprland widział tylko `simpledrm` i kończył pracę komunik
   Slurpa, a Satty otwiera czysty wynik do przycięcia i adnotacji; Enter zapisuje
   wynik, zamyka edytor, a skrypt kopiuje dokładnie zapisany PNG do schowka,
 - `Print` przechwytuje obszar i otwiera edytor, `Shift+Print` robi to samo dla
-  aktywnego okna, a `Ctrl+Print` zapisuje cały ekran bez edytora,
+  aktywnego okna, a `Ctrl+Print` przechwytuje cały ekran i również otwiera Satty,
 - zmiany głośności, wyciszenia i jasności pokazuje osobny Biscuit OSD na dole
   ekranu; nie trafiają one do historii powiadomień.
+
+## Menedżer plików
+
+Yazi 26.8.15 jest domyślnym eksploratorem katalogów i uruchamia się w osobnym
+oknie Foot przez `Super+E`. Natywna obsługa Sixel zapewnia podglądy obrazów bez
+dodatkowego procesu pośredniczącego. Dołączone zależności obsługują miniatury
+wideo, PDF, SVG, HEIC/JXL, archiwa 7z/RAR, wyszukiwanie przez `fd`, `ripgrep` i
+`fzf`, historię katalogów Zoxide oraz schowek Waylanda. Polecenie `y` uruchamia
+Yazi w aktualnym terminalu i po wyjściu przechodzi do ostatniego katalogu.
+
+Konfiguracja używa palety Biscuit, naturalnego sortowania, rozmiarów plików,
+trzech paneli oraz statusów Git. Oficjalne pluginy dodają inteligentne wejście,
+filtrowanie i wklejanie, zaokrągloną ramkę, montowanie nośników, zmianę
+uprawnień, sterowanie panelem podglądu, zoom obrazów, skok po pierwszym znaku,
+listę zmienionych plików Git oraz porównanie dwóch plików. Thunar pozostaje
+dostępny pod `Super+Alt+E` jako awaryjny menedżer GUI na czas testów Yazi.
 
 MPV jest głównie napisany w C i korzysta z akceleracji sprzętowej. Interfejs
 uosc oraz miniatury thumbfast są napisane w Lua, a małe narzędzie pomocnicze
@@ -181,82 +302,29 @@ przypięte do paska narzędzi i oba rozszerzenia mogą działać w oknach prywat
 Polityki można sprawdzić w Zen pod `about:policies`. Moduł `home/wojtek/zen.nix`
 używa istniejącego profilu, aby zachować historię, sesję i zakładki, oraz dodaje
 deklaratywny Biscuit `userChrome` i `userContent` dla interfejsu przeglądarki,
-strony nowej karty, ustawień, dodatków i menedżera haseł.
+strony nowej karty, ustawień, dodatków i menedżera haseł. Zwykłe i przypięte
+karty są po restarcie odtwarzane na żądanie: ich pozycje pozostają w sesji, ale
+zawartość i ruch sieciowy pojawiają się dopiero po wybraniu karty. `Super+B`
+fokusuje ostatnio używane okno Zen również na innym pulpicie; uruchamia nowy
+proces tylko wtedy, gdy Hyprland nie widzi żadnego okna `zen-twilight`.
 
-## Benchmark pulpitu
-
-Shell pulpitu opiera się na Ironbarze, SwayNC, SwayOSD i Awww zamiast pełnego
-shella Quickshell. Waybar i Noctalia zostały usunięte z flake, ale ich ostatnie
-porównywalne pomiary pozostają zapisane jako historyczne punkty odniesienia:
-
-| Wariant | CPU systemu | CPU shella (1 wątek) | PSS shella | iGPU busy |
-| --- | ---: | ---: | ---: | ---: |
-| Waybar + SwayNC + Awww | 1,56% | 2,550% | 105,7 MiB | 2,30% |
-| Noctalia v5 | 1,53% | 3,717% | 127,1 MiB | 22,40% |
-| Waybar + Biscuit, 2026-08-23 | 1,50% | 1,042% | 124,9 MiB | 6,61% |
-| Ironbar + Biscuit, 2026-08-23 | 1,53% | 0,508% | 127,0 MiB | 4,20% |
-
-Na 16-wątkowym CPU wynik procesu shella odpowiada około 0,159% całego CPU dla
-historycznego Waybara, 0,232% dla Noctalii i 0,065% dla Waybara z Biscuit.
-Największą różnicę w pierwszym przebiegu pokazało obciążenie iGPU. Pierwsze dwa
-wyniki pochodzą z konfiguracji sprzed motywu Biscuit. Trzeci wiersz jest osobną,
-120-sekundową serią wykonaną po wdrożeniu Biscuit. Docker, Voxtype, bufor GPU
-Screen Recordera i Noctalia były wyłączone;
-działały Waybar, SwayNC, Awww oraz bezczynny Foot z Codexem. Timer tapety został
-wyzerowany przed testem, więc przejście Awww nie wystąpiło podczas próbki.
-Laptop był podłączony do zasilacza, dlatego odczyt
-`battery_power_average_w=0.00` nie nadaje się do porównania.
-
-Względem zapisanego pomiaru Noctalii Waybar z Biscuit osiągnął o 0,03 punktu
-procentowego niższe CPU całego systemu, o 72,0% niższe CPU procesów shella,
-o 2,2 MiB niższe PSS oraz o 70,5% niższe średnie obciążenie iGPU. PSS można
-traktować jako remis; był to wynik korzystniejszy od Noctalii. Benchmark nie
-jest pomiarem
-laboratoryjnym, dlatego kolejne pomiary należy wykonywać na tym samym laptopie,
-przy identycznym stanie usług i zasilania.
-
-Ironbar został zmierzony przez 120 sekund przy wyłączonych Waybarze, Dockerze i
-Voxtype. Względem Waybara z Biscuit jego CPU całego systemu było wyższe jedynie o
-0,03 punktu procentowego, CPU stale działających procesów shella niższe o 51,2%,
-PSS wyższe o 2,1 MiB, a średnie obciążenie iGPU niższe o 36,5%. Względem
-Noctalii osiągnął takie samo CPU całego systemu, o 86,3% niższe CPU shella,
-praktycznie identyczne PSS oraz o 81,3% niższe użycie iGPU. Różnica 0,03 punktu
-CPU systemu mieści się w szumie pojedynczego pomiaru; z tej serii Ironbar jest
-najlepszym kandydatem pod względem CPU procesów shella i zachowuje pełną
-funkcjonalność przygotowanego panelu.
-
-Pomiar Ironbara:
-
-```bash
-make test
-# wyloguj się i zaloguj ponownie, odczekaj 2 minuty;
-# do porównania z zapisanym Waybarem pozostaw zasilacz podłączony
-make benchmark SECONDS=120 | tee /tmp/ironbar-biscuit.bench
-```
-
-Polecenie `desktop-benchmark` zapisuje `variant=ironbar` i uwzględnia Ironbar,
-SwayNC oraz Awww. Kolejny wynik należy dopisać do tabeli dopiero po wykonaniu
-pełnej 120-sekundowej próbki w tych samych warunkach co zapisane pomiary.
-
-Najważniejszą wartością jest `system_cpu_percent`, ponieważ obejmuje także
-krótkotrwałe skrypty panelu. `resident_shell_cpu_percent` mierzy stale działający
-Ironbar wraz z SwayNC i Awww. `battery_power_average_w` jest
-miarodajne po odłączeniu ładowarki, ale zapisany pomiar Waybara wykonano na
-zasilaczu. Do bezpośredniego porównania Ironbara należy więc pozostawić komputer
-podłączony i utrzymać tę samą jasność ekranu, profil zasilania, sieć, procesy w
-tle oraz stan bufora nagrywania.
-
-`make test` aktywuje konfigurację tylko do restartu. `make rollback` przywraca
-na żywo system uruchomiony podczas bootowania.
+Historyczne wyniki porównania Ironbara, Waybara i Noctalii są zachowane w
+osobnym archiwum [benchmarków pulpitu](benchmarks.md).
 
 ## Blokada i bezczynność
 
 - po 5 minutach uruchamiany jest animowany wygaszacz,
+- wygaszacz działa z pełną częstotliwością monitora na zasilaczu i najwyżej
+  60 FPS na baterii; wspólne wykrywanie źródła zasilania nie zakłada nazw
+  urządzeń takich jak `BAT0` ani `AC0`,
+- okno wygaszacza przejmuje fokus i włącza raportowanie ruchu myszy w Foot;
+  dowolny klawisz, ruch albo kliknięcie zamyka nakładkę, natomiast syntetyczne
+  zdarzenie wznowienia generowane przy mapowaniu okna jest ignorowane,
 - po 6 minutach sesja jest blokowana,
 - po 10 minutach ekran jest wyłączany przez DPMS zarówno na baterii, jak i na
   zasilaczu,
-- po 30 minutach system przechodzi w suspend tylko podczas pracy z baterii;
-  zasilanie zewnętrzne blokuje automatyczny suspend,
+- po 30 minutach system przechodzi w suspend wyłącznie na baterii; przy
+  zasilaniu zewnętrznym nigdy nie usypia się automatycznie,
 - zamknięcie pokrywy jest ignorowane na baterii, zasilaczu i w stacji dokującej,
 - natywny przełącznik caffeine w Ironbarze blokuje wygaszacz, blokadę, DPMS oraz
   automatyczny suspend do czasu ponownego kliknięcia,

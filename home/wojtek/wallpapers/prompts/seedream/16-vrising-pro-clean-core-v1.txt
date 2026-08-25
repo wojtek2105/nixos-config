@@ -1,0 +1,23 @@
+Use case: stylized-concept
+Asset type: native 2560x1440 OLED desktop wallpaper core
+
+Create an authentic V Rising gameplay scene in the game's recognizable
+stylized isometric Gothic rendering. Show a coherent crimson-black castle
+armory domain with a Castle Heart, patterned construction floors, servant
+coffins, blood essence, one source lectern, a compact two-chamber forge and a
+heavy secure armory chest. An armored vampire overseer and two fully equipped
+servants work naturally at the forge. Keep the complete focal composition
+right of center while the left side remains detailed dark workshop architecture
+and organic negative space for terminal windows.
+
+Lighting/mood: moonless, tense and elegant, strong ambient occlusion, contact
+shadows, small forge-red and antique-gold practical lights, physically coherent
+bounce light, broad organic true-black cavities suitable for OLED.
+
+Color palette: Biscuit-compatible near-black, charcoal, muted crimson, warm
+bronze and restrained cool stone blue. Preserve readable material depth without
+a gray wash or crushed flat darkness.
+
+This is only the clean visual base. Do not add CI/CD mechanisms, labels,
+letters, digits, logos, diagrams, UI, rubber ducks, crossover objects or
+watermarks. No split composition, vertical seam, black panel or empty sky.

@@ -1,0 +1,20 @@
+SCENE 19 — WORLD-SEED BLUEPRINT
+
+Original visual language: unmistakable Valheim low-poly painterly rendering,
+procedural terrain, rough building pieces, runestones, fog and original fully
+clothed Vikings. Do not create a realistic Viking movie or generic fantasy art.
+
+Use exactly three major props. First, one Git blueprint table combines a runic
+state lock with the OpenTofu plan and approval seal. Second, one hammer applies
+that plan into a Proxmox VM-shaped hut; a cloud-init scroll at its threshold
+gives the first identity. Third, one Semaphore job board dispatches Ansible
+workers to configure the interior, light the service hearth and later correct
+the single drift board identified by a worried raven. The visible flow is only
+Git/OpenTofu plan -> approved Proxmox VM -> Semaphore/Ansible -> healthy service
+and drift fix.
+Use labels only on those three props; no terminal, cloud logo or extra outpost.
+
+Exactly one crossover: a small Pal Sphere is used as a paperweight on the
+blueprint. Gather builders, three props, drift board, service hearth and sphere
+naturally to the right of centre. The same terrain, outpost and forest form one
+continuous Valheim landscape across the full panorama.

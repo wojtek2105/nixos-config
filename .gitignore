@@ -4,7 +4,12 @@
 
 # Local development state
 /.direnv/
-/.agents/
+# Keep Codex runtime state local, but version the repository management skill.
+/.agents/*
+!/.agents/skills/
+/.agents/skills/*
+!/.agents/skills/manage-nixos-config/
+!/.agents/skills/manage-nixos-config/**
 /.codex/
 .env
 .env.*
@@ -24,6 +29,15 @@
 *.img
 *.iso
 *.qcow2
+
+# Generated benchmark runs contain mutable machine state and can grow to
+# multiple gigabytes. Keep only the methodology and directory documentation.
+/docs/benchmark-results/*
+!/docs/benchmark-results/README.md
+
+# Paid-generation review intermediates stay local. Accepted source masters,
+# prompts, metrics and final aspect-ratio variants remain versioned.
+/home/wojtek/wallpapers/candidates/
 
 # Editor and temporary files
 *~

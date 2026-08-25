@@ -1,0 +1,26 @@
+SCENE 12 — PALBOX MEDIA REQUEST
+
+Original visual language: canonical Palworld 3D anime-game rendering with a
+recognizable Palbox base, production stations and canonical Pals doing their
+plausible specialized work. Preserve playful black comedy without candy-bright
+generic mascot art.
+
+Show only the acquisition half of a real media pipeline using three major
+props. First, one impatient Pal submits a single movie or series request at an
+"OVERSEERR" kiosk. Second, one combined catalog workshop has twin SONARR and
+RADARR bays selecting series versus movie, plus one shared PROWLARR telescope
+that finds the source; these are sections of one prop, not separate buildings.
+Third, one QBITTORRENT transport station gives the tracked media crate to a
+transport Pal, who delivers it to a dark library entrance. The requester is
+visibly delighted when the one crate arrives.
+
+The visible flow is only request -> Sonarr/Radarr choice -> Prowlarr search ->
+qBittorrent download and library delivery. Do not add Plex, Bazarr, Tautulli,
+subtitle work, playback screens, giant logos, status dashboards or extra jobs.
+Use short device plates only where necessary.
+
+Exactly one crossover: Geralt's wolf medallion is a keychain on the request
+kiosk. Gather handler, Pals, three props, tracked crate and medallion naturally
+to the right of centre. Unlit Palworld machinery and base bays continue through
+one uninterrupted base panorama with coherent game-world perspective and
+organic OLED-black cavities.

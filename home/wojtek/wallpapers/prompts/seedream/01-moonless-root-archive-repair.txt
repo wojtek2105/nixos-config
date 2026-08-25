@@ -1,0 +1,30 @@
+Use the supplied 5120x1440 image as the edit source. Perform a surgical repair,
+not a reinterpretation or a new composition. Preserve the entire source image
+outside the brass archive mechanism and its five physical labels. Keep exactly
+the same canvas, panorama, camera, crop, perspective, Frieren identity, face,
+hair, ears, expression, body, hands, canonical outfit, staff, pose, brass key,
+wolf-medallion key guard, lamp, yellow debugging duck, trees, roots, masonry,
+floor, arch geometry, shadows, OLED-black cavities, illumination, linework,
+palette, texture and level of detail. Add no characters, props or logos.
+
+Repair only these two defects:
+
+1. Replace the generic ship-wheel-like brass device with a precise six-armed
+   Nix archive-lock mechanism. Its six identical angular ribbon arms interlock
+   around one hexagonal hub with exact radial symmetry, unmistakably evoking
+   the Nix snowflake while remaining a real dimensional brass lock driven by
+   Frieren's existing key. It must not resemble a ship wheel, helm, Kubernetes
+   wheel, flower, sun or random spokes. Preserve its current footprint,
+   perspective, contact shadows and warm lamp reflections.
+
+2. Replace every malformed or meaningless tag near the mechanism with exactly
+   five small but crisp physical labels and no other writing. Put "flake.lock"
+   on the sealed input scroll feeding the lock. Put "main" and "v1.0.0" on the
+   healthy branch of the living catalogue tree. Put "untrusted" on its broken
+   branch. Emboss "signed" on the cream archive capsule. Spell each string
+   exactly as quoted, with clean high-contrast dark lettering, readable at the
+   full 5120x1440 resolution. Keep each label attached to its described object;
+   no floating words, gibberish, duplicated labels or extra punctuation.
+
+Return one continuous 5120x1440 PNG. Do not repaint, restyle, crop, resize,
+brighten or rearrange anything else in the supplied image.

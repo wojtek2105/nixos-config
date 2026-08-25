@@ -1,0 +1,8 @@
+Extend the supplied 2560x1440 image into one exact 5120x1440 panoramic PNG by
+adding new scenery only to its left. Preserve the complete supplied image as the
+rightmost 2560x1440 portion without scaling, cropping, moving or repainting it.
+Continue the same crypt from the same camera with coherent stone-floor lines,
+repeating arches, old roots, deep alcoves, material scale, ambient occlusion and
+progressively weaker blue-black bounced light. Make the extension feel like one
+natural location with no seam, boundary or separate zone. Keep it dark and
+OLED-friendly. Add no character, focal prop, label, symbol, watermark or text.

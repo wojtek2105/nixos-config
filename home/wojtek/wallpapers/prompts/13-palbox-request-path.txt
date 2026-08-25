@@ -1,0 +1,27 @@
+SCENE 13 — PALBOX REQUEST PATH
+
+Original visual language: authentic Palworld gameplay with canonical Pals,
+polished 3D anime rendering, the real Palbox visual language and an absurdly
+elaborate survival base. No generic creature factory and no floating diagram.
+
+Show one HTTP lifecycle using exactly three devices and one request capsule.
+Device one is a compact two-stage entry gate: outer "API" and inner "TRAEFIK"
+reverse-proxy switch. Device two is one application workshop containing two
+Laravel Octane workers on one FrankenPHP engine; a health check closes one red
+worker bay while the other accepts the request. Device three is one vertical
+data store: a fast Redis shelf above the durable PostgreSQL archive. Do not
+create a separate building for every name.
+
+The selected app checks the "REDIS" shelf first. A cache-hit capsule turns
+around immediately. A cache miss descends once to the durable "POSTGRESQL"
+archive, returns the data, fills Redis and sends the response back through the
+same app, Traefik and API gateway. Pals, capsules, conveyors, forks and gates
+must make both hit and miss paths physically readable without hovering arrows.
+This is only HTTP -> API/Traefik gate -> app plus cache/database -> response.
+The cache miss is a short branch inside device three, not another scene.
+
+Exactly one crossover: a miniature version of Ciri's sword is the Palbox
+routing lever. Gather handler, Pals, request and response, the three devices
+and lever naturally to the right of centre. The same base and terrain continue
+through the entire panorama with coherent perspective, organic dark cavities
+and progressively weaker bounced light.

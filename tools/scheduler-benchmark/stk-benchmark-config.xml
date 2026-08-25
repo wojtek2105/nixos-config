@@ -1,0 +1,226 @@
+<?xml version="1.0"?>
+<!--
+  Complete isolated SuperTuxKart 1.5 user configuration (schema version 8).
+  @...@ tokens are replaced per benchmark profile before STK starts, because
+  renderer-affecting settings must be present before device creation.
+-->
+<stkconfig version="8">
+  <Audio
+    sfx_on="false"
+    music_on="false"
+    sfx_numerator="0"
+    sfx_volume="0.000000"
+    music_numerator="0"
+    music_volume="0.000000"
+    volume_denominator="15"
+  />
+  <RaceSetup
+    numkarts="4"
+    numlaps="4"
+    gp-reverse="0"
+    random-gp-num-tracks="1"
+    ffa-time-limit="3"
+    use-ffa-mode="false"
+    lap-trial-time-limit="3"
+    numgoals="3"
+    soccer-default-team="0"
+    soccer-time-limit="3"
+    soccer-use-time-limit="false"
+    random-arena-item="false"
+    difficulty="0"
+    game_mode="0"
+    soccer-red-ai-num="0"
+    soccer-blue-ai-num="0"
+    karts-powerup-gui="false"
+    soccer-player-list="false"
+    addon-tux-online="false"
+    random-player-pos="false"
+  />
+  <kart value="tux" />
+  <last_kart_group value="all" />
+  <WiiMote
+    wiimote-raw-max="20.000000"
+    wiimote-weight-linear="1.000000"
+    wiimote-weight-square="0.000000"
+    wiimote-weight-asin="0.000000"
+    wiimote-weight-sin="0.000000"
+  />
+  <Multitouch
+    multitouch_active="0"
+    multitouch_draw_gui="false"
+    multitouch_inverted="false"
+    multitouch_auto_acceleration="false"
+    multitouch_controls="0"
+    multitouch_deadzone="0.100000"
+    multitouch_sensitivity_x="0.200000"
+    multitouch_sensitivity_y="0.650000"
+    multitouch_tilt_factor="4.000000"
+    multitouch_scale="1.200000"
+    screen_keyboard_status="0"
+  />
+  <GpStartOrder most_points_first="true" player_last="false" />
+  <additional_gp_directory value="" />
+  <Video
+    real_width="@WIDTH@"
+    real_height="@HEIGHT@"
+    width="@WIDTH@"
+    height="@HEIGHT@"
+    fullscreen="true"
+    prev_real_width="@WIDTH@"
+    prev_real_height="@HEIGHT@"
+    prev_fullscreen="false"
+    remember_window_location="false"
+    window_x="-1"
+    window_y="-1"
+    show_fps="false"
+    show_story_mode_timer="false"
+    show_speedrun_timer="false"
+    max_fps="9999"
+    force_legacy_device="false"
+    split_screen_horizontally="true"
+    enable_texture_compression="true"
+    enable_high_definition_textures="@HD_TEXTURES@"
+    enable_glow="true"
+    enable_bloom="@BLOOM@"
+    enable_light_shaft="@LIGHT_SHAFT@"
+    enable_dynamic_lights="true"
+    enable_dof="@DOF@"
+    old_driver_popup="false"
+    scale_rtts_factor="1.000000"
+    max_texture_size="512"
+    ssr="@SSR@"
+    hq_mipmap="@HQ_MIPMAP@"
+    font_size="3.000000"
+    render_driver="@RENDER_DRIVER@"
+    vulkan_fullscreen_desktop="@VULKAN_FULLSCREEN_DESKTOP@"
+    non_ge_fullscreen_desktop="@NON_GE_FULLSCREEN_DESKTOP@"
+  />
+  <Recording
+    limit_game_fps="false"
+    video_format="0"
+    audio_bitrate="112000"
+    video_bitrate="20000"
+    recorder_jpg_quality="90"
+    record_fps="30"
+  />
+  <server-bookmarks />
+  <server-bookmarks-order />
+  <address-history />
+  <ipv4-stun-servers />
+  <ipv6-stun-servers />
+  <Network
+    enable-network-splitscreen="false"
+    log-network-packets="false"
+    random-client-port="true"
+    random-server-port="false"
+    lobby-chat="false"
+    race-chat="false"
+    ipv6-lan="false"
+    max-players="8"
+    timer-sync-difference-tolerance="5"
+    default-ip-type="0"
+    lan-server-gp="false"
+    wan-server-gp="false"
+  />
+  <num-karts-per-gamemode>
+    <gamemode-list gamemode="0" num-karts="4" />
+    <gamemode-list gamemode="1002" num-karts="5" />
+    <gamemode-list gamemode="1100" num-karts="4" />
+    <gamemode-list gamemode="1101" num-karts="4" />
+    <gamemode-list gamemode="2000" num-karts="4" />
+    <gamemode-list gamemode="2001" num-karts="4" />
+  </num-karts-per-gamemode>
+  <GFX
+    particles-effecs="@PARTICLES@"
+    christmas-mode="2"
+    easter-ear-mode="2"
+    animated-characters="true"
+    geometry-level="@GEOMETRY_LEVEL@"
+    anisotropic="@ANISOTROPIC@"
+    swap-interval-vsync="0"
+    motionblur_enabled="true"
+    mlaa="@MLAA@"
+    ssao="@SSAO@"
+    light_scatter="@LIGHT_SCATTER@"
+    shadows_resolution="@SHADOWS@"
+    pcss="@PCSS@"
+    Degraded_IBL="@DEGRADED_IBL@"
+  />
+  <cache-overworld value="true" />
+  <crashed value="false" />
+  <camera-normal
+    distance="1.000000"
+    forward-up-angle="0.000000"
+    forward-smooth-position="0.200000"
+    forward-smooth-rotation="0.125000"
+    backward-distance="2.000000"
+    backward-up-angle="5.000000"
+    fov="80"
+  />
+  <reverse-look-use-soccer-cam value="false" />
+  <camera-present value="1" />
+  <standard-camera-settings
+    distance="1.000000"
+    forward-up-angle="0.000000"
+    forward-smooth-position="0.200000"
+    forward-smooth-rotation="0.125000"
+    backward-distance="2.000000"
+    backward-up-angle="5.000000"
+    fov="80"
+    reverse-look-use-soccer-cam="false"
+  />
+  <drone-camera-settings
+    distance="2.600000"
+    forward-up-angle="33.000000"
+    forward-smooth-position="0.000000"
+    forward-smooth-rotation="0.000000"
+    backward-distance="2.000000"
+    backward-up-angle="10.000000"
+    fov="100"
+    reverse-look-use-soccer-cam="false"
+  />
+  <saved-camera-settings
+    distance="1.800000"
+    forward-up-angle="20.000000"
+    forward-smooth-position="0.100000"
+    forward-smooth-rotation="0.125000"
+    backward-distance="2.000000"
+    backward-up-angle="5.000000"
+    fov="85"
+    reverse-look-use-soccer-cam="false"
+  />
+  <camera
+    reverse_look_threshold="0"
+    fpscam_rotation_speed="0.003000"
+    fpscam_smooth_rotation_max_speed="0.040000"
+    fpscam_angular_velocity="0.020000"
+    fpscam_max_angular_velocity="1.000000"
+  />
+  <item_style value="items" />
+  <last_track value="olivermath" />
+  <last_track_group value="all" />
+  <discord_client_id value="-1" />
+  <rich_presence_debug value="false" />
+  <skin_name value="classic" />
+  <Minimap display="2" size="180.000000" ai-icon="16.000000" player-icon="20.000000" />
+  <PowerUp display="2" powerup-icon-size="64.000000" />
+  <Spectator camera-distance="6.750000" camera-angle="40.000000" />
+  <Handicap per_player_difficulty="false" />
+  <enable_internet value="2" />
+  <HWReport report-version="0" random-identifier="0" hw-report-enabled="false" />
+  <always_show_login_screen value="false" />
+  <AddonServer
+    news_last_updated="0"
+    news_frequency="0"
+    news_display_count=""
+    last_important_message_id="-1"
+    news_list_shown_id="0"
+    addon_last_updated="0"
+    latest_addon_time="0"
+  />
+  <language value="system" />
+  <artist_debug_mode value="false" />
+  <debug_hide_gui value="false" />
+  <unlock_everything value="2" />
+  <commandline value="" />
+</stkconfig>

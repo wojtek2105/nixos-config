@@ -5,6 +5,19 @@ Preferowane są oficjalne repozytoria GitHub i dokumentacja pierwotna.
 ## GitHub
 
 - [NixOS/nixpkgs](https://github.com/NixOS/nixpkgs) — pakiety i moduły NixOS.
+- [sched-ext/scx](https://github.com/sched-ext/scx) — schedulery BPF/Rust dla
+  mechanizmu `sched_ext`, w tym interaktywny `scx_bpfland`.
+- [Dokumentacja scx_bpfland](https://github.com/sched-ext/scx/tree/main/scheds/rust/scx_bpfland) — uzasadnienie wyboru schedulera dla interaktywnego pulpitu, gier i multimediów pod obciążeniem.
+- [Dokumentacja scx_lavd](https://github.com/sched-ext/scx/tree/main/scheds/rust/scx_lavd) — algorytm Latency-criticality Aware Virtual Deadline i profile zasilania.
+- [Wydanie SCX 1.1.2](https://github.com/sched-ext/scx/releases/tag/v1.1.2) — przypięte źródło LAVD używane wyłącznie przez opcjonalny harness benchmarkowy.
+- [Dokumentacja scx_flash](https://github.com/sched-ext/scx/tree/main/scheds/rust/scx_flash) — scheduler EDF nastawiony na sprawiedliwość i przewidywalne opóźnienia.
+- [Regresja scx_lavd 1.1.3](https://github.com/sched-ext/scx/issues/3750) — powód niewłączania LAVD przy obecnie przypiętej wersji SCX.
+- [stress-ng](https://github.com/ColinIanKing/stress-ng) — kontrolowane obciążenie CPU używane podczas pomiaru responsywności pulpitu i wątku renderującego.
+- [SuperTuxKart](https://github.com/supertuxkart/stk-code) — rzeczywisty silnik gry i wbudowany deterministyczny benchmark replayu dla profili gaming CPU i GPU.
+- [FeralInteractive/gamemode](https://github.com/FeralInteractive/gamemode) —
+  optymalizacje uruchamiane na żądanie dla procesu gry.
+- [ValveSoftware/gamescope](https://github.com/ValveSoftware/gamescope) —
+  składnia zagnieżdżonego mikrokompozytora, skalowania i limitu odświeżania.
 - [Moduł NixOS dla GPU Screen Recordera](https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/programs/gpu-screen-recorder.nix) — integracja, pakiet UI i wymagane wrappery capabilities.
 - [Pakiet GPU Screen Recorder UI w nixpkgs](https://github.com/NixOS/nixpkgs/blob/master/pkgs/by-name/gp/gpu-screen-recorder-ui/package.nix) — sposób budowania oficjalnego upstreamu.
 - [nix-community/home-manager](https://github.com/nix-community/home-manager) — konfiguracja użytkownika.
@@ -41,11 +54,19 @@ Preferowane są oficjalne repozytoria GitHub i dokumentacja pierwotna.
   do Wi-Fi zarządzanego przez NetworkManager.
 - [Lazygit](https://github.com/jesseduffield/lazygit) — interfejs TUI do Git.
 - [Lazydocker](https://github.com/jesseduffield/lazydocker) — interfejs TUI do kontenerów Docker.
+- [Oficjalne pluginy Yazi](https://github.com/yazi-rs/plugins) — źródło przypiętych rozszerzeń menedżera plików.
+- [Yazi vcs-files](https://github.com/yazi-rs/plugins/tree/main/vcs-files.yazi) — lista plików zmienionych w repozytorium.
+- [Yazi jump-to-char](https://github.com/yazi-rs/plugins/tree/main/jump-to-char.yazi) — szybki skok po pierwszym znaku nazwy.
+- [Yazi diff](https://github.com/yazi-rs/plugins/tree/main/diff.yazi) — porównywanie zaznaczonego i wskazanego pliku.
 - [LazySSH](https://github.com/Adembc/lazyssh) — interfejs TUI do zapisanych hostów SSH.
 - [ChrisBuilds/terminaltexteffects](https://github.com/ChrisBuilds/terminaltexteffects) — animacje wygaszacza.
 
 ## Oficjalne źródła poza GitHubem
 
+- [SuperTuxKart: Performance Testing](https://supertuxkart.net/Performance_testing) — opis deterministycznego replayu, jego powtarzalności i metryk Steady/Mostly Steady/Typical FPS.
+- [OpenBenchmarking: SuperTuxKart](https://openbenchmarking.org/test/pts/supertuxkart) — zweryfikowany replay testowy STK 1.5 i historyczna referencja ustawień Low/Ultimate dla Vulkan; bieżący profil GPU używa natywnego OpenGL Ultimate, aby wymagać pełnej ścieżki shaderowej.
+- [SuperTuxKart: Vulkan uruchamia fixed pipeline](https://github.com/supertuxkart/stk-code/issues/4815) — upstreamowe zgłoszenie regresji uzasadniające użycie shaderowego OpenGL w bieżącym profilu GPU.
+- [Mesa: zmienna `DRI_PRIME`](https://docs.mesa3d.org/envvars.html#envvar-DRI_PRIME) — wybór konkretnego GPU OpenGL/Vulkan i składnia ukrywająca pozostałe urządzenia.
 - [Zen: live editing](https://docs.zen-browser.app/guides/live-editing) — oficjalna dokumentacja obsługi `userChrome.css` i `userContent.css`.
 - [Dark Reader dla Firefoksa](https://addons.mozilla.org/firefox/addon/darkreader/) — deklaratywnie instalowany oficjalny dodatek AMO.
 - [Bitwarden dla Firefoksa](https://addons.mozilla.org/firefox/addon/bitwarden-password-manager/) — deklaratywnie instalowany oficjalny dodatek AMO.

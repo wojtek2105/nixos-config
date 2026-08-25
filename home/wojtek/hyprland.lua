@@ -2,7 +2,7 @@
 
 local mod = "SUPER"
 local terminal = "foot"
-local file_manager = "thunar"
+local file_manager = "yazi-file-manager"
 local menu = "fuzzel"
 
 hl.monitor({
@@ -71,7 +71,7 @@ hl.config({
   misc = {
     force_default_wallpaper = 0,
     disable_hyprland_logo = true,
-    focus_on_activate = true,
+    focus_on_activate = false,
   },
 })
 
@@ -91,7 +91,6 @@ hl.animation({ leaf = "fade", enabled = true, speed = 5, bezier = "easeOutQuint"
 hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "easeOutQuint", style = "slide" })
 
 hl.on("hyprland.start", function()
-  @START_GAMING@
   hl.exec_cmd("wl-paste --type text --watch cliphist store")
   hl.exec_cmd("wl-paste --type image --watch cliphist store")
   hl.exec_cmd("@POLKIT_AGENT@")
@@ -103,16 +102,17 @@ end
 
 bind_exec(mod .. " + RETURN", terminal)
 bind_exec(mod .. " + E", file_manager)
-bind_exec(mod .. " + B", "zen-twilight")
+bind_exec(mod .. " + ALT + E", "thunar")
+bind_exec(mod .. " + B", "zen-run-or-raise")
 bind_exec(mod .. " + SPACE", menu)
 bind_exec(mod .. " + N", "swaync-client -t -sw")
 bind_exec(mod .. " + L", "hyprlock")
-bind_exec(mod .. " + F1", "hypr-bindings")
-bind_exec(mod .. " + ESCAPE", "wlogout")
-bind_exec(mod .. " + SHIFT + E", "wlogout")
+bind_exec(mod .. " + F1", "shortcut-menu")
+bind_exec(mod .. " + ESCAPE", "power-menu")
+bind_exec(mod .. " + SHIFT + E", "power-menu")
 @BIND_PERSONAL_APPS@
 
-@BIND_GAMING@
+@BIND_SCREEN_RECORDING@
 bind_exec(mod .. " + SHIFT + V", "clipboard-history")
 
 hl.bind(mod .. " + Q", hl.dsp.window.close())
@@ -179,4 +179,7 @@ hl.window_rule({
   match = { class = "^org.polamaniec.screensaver$" },
   float = true,
   fullscreen = true,
+  -- Foot owns input while the saver is visible and closes itself after the
+  -- first keyboard or pointer report. Hypridle must not kill it on the resume
+  -- event generated while the fullscreen window itself is being mapped.
 })

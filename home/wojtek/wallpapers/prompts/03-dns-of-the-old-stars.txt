@@ -1,0 +1,19 @@
+SCENE 03 — DNS OF THE OLD STARS
+
+Original visual language: detailed Frieren anime illustration. Use canonical
+Frieren and Fern with their default faces, hair, staffs and mage wardrobes.
+
+They work inside a roofed ancient observatory with only two technical props.
+A real stone PI-HOLE well physically swallows one advertisement packet while a
+clean query continues. One armillary resolver integrates its engraved "53"
+socket, a small TTL hourglass cache and a closed DNSSEC validation ring into the
+same mechanism. Fern looks concerned at the blocked packet; Frieren verifies
+the clean answer and the mechanism turns healthy. The visible flow is only
+query -> Pi-hole block/pass -> validating cached resolver -> answer. Add no
+root/TLD diagram, other networking tools or ports.
+
+Exactly one crossover: a small Pochita figurine acts as the telescope's
+counterweight. Gather Frieren, Fern, PI-HOLE, resolver, hourglass and figurine
+naturally to the right of centre inside one uninterrupted observatory. Its
+arches and machinery continue behind them and across the full panorama with
+the same perspective, materials and progressively weaker practical light.

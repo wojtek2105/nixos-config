@@ -1,0 +1,4 @@
+interface:
+  display_name: "Manage NixOS Config"
+  short_description: "Build a portable, fast and cohesive NixOS desktop"
+  default_prompt: "Use $manage-nixos-config to implement this portable, snappy NixOS change without running builds or tests."

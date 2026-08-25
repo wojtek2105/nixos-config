@@ -5,15 +5,16 @@
     ./hardware-configuration.nix
     ../../modules/common.nix
     ../../modules/desktop.nix
-    ../../modules/desktop-shell.nix
-    ../../modules/development.nix
-    ../../modules/gaming.nix
+    ../../modules/development-core.nix
     ../../modules/hardware-amd-gpu.nix
     ../../modules/hardware-asus-laptop.nix
   ];
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
+  # Keep recovery generations selectable without paying the default five-second
+  # delay on every normal boot.
+  boot.loader.timeout = 1;
 
   networking.hostName = hostName;
   networking.networkmanager.enable = true;

@@ -1,0 +1,23 @@
+SCENE 11 — PALBOX HOMELAB
+
+Original visual language: unmistakable Palworld game art — polished 3D anime
+rendering, the real Palbox design language, an overbuilt survival base and
+canonical Pals performing their actual specialized work. Do not render generic
+mascots, western fantasy or photoreal live action.
+
+At night, a fully equipped handler repairs a three-node homelab built into the
+base. Grizzbolt feeds a UPS before the racks, Anubis performs precise handiwork
+on the patch panel and Wumpo transports storage while cooling the aisle. Three
+physical Proxmox nodes run one VM workload over a replicated Ceph pool. When
+one node becomes unhealthy it is fenced off; the remaining quorum keeps both
+the virtual machine and its data available. Show the failed node disconnected,
+not silently sharing writes. Use only tiny device plates "PVE-1", "PVE-2",
+"PVE-3", "CEPH" and "UPS", naturally attached to their hardware. The causal
+flow is power/cooling -> cluster -> replicated storage -> VM -> node failure ->
+fencing and continued service.
+
+Exactly one crossover: the small secondary Palbox display uses a dark Frieren
+wallpaper. Gather handler, all required Pals, Palbox, three nodes and display
+naturally to the right of centre. Real Palworld base structures, fences and
+unlit workstations form one continuous base across the panorama with coherent
+game-world perspective, materials and light.

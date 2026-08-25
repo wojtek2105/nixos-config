@@ -15,6 +15,45 @@ hosta i użytkownika nie jest zaszyta we współdzielonych modułach.
 Nazwy w przykładach należy zastąpić własnymi. Nazwa użytkownika powinna być
 krótka, zapisana małymi literami i nie zawierać spacji.
 
+## Kolejność całego wdrożenia
+
+1. Zrób kopię danych z docelowego komputera i zdecyduj, czy dysk będzie
+   wyczyszczony, szyfrowany albo używany w dual boot.
+2. W bieżącym checkoutcie przygotuj osobny host i profil użytkownika.
+3. Dopasuj manifest funkcji i importy sprzętowe, ale nie kopiuj konfiguracji
+   sprzętowej ROG-a.
+4. Przenieś dokładnie ten checkout na Live ISO: przez zatwierdzony i wypchnięty
+   commit albo jako kopię katalogu roboczego bez sekretów.
+5. Na docelowym komputerze przygotuj i zamontuj partycje, a następnie wygeneruj
+   jego własny `hardware-configuration.nix`.
+6. Wykonaj ewaluację i build nowego outputu. Dopiero po ich powodzeniu uruchom
+   `nixos-install`.
+7. Przed restartem ustaw hasło nowego konta przez `nixos-enter`; po restarcie
+   sprawdź sprzęt i pulpit przed włączaniem kolejnych funkcji.
+
+## 0. Przygotowanie źródła konfiguracji
+
+Najpierw sprawdź stan repozytorium:
+
+```bash
+git status --short
+git diff --check
+```
+
+Zwykły `git clone` na komputerze docelowym zawiera tylko zmiany zatwierdzone i
+wypchnięte na serwer. Nie przeniesie niezatwierdzonych ani nieśledzonych plików
+z bieżącego katalogu. Są dwa bezpieczne warianty:
+
+- zatwierdź i wypchnij kompletny stan potrzebny do buildu, a następnie sklonuj
+  go na Live ISO,
+- skopiuj cały katalog roboczy na nośnik lub przez sieć, wykluczając co najmniej
+  `.git/`, `.env`, `.env.*`, `result` i `result-*`.
+
+Przed przeniesieniem upewnij się, że w źródle znajdują się wszystkie pliki
+wskazywane przez `flake.nix` i importy Nix. Dotyczy to również nowych modułów
+oraz trzech plików z `home/<profil>/wallpapers/fallback/`. Nie przenoś haseł,
+tokenów, prywatnych kluczy SSH ani profili Wi-Fi.
+
 ## 1. Wybór sposobu użycia profilu Home Managera
 
 Są dwa poprawne warianty.
@@ -41,13 +80,19 @@ homeProfile = "wojtek";
 
 Powstanie oddzielne konto `/home/nowy-user`, ale jego konfiguracja będzie
 budowana ze źródeł w `home/wojtek`. Stan programów i pliki użytkowników nadal
-pozostają oddzielne.
+pozostają oddzielne. Każdy samodzielny profil musi zawierać `theme.nix`; flake
+przekazuje jego paletę zarówno do Home Managera, jak i systemowego Tuigreet.
 
 ## 2. Skopiowanie hosta
 
 ```bash
-cp -a hosts/rog-polamaniec hosts/nowy-host
+mkdir hosts/nowy-host
+cp hosts/rog-polamaniec/default.nix hosts/nowy-host/
+cp hosts/rog-polamaniec/configuration.nix hosts/nowy-host/
 ```
+
+Celowo nie kopiuj `hardware-configuration.nix`. Dzięki temu nie da się przez
+przypadek zbudować nowego hosta z UUID-ami dysków i modułami ROG-a.
 
 Nazwa katalogu automatycznie staje się:
 
@@ -63,15 +108,18 @@ docelowym wykonaj z katalogu repozytorium:
 
 ```bash
 sudo nixos-generate-config --show-hardware-config \
-  > hosts/nowy-host/hardware-configuration.nix
+  | sudo tee hosts/nowy-host/hardware-configuration.nix >/dev/null
 ```
 
 Podczas instalacji z obrazu NixOS, po zamontowaniu systemu pod `/mnt`, użyj:
 
 ```bash
 sudo nixos-generate-config --root /mnt --show-hardware-config \
-  > hosts/nowy-host/hardware-configuration.nix
+  | sudo tee hosts/nowy-host/hardware-configuration.nix >/dev/null
 ```
+
+Jeżeli wcześniej wykonasz `sudo -i` i całą instalację prowadzisz w powłoce
+roota, pomiń oba wystąpienia `sudo` i użyj zwykłego przekierowania `>`.
 
 Przed kontynuacją sprawdź szczególnie:
 
@@ -103,27 +151,41 @@ Poniższy szablon pokazuje wszystkie obsługiwane pola manifestu hosta:
   # Ustaw "wojtek", aby użyć home/wojtek bez kopiowania profilu.
   # homeProfile = "wojtek";
 
-  desktopFeatures = {
+  # Jedna mapa steruje modułami NixOS i odpowiadającymi im elementami pulpitu.
+  features = {
     # Metryki AMD GPU, VRAM i temperatury w Ironbarze.
     # Ustaw true tylko dla GPU obsługiwanego przez skrypt AMD w tym repo.
-    amdGpu = false;
+    amdGpuMetrics = false;
 
-    # Status Dockera w Ironbarze, lazydocker i panel terminalowy.
-    # Nie uruchamia demona; systemowy Docker pochodzi z modules/development.nix.
+    # Docker, Compose, lazydocker, lazyssh oraz integracja z pulpitem.
+    # Daemon pozostaje uruchamiany ręcznie.
     docker = false;
 
-    # Autostart i skróty GPU Screen Recorder oraz konfiguracja replay.
-    # Pakiety systemowe pochodzą z modules/gaming.nix.
+    # Steam, Proton-GE, Gamescope, GameMode i biblioteki 32-bit.
     gaming = false;
+
+    # GPU Screen Recorder, uruchamiany na żądanie, skróty i konfiguracja replay.
+    screenRecording = false;
+
+    # vainfo, radeontop i vulkaninfo do doraźnej diagnostyki GPU.
+    hardwareDiagnostics = false;
+
+    # Opcjonalny benchmark schedulerów; instaluje się tylko na czas porównań.
+    # Nie uruchamia testu ani usługi automatycznie.
+    schedulerBenchmark = false;
 
     # Bateria, jasność i klawisze regulacji ekranu w sesji użytkownika.
     laptop = false;
 
-    # Prywatne aplikacje i skróty, obecnie m.in. Discord, Plexamp i EasyEffects.
-    personalApps = false;
+    # Każda większa aplikacja może być przełączana osobno.
+    personalApps = {
+      discord = false;
+      easyeffects = false;
+      plexamp = false;
+    };
   };
 
-  # Wymagane, gdy desktopFeatures.laptop = true.
+  # Wymagane, gdy features.laptop = true.
   # Nazwy urządzeń pokaże `brightnessctl --list` albo `ls /sys/class/backlight`.
   backlightDevice = "amdgpu_bl2";
 
@@ -188,22 +250,13 @@ Minimalny, komentowany szablon oparty na ROG-u:
     # Podstawowe narzędzia, locale, strefa czasowa i obsługa flakes.
     ../../modules/common.nix
 
-    # Hyprland, greetd, PipeWire, Bluetooth, Thunar, fonty i usługi pulpitu.
+    # Hyprland, greetd, PipeWire, Bluetooth, awaryjny Thunar, fonty i usługi.
     ../../modules/desktop.nix
 
-    # Opcjonalny program desktop-benchmark. Nie jest wymagany przez pulpit.
-    ../../modules/desktop-shell.nix
+    # Fish, Codex i GNU Make.
+    ../../modules/development-core.nix
 
-    # Fish, Codex, Docker, Compose, lazydocker i lazyssh.
-    # Jeśli Docker nie jest potrzebny, można zamiast tego importować tylko:
-    # ../../modules/development-core.nix
-    ../../modules/development.nix
-
-    # Steam, Gamescope, GameMode, Proton-GE i GPU Screen Recorder.
-    # Usuń, jeśli desktopFeatures.gaming = false i host nie służy do grania.
-    ../../modules/gaming.nix
-
-    # Grafika AMD, biblioteki 32-bit, wczesny KMS i narzędzia diagnostyczne.
+    # Grafika AMD i wczesny KMS.
     # Usuń dla Intel/NVIDIA; odpowiedni moduł trzeba wtedy przygotować osobno.
     ../../modules/hardware-amd-gpu.nix
 
@@ -265,39 +318,51 @@ Minimalny, komentowany szablon oparty na ROG-u:
 }
 ```
 
+`flake.nix` automatycznie dołącza `docker.nix`, `gaming.nix`,
+`screen-recording.nix`, `hardware-diagnostics.nix` i `scheduler-benchmark.nix`
+według mapy `features` z manifestu. Nie należy powtarzać tych importów w
+`configuration.nix`.
+
 ## 6. Katalog modułów systemowych
 
 | Moduł | Co włącza | Kiedy importować |
 |---|---|---|
-| `common.nix` | Flakes, strefę Warszawa, polskie locale, Git, curl, jq, fd i ripgrep | Praktycznie na każdym hoście |
-| `desktop.nix` | Hyprland/UWSM, automatyczną sesję greetd dla wybranego użytkownika, PipeWire, Bluetooth, Thunar, Polkit i fonty | Na hostach graficznych |
-| `desktop-shell.nix` | Wyłącznie polecenie `desktop-benchmark` | Opcjonalnie do pomiarów pulpitu |
+| `common.nix` | Flakes, ZRAM skalowany do 50% RAM-u, strefę Warszawa, polskie locale, Git, curl, jq, fd i ripgrep | Praktycznie na każdym hoście |
+| `desktop.nix` | Hyprland/UWSM, automatyczną sesję greetd dla wybranego użytkownika, PipeWire, Bluetooth, awaryjny Thunar, Polkit i fonty | Na hostach graficznych |
 | `development-core.nix` | Fish, Codex i GNU Make | Gdy potrzebne są podstawowe narzędzia deweloperskie bez Dockera |
-| `development.nix` | Importuje `development-core`, dodaje Docker uruchamiany ręcznie, grupę `docker`, Compose, lazydocker i lazyssh | Na hostach deweloperskich z Dockerem |
-| `gaming.nix` | Steam, Proton-GE, Gamescope, GameMode i GPU Screen Recorder UI | Na komputerach gamingowych |
-| `hardware-amd-gpu.nix` | `amdgpu` w initrd, grafikę 32-bitową, libva-utils, radeontop i vulkan-tools | Tylko dla GPU AMD |
+| `development.nix` | Zgodnościowy agregat `development-core.nix` i `docker.nix` | Dla starszych hostów importujących cały stos; nowe powinny używać mapy `features` |
+| `docker.nix` | Docker uruchamiany ręcznie, grupę `docker`, Compose, lazydocker i lazyssh | Gdy `features.docker = true` |
+| `gaming.nix` | Steam, Proton-GE, Gamescope, GameMode oraz grafikę i ALSA 32-bit | Gdy `features.gaming = true` |
+| `scheduler-benchmark.nix` | Zachowany harness, stress-ng, SuperTuxKart i schedulery SCX | Doraźnie, gdy `features.schedulerBenchmark = true` |
+| `screen-recording.nix` | GPU Screen Recorder i oficjalne UI | Gdy `features.screenRecording = true` |
+| `hardware-amd-gpu.nix` | `amdgpu` w initrd i systemową obsługę grafiki | Tylko dla GPU AMD |
+| `hardware-diagnostics.nix` | libva-utils, radeontop i vulkan-tools | Doraźnie, gdy `features.hardwareDiagnostics = true` |
 | `hardware-asus-laptop.nix` | Najnowsze jądro, `asus-armoury`, `asusd`, UPower, profile zasilania i ROG Control Center | Tylko dla zgodnych laptopów ASUS |
 
 `hardware-configuration.nix` nie jest modułem współdzielonym. Musi pochodzić z
 konkretnej maszyny.
 
-### Zależności między importami i `desktopFeatures`
+ZRAM z `common.nix` nie zawiera identyfikatora sprzętu ani użytkownika. Jego
+logiczna pojemność wynika z fizycznego RAM-u wykrytego na danym urządzeniu, więc
+po skopiowaniu konfiguracji nie wymaga ręcznej zmiany.
 
-- import `development.nix` włącza systemowego Dockera; flaga `docker` włącza
-  tylko jego elementy w sesji użytkownika,
-- import `gaming.nix` dostarcza GSR i gry; flaga `gaming` dodaje autostart,
-  skróty i konfigurację replay,
-- import `hardware-amd-gpu.nix` konfiguruje systemową grafikę AMD; flaga
-  `amdGpu` pokazuje jej metryki w Ironbarze,
-- flaga `laptop` nie oznacza automatycznie ASUS-a: włącza ogólne elementy
-  laptopowe w sesji, a moduł ASUS jest niezależnym wyborem sprzętowym.
+### Jedno źródło prawdy: `features`
+
+- `docker`, `gaming`, `screenRecording`, `hardwareDiagnostics` i
+  `schedulerBenchmark` warunkowo importują kompletne moduły systemowe,
+- `amdGpuMetrics`, `docker`, `screenRecording`, `laptop` i `personalApps` są
+  przekazywane także do Home Managera i sterują wyłącznie pasującym interfejsem,
+- `personalApps` rozdziela Discord, Plexamp i EasyEffects, więc wyłączenie jednej
+  aplikacji usuwa jej pakiet oraz skrót bez wpływu na pozostałe,
+- `laptop` nie oznacza automatycznie ASUS-a: włącza ogólne elementy laptopowe w
+  sesji, a moduł ASUS nadal jest niezależnym wyborem sprzętowym.
 
 ## 7. Moduły profilu Home Managera
 
 | Plik w `home/<profil>/` | Odpowiedzialność |
 |---|---|
 | `default.nix` | Punkt wejścia, pakiety użytkownika, Fish, tmux, Neovim, btop, Git i konfiguracja replay |
-| `desktop.nix` | Aplikacje pulpitu, GTK, Foot, Fuzzel i MPV |
+| `desktop.nix` | Aplikacje pulpitu, GTK, Foot, Fuzzel, MPV i Yazi |
 | `hyprland.nix` oraz `hyprland.lua` | Sesja Hyprlanda, autostart, skróty i reguły okien |
 | `ironbar.nix` | Panel, moduły statusu, metryki, popupy i usługa użytkownika |
 | `ironbar-metric.nix` | Pobieranie i formatowanie metryk CPU, RAM, sieci, dysku i AMD GPU |
@@ -310,6 +375,16 @@ konkretnej maszyny.
 Po skopiowaniu katalogu na nową nazwę użytkownika pliki działają bez zmian.
 Opcjonalnej adaptacji mogą wymagać jedynie osobiste aplikacje, skróty, tapety,
 branding wygaszacza oraz preferencje przeglądarki.
+
+Obecny profil zawiera widoczny napis `WOJTECH` oraz grafikę ASCII w
+`home/<profil>/default.nix`. Dla osobnego profilu siostry zmień opis skrótu i
+zawartość `xdg.configFile."screensaver/wojtech.txt"`. Identyfikator techniczny
+`org.polamaniec.screensaver` może pozostać bez zmian; jeśli go zmieniasz, zrób
+to spójnie w `default.nix` oraz regule okna w `hyprland.lua`.
+
+Skrypty produkcji tapet w `tools/` wskazują obecnie katalog `home/wojtek`.
+Nie wpływa to na działanie pulpitu siostry, ale przed generowaniem osobnego
+zestawu tapet trzeba świadomie zmienić ich katalog docelowy.
 
 ## 8. Dodanie hosta i użytkownika do allowlisty Git
 
@@ -347,7 +422,7 @@ nix flake show path:.
 nix flake check path:.
 
 # Pełny build bez aktywowania systemu.
-nix build path:.#nixosConfigurations.nowy-host.config.system.build.toplevel
+nix build path:.#nixosConfigurations.nowy-host.config.system.build.toplevel --no-link
 ```
 
 Po dodaniu wszystkich plików do Git można używać krótszego `.#...` zamiast
@@ -368,18 +443,86 @@ potem zapisz konfigurację:
 sudo nixos-rebuild switch --flake path:.#nowy-host
 ```
 
-Podczas świeżej instalacji, gdy partycje są już przygotowane i zamontowane pod
-`/mnt`, a repo znajduje się np. w `/mnt/etc/nixos`:
+### Instalacja od zera z Live ISO
+
+Poniższy wariant zakłada komputer `x86_64`, start Live ISO w trybie UEFI,
+systemd-boot, jedną partycję EFI i jedną partycję główną. Przed formatowaniem
+wykonaj kopię danych i sprawdź urządzenie po modelu oraz rozmiarze:
 
 ```bash
-sudo nixos-install --flake path:/mnt/etc/nixos#nowy-host
+sudo -i
+lsblk -e7 -o NAME,SIZE,MODEL,SERIAL,TYPE,FSTYPE,MOUNTPOINTS
+test -d /sys/firmware/efi/efivars && echo UEFI || echo BIOS
+lspci -nnk | grep -A3 -E 'VGA|3D|Display'
 ```
 
-Konfiguracja nie przechowuje hasła. Ustaw je lokalnie dla nowego konta:
+Jeśli wynik pokazuje BIOS, docelowy dysk ma pozostać w dual boot, ma używać
+LUKS albo komputer nie jest `x86_64`, przerwij ten wariant. Najpierw trzeba
+dopasować bootloader, partycje lub parametr architektury; obecny flake zakłada
+`x86_64-linux` i UEFI z systemd-boot. Bez konfiguracji podpisanego bootloadera
+Secure Boot powinien być wyłączony.
+
+Na pustym dysku utwórz tablicę GPT, partycję EFI około 1 GiB typu EFI System i
+partycję główną zajmującą resztę. Możesz użyć `cfdisk` lub `parted`. Dopiero po
+ponownym sprawdzeniu nazw sformatuj właściwe partycje. Przykład dla dysku NVMe,
+w którym EFI to `p1`, a root to `p2`:
 
 ```bash
-sudo passwd nowy-user
+# UWAGA: te dwie komendy bezpowrotnie kasują zawartość wskazanych partycji.
+mkfs.fat -F 32 -n NIXBOOT /dev/nvme0n1p1
+mkfs.ext4 -L nixos /dev/nvme0n1p2
+
+mount /dev/disk/by-label/nixos /mnt
+mkdir -p /mnt/boot
+mount -o umask=077 /dev/disk/by-label/NIXBOOT /mnt/boot
+findmnt -R /mnt
 ```
+
+Nazwy dla dysku SATA zwykle wyglądają jak `/dev/sda1` i `/dev/sda2`. Nie
+wklejaj nazw z przykładu bez potwierdzenia ich przez `lsblk`. Konfiguracja używa
+ZRAM-u i nie wymaga partycji swap; hibernacja wymaga osobnego projektu swapu i
+resume.
+
+Następnie umieść przygotowane repo w `/mnt/etc/nixos`, przejdź do niego i
+wygeneruj konfigurację sprzętową tej maszyny:
+
+```bash
+mkdir -p /mnt/etc/nixos
+# W tym miejscu sklonuj zatwierdzony commit albo skopiuj przygotowany checkout.
+cd /mnt/etc/nixos
+
+nixos-generate-config --root /mnt --show-hardware-config \
+  > hosts/nowy-host/hardware-configuration.nix
+
+lsblk -f
+sed -n '1,220p' hosts/nowy-host/hardware-configuration.nix
+```
+
+Potwierdź UUID-y `/` i `/boot`, platformę, moduły dysku oraz mikrokod CPU.
+Następnie wykonaj kontrole i instalację:
+
+```bash
+nix flake show path:.
+nix flake check path:.
+nix build path:.#nixosConfigurations.nowy-host.config.system.build.toplevel --no-link
+nixos-install --flake 'path:/mnt/etc/nixos#nowy-host'
+```
+
+`nixos-install` poprosi o hasło roota. Konfiguracja nie przechowuje hasła
+zwykłego użytkownika, dlatego ustaw je w zainstalowanym systemie jeszcze przed
+restartem:
+
+```bash
+nixos-enter --root /mnt -c 'passwd nowy-user'
+sync
+reboot
+```
+
+Obecny `modules/desktop.nix` uruchamia pierwszą sesję Hyprlanda automatycznie
+dla użytkownika z manifestu. Hasło nadal jest potrzebne do `sudo`. Jeśli siostra
+ma dostawać ekran logowania po każdym uruchomieniu, należy przed instalacją
+dodać osobną, sterowaną z manifestu opcję zamiast usuwać autologowanie globalnie
+dla wszystkich hostów.
 
 ## 11. Kontrola po uruchomieniu
 
@@ -393,7 +536,7 @@ brightnessctl --list
 gpu-screen-recorder --list-monitors
 ```
 
-Jeśli importujesz `development.nix`, Docker pozostaje celowo wyłączony po
+Jeśli ustawisz `features.docker = true`, Docker pozostaje celowo wyłączony po
 starcie. Uruchamiaj go ręcznie:
 
 ```bash
@@ -418,7 +561,7 @@ homeProfile = "wojtek";
 
 ### Host jest laptopem, ale nie ustawia `backlightDevice`
 
-Przy `desktopFeatures.laptop = true` pole jest wymagane. Znajdź nazwę przez
+Przy `features.laptop = true` pole jest wymagane. Znajdź nazwę przez
 `brightnessctl --list` i wpisz ją w manifeście hosta.
 
 ### Hyprland nie widzi GPU

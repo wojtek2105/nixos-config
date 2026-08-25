@@ -4,35 +4,56 @@ let
   theme = import ./theme.nix { inherit inputs; };
   c = theme.colors;
   scripts = import ./scripts.nix { inherit pkgs; };
-  gamingEnabled = desktopFeatures.gaming or false;
   laptopEnabled = desktopFeatures.laptop or false;
-  personalAppsEnabled = desktopFeatures.personalApps or false;
+  screenRecordingEnabled = desktopFeatures.screenRecording or false;
+  personalApps = desktopFeatures.personalApps or { };
+  easyeffectsEnabled = personalApps.easyeffects or false;
+  plexampEnabled = personalApps.plexamp or false;
 
-  wallpaperPaths = lib.concatMapStringsSep "\n        "
-    (wallpaper: lib.escapeShellArg (toString wallpaper))
-    theme.wallpapers;
+  wallpaperPathsFor = wallpapers:
+    lib.concatMapStringsSep "\n        "
+      (wallpaper: lib.escapeShellArg (toString wallpaper))
+      wallpapers;
 
   rotate-wallpaper = pkgs.writeShellApplication {
     name = "rotate-wallpaper";
     runtimeInputs = with pkgs; [
       awww
       coreutils
-      scripts.display-refresh-rate
+      hyprland
+      jq
     ];
     text = ''
-      wallpapers=(
-        ${wallpaperPaths}
+      wallpapers_16x9=(
+        ${wallpaperPathsFor theme.wallpapers.aspect16x9}
       )
+      wallpapers_21x9=(
+        ${wallpaperPathsFor theme.wallpapers.aspect21x9}
+      )
+      wallpapers_32x9=(
+        ${wallpaperPathsFor theme.wallpapers.aspect32x9}
+      )
+      transitions=(wave grow wipe outer wave grow outer wipe)
+      positions=(right bottom-right top-left center left top-right bottom-left center)
+
+      scene_count="''${#wallpapers_16x9[@]}"
+      if (( scene_count == 0 )) \
+        || (( ''${#wallpapers_21x9[@]} != scene_count )) \
+        || (( ''${#wallpapers_32x9[@]} != scene_count )); then
+        printf 'Wallpaper aspect lists must be non-empty and have equal lengths.\n' >&2
+        exit 1
+      fi
 
       state_dir="''${XDG_STATE_HOME:-$HOME/.local/state}/wallpaper-rotation"
       state_file="$state_dir/index"
+      session_marker="''${XDG_RUNTIME_DIR:?}/wallpaper-rotation-initialized"
       mkdir -p "$state_dir"
 
       index=0
       if [[ -r "$state_file" ]]; then
         read -r previous_index < "$state_file" || previous_index=-1
         if [[ "$previous_index" =~ ^[0-9]+$ ]]; then
-          index=$(((previous_index + 1) % ''${#wallpapers[@]}))
+          index=$(((previous_index + 1) % scene_count))
         fi
       fi
 
@@ -41,48 +62,104 @@ let
         sleep 0.1
       done
 
-      awww img "''${wallpapers[index]}" \
-        --resize crop \
-        --crop-gravity center \
-        --transition-type wave \
-        --transition-angle 35 \
-        --transition-wave 12,12 \
-        --transition-duration 2.4 \
-        --transition-fps "$(display-refresh-rate)"
+      transition_type="''${transitions[index % ''${#transitions[@]}]}"
+      transition_angle=$(((index * 137 + 23) % 360))
+      transition_pos="''${positions[index % ''${#positions[@]}]}"
+      transition_wave="$((14 + (index % 3) * 3)),$((24 + (index % 4) * 4))"
 
+      # The daemon has no image at the beginning of a session. Grow the first
+      # wallpaper from the center instead of flashing it in with a plain fade.
+      if [[ ! -e "$session_marker" ]]; then
+        transition_type=grow
+        transition_pos=center
+      fi
+
+      monitor_rows="$(
+        hyprctl monitors -j \
+          | jq -r '
+              .[]
+              | select(.disabled != true)
+              | [
+                  .name,
+                  ([.width, .height] | max),
+                  ([.width, .height] | min),
+                  ((.refreshRate // 60) | round)
+                ]
+              | @tsv
+            '
+      )"
+
+      if [[ -z "$monitor_rows" ]]; then
+        printf 'Hyprland did not report an active monitor.\n' >&2
+        exit 1
+      fi
+
+      # Pick the nearest stored landscape family from the monitor's real
+      # geometry. Ratios are scaled by 10000 to avoid a floating-point helper:
+      # 16:9 = 1.7778, 3440:1440 = 2.3889, 32:9 = 3.5556.
+      while IFS=$'\t' read -r output long_edge short_edge refresh_rate; do
+        if (( short_edge <= 0 )); then
+          printf 'Ignoring monitor %s with invalid geometry.\n' "$output" >&2
+          continue
+        fi
+
+        ratio=$((long_edge * 10000 / short_edge))
+        distance_16x9=$((ratio - 17778))
+        distance_21x9=$((ratio - 23889))
+        distance_32x9=$((ratio - 35556))
+        if (( distance_16x9 < 0 )); then
+          distance_16x9=$((-distance_16x9))
+        fi
+        if (( distance_21x9 < 0 )); then
+          distance_21x9=$((-distance_21x9))
+        fi
+        if (( distance_32x9 < 0 )); then
+          distance_32x9=$((-distance_32x9))
+        fi
+
+        if (( distance_32x9 <= distance_21x9 && distance_32x9 <= distance_16x9 )); then
+          wallpaper="''${wallpapers_32x9[index]}"
+        elif (( distance_21x9 <= distance_16x9 )); then
+          wallpaper="''${wallpapers_21x9[index]}"
+        else
+          wallpaper="''${wallpapers_16x9[index]}"
+        fi
+
+        if [[ ! "$refresh_rate" =~ ^[0-9]+$ ]] \
+          || (( refresh_rate < 30 || refresh_rate > 1000 )); then
+          refresh_rate=60
+        fi
+
+        awww img "$wallpaper" \
+          --outputs "$output" \
+          --resize crop \
+          --crop-gravity right \
+          --transition-type "$transition_type" \
+          --transition-angle "$transition_angle" \
+          --transition-pos "$transition_pos" \
+          --transition-bezier 0.16,1,0.3,1 \
+          --transition-wave "$transition_wave" \
+          --transition-duration 2.4 \
+          --transition-fps "$refresh_rate"
+      done <<< "$monitor_rows"
+
+      touch "$session_marker"
       printf '%s\n' "$index" > "$state_file"
     '';
   };
 
   suspend-on-battery = pkgs.writeShellApplication {
     name = "suspend-on-battery";
-    runtimeInputs = [ pkgs.systemd ];
+    runtimeInputs = [
+      pkgs.systemd
+      scripts.power-source-state
+    ];
     text = ''
-      battery_present=false
-      external_power=false
-
-      for supply in /sys/class/power_supply/*; do
-        [[ -r "$supply/type" ]] || continue
-        read -r supply_type < "$supply/type"
-
-        case "$supply_type" in
-          Battery)
-            battery_present=true
-            ;;
-          Mains|USB|USB_C|USB_PD|Wireless)
-            if [[ -r "$supply/online" ]]; then
-              read -r online < "$supply/online"
-              [[ "$online" == 1 ]] && external_power=true
-            fi
-            ;;
-        esac
-      done
-
-      "$battery_present" || exit 0
-      "$external_power" && exit 0
+      [[ "$(power-source-state)" == battery ]] || exit 0
       exec systemctl suspend
     '';
   };
+
 in
 {
   home.activation.removeAutogeneratedHyprlandStub =
@@ -109,9 +186,8 @@ in
         "@ACTIVE_BORDER_ALT@"
         "@INACTIVE_BORDER@"
         "@SHADOW@"
-        "@START_GAMING@"
         "@BIND_PERSONAL_APPS@"
-        "@BIND_GAMING@"
+        "@BIND_SCREEN_RECORDING@"
         "@BIND_LAPTOP@"
       ]
       [
@@ -120,16 +196,19 @@ in
         c.yellow
         c.muted
         c.background
-        (lib.optionalString gamingEnabled ''hl.exec_cmd("gsr-ui launch-hide")'')
-        (lib.optionalString personalAppsEnabled ''
-          bind_exec(mod .. " + M", "plexamp")
-          bind_exec(mod .. " + SHIFT + A", "easyeffects")
-        '')
-        (lib.optionalString gamingEnabled ''
-          bind_exec("ALT + Z", "gsr-ui-cli toggle-show")
-          bind_exec(mod .. " + G", "gsr-ui-cli toggle-show")
-          bind_exec(mod .. " + R", "gsr-ui-cli replay-save")
-          bind_exec(mod .. " + SHIFT + R", "gsr-ui-cli toggle-replay")
+        (lib.concatStrings [
+          (lib.optionalString plexampEnabled ''
+            bind_exec(mod .. " + M", "plexamp")
+          '')
+          (lib.optionalString easyeffectsEnabled ''
+            bind_exec(mod .. " + SHIFT + A", "easyeffects")
+          '')
+        ])
+        (lib.optionalString screenRecordingEnabled ''
+          bind_exec("ALT + Z", "gsr-control toggle-show")
+          bind_exec(mod .. " + G", "gsr-control toggle-show")
+          bind_exec(mod .. " + R", "gsr-control replay-save")
+          bind_exec(mod .. " + SHIFT + R", "gsr-control toggle-replay")
         '')
         (lib.optionalString laptopEnabled ''
           bind_exec("XF86MonBrightnessUp", "swayosd-client --brightness=+5 --device=${backlightDevice}", { locked = true, repeating = true })
@@ -208,7 +287,9 @@ in
       PartOf = [ "graphical-session.target" ];
     };
     Timer = {
+      # Give Awww two seconds to expose its Wayland socket after login.
       OnActiveSec = "2s";
+      # Rotate often enough to vary the OLED image without keeping a daemon busy.
       OnUnitActiveSec = "5min";
       AccuracySec = "1s";
       Unit = "rotate-wallpaper.service";
@@ -230,7 +311,6 @@ in
         {
           timeout = 300;
           on-timeout = "pidof hyprlock || screensaver";
-          on-resume = "pkill -f '[o]rg.polamaniec.screensaver'";
         }
         {
           timeout = 360;

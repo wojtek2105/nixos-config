@@ -5,14 +5,13 @@ FLAKE ?= path:.
 KEEP ?= 4
 SYSTEM_PROFILE ?= /nix/var/nix/profiles/system
 
-.PHONY: help check build test rollback boot switch generations gc benchmark
+.PHONY: help check build test rollback boot switch generations gc
 
 help:
 	@printf '%s\n' \
 		'make check     - sprawdź wszystkie wyjścia flake' \
 		'make build     - zbuduj system bez aktywacji' \
 		'make test      - aktywuj konfigurację do restartu' \
-		'make benchmark [SECONDS=120] - zmierz aktywny shell pulpitu' \
 		'make rollback  - wróć na żywo do systemu uruchomionego przy bootowaniu' \
 		'make boot      - ustaw konfigurację na następny start' \
 		'make switch    - aktywuj i ustaw konfigurację jako domyślną' \
@@ -30,9 +29,6 @@ test:
 	ironbar --config "$(HOME)/.config/ironbar/config.json" --theme "$(HOME)/.config/ironbar/style.css" --validate-config
 	systemctl --user daemon-reload
 	systemctl --user restart ironbar.service
-
-benchmark:
-	desktop-benchmark $(or $(SECONDS),120)
 
 rollback:
 	sudo /run/booted-system/bin/switch-to-configuration test

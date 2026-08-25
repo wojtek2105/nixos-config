@@ -1,0 +1,9 @@
+Edit the supplied 2560x1440 image only inside three compact diegetic label areas.
+Engrave "ACME" on a small dark-metal plate on the front of the challenge brazier
+at x=1325..1500, y=785..875. Engrave "FULL CHAIN" on a narrow brass plate below
+the triangular gate seal at x=1660..1845, y=650..735. Embroider "TRAEFIK :443"
+as one small crisp line near the lower half of the existing red gate banner at
+x=1880..2075, y=570..700. Use exact legible uppercase lettering. Preserve every
+detail outside these three areas, including the vampire lord, Castle Heart,
+certificate chain, wards, architecture, lighting and OLED shadows. Add no other
+text, plaques, symbols or objects.

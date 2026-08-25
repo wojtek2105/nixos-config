@@ -1,0 +1,60 @@
+Create one premium OLED desktop wallpaper as an exact 2560x1440, 16:9 PNG. This
+is the definitive right-anchored core of a future 32:9 panorama, but it must
+already work as a complete standalone WQHD wallpaper. Compose one uninterrupted
+environmental anime shot from a single camera inside a roofed abbey crypt
+threaded with ancient roots. Use one horizon, continuous stone-floor lines,
+coherent arch perspective and one physically consistent lighting solution.
+
+Show canonical Frieren from Frieren: Beyond Journey's End, immediately
+recognizable through her accurate face, green eyes, silver twin tails, elf
+ears, gold earrings, staff and default ivory-and-gold mage travel wardrobe.
+Preserve her complete head, hair, ears, hands, staff and clothing with safe
+margins. She actively inserts a brass key into an archive mechanism and studies
+it with quiet concentration. Keep her, the mechanism, the input, the result and
+the practical lamp as one readable focal group around the centre-right. Leave
+enough breathing room around every subject for normal desktop use.
+
+The archive lock is a precise dimensional brass Nix mechanism: six identical
+angular ribbon arms interlock around a hexagonal hub with exact radial symmetry,
+unmistakably evoking the Nix snowflake while functioning as a real ancient lock.
+It must not resemble a ship wheel, helm, Kubernetes wheel, flower, sun or random
+spokes. Frieren's existing key physically drives its central hub.
+
+Tell one compact technical story with exactly five small physical labels and no
+other text. A sealed input scroll entering the lock reads "flake.lock". A living
+catalogue tree beside it has one healthy branch carrying the tags "main" and
+"v1.0.0", while one visibly broken branch is tagged "untrusted". The successful
+output is a sealed cream archive capsule embossed "signed". Spell all five
+strings exactly as quoted in crisp, high-contrast lettering readable at native
+WQHD. Attach every label to its described real prop. No floating words,
+gibberish, duplicated labels, random punctuation, terminal wall or logo wall.
+
+Use exactly one subtle cross-world easter egg: shape the brass key guard as a
+small, angular wolf-medallion silhouette. A tiny yellow rubber debugging duck
+rests naturally in Frieren's open leather tool roll. These details remain
+subordinate to the Frieren scene and the locked-input to signed-artifact story.
+
+Render in premium detailed anime artwork faithful to Frieren's television
+visual language: clean expressive linework, accurate anatomy and hands,
+restrained painterly materials and subtle cinematic depth. One small hooded
+amber work lamp illuminates Frieren's face, hands, key, mechanism and signed
+capsule. Its light creates soft contact shadows, warm material-aware bounce,
+ambient occlusion and progressively weaker illumination through the crypt.
+
+Make the environment genuinely OLED-first. Distribute roughly 35–50 percent
+emitted-off #000000 through arch cavities, root gaps, unlit passages and deep
+material occlusion without crushing all secondary detail. Preserve dimensional
+shadow edges in #1A1515, #2D2424 and #453636. Use restrained Biscuit de Mar Dark
+accents: foreground #DCC9BC, highlight #FFE9C7, amber #E39C45, orange #F07342,
+healthy green #768F80, olive #959A6B, violet #756D94, focus pink #AE3F82 and
+critical red #CF223E. No broad white, grey, blue or neon surfaces.
+
+The upper edge remains a calm, dark continuation of the crypt ceiling with no
+bright strip, grey bar, border, frame, watermark or UI. The stone floor, roots,
+arches and material lighting must continue naturally beyond the left edge of
+the 16:9 frame so a later model can extend this exact world to the left. Do not
+place a wall, pillar, black veil, gradient boundary, foreground occluder or
+vignette that visually closes the left edge. Do not split the frame into zones.
+
+Preserve Frieren's complete standard travel wardrobe and neutral working pose
+exactly as depicted in the television series.

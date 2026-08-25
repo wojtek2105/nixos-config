@@ -1,0 +1,6 @@
+Edit the supplied image. Preserve the character, Nix mechanism, archive cabinet,
+roots, camera, composition, lighting and every other detail. Add exactly three
+small physical labels: "flake.lock" on a parchment tag tied to the upper-left
+root, "main" on a small tag tied to the healthy upper-right root, and "signed"
+on a brass plate directly below the mechanism. Spell them exactly, use crisp
+dark lettering and add no other text or changes.

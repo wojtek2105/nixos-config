@@ -1,0 +1,27 @@
+SCENE 02 — CANARY OVER SILENT BRIDGE
+
+Original visual language: premium Frieren anime background art and canonical
+Frieren, Fern and Stark in their default recognizable travel wardrobes,
+canonical hair, faces, staff and axe. Never replace them with generic fantasy
+travelers.
+
+Use only three major technical props. A single stone bridge is the sturdy
+"main" trunk. Beside it, one tangled long-lived side scaffold fails to merge;
+Stark sits visibly frustrated beside its conflict knot and red "test" lantern.
+Fern cuts the work down to one short clean scaffold that joins main and turns
+the same test lantern green. At the far end, Frieren operates one physical
+"flag" lever while a small golden canary crosses as the selected cohort. If
+the health lamp turns red again, she pulls flag off and the canary route closes
+immediately while the stable bridge remains open.
+
+The complete visible flow is only: conflict plus red test -> short branch into
+main -> feature flag for canary -> flag-off rollback. Do not add build stages,
+artifact registry, preview, production, Flux, GitHub, GitLab, Jenkins or a
+floating pipeline diagram to this scene. Use exactly three physical labels:
+"main", "test" and "flag".
+
+Exactly one crossover: a miniature Pal Sphere hangs from Stark's axe belt.
+Gather the complete trio, conflict scaffold, flag, bird and test lamp naturally
+to the right of centre on one uninterrupted bridge. Its masonry, arches, river
+and mist pass continuously through the centre and recede across the full
+panorama with one perspective and lighting solution.

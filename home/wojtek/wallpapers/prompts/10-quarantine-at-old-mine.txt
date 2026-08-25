@@ -1,0 +1,18 @@
+SCENE 10 — QUARANTINE AT OLD MINE
+
+Original visual language: The Witcher 3 game cinematic with canonical game
+Yennefer, Geralt and Ciri, default wardrobe language, equipment and faces.
+
+Inside an abandoned mine, Yennefer isolates a corrupted artifact, Geralt
+collects a physical sample and Ciri cuts the only propagation route. One
+pattern stencil represents YARA matching the artifact; a behavior ledger
+represents Sigma; a host evidence plate confirms the same finding. Only the
+agreement of those clues closes the quarantine cage. A common harmless sample
+matches the first stencil but fails the behavior proof, forming a logical
+false positive.
+
+Exactly one crossover: a small in-world poster of Power is pinned inside the
+mine guard's locker. Gather the trio, evidence sequence, false sample, cage and
+poster naturally to the right of centre. Timber supports, rails and tunnel
+cavities continue through one uninterrupted Witcher 3 mine with coherent
+perspective, materials and restrained practical light.

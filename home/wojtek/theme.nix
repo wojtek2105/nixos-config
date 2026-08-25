@@ -31,6 +31,22 @@ in
 
   inherit colors;
 
+  metricPopup = {
+    label = colors.subtle;
+    value = colors.bright;
+    secondary = colors.foreground;
+    cpu = colors.violet;
+    memory = colors.accent;
+    positive = colors.green;
+    upload = colors.violet;
+    disk = colors.orange;
+    gpu = colors.blue;
+    vram = colors.magenta;
+    thermal = colors.yellow;
+    warning = colors.orange;
+    critical = colors.red;
+  };
+
   semantic = {
     panel = colors.surface;
     panelHover = colors.selection;
@@ -43,30 +59,20 @@ in
     critical = colors.red;
   };
 
-  wallpapers = [
-    ./wallpapers/frieren-observatory.png
-    ./wallpapers/night-ops.png
-    ./wallpapers/devsecops-owl.png
-    ./wallpapers/zero-trust-shrine.png
-    ./wallpapers/dependency-labyrinth.png
-    ./wallpapers/packet-rain-rooftop.png
-    ./wallpapers/reproducible-build-forge.png
-    ./wallpapers/secure-release-montage.png
-    ./wallpapers/smoke-and-policy.png
-    ./wallpapers/desert-chemistry-ci.png
-    ./wallpapers/demon-proxy.png
-    ./wallpapers/monster-hunter-firewall.png
-    ./wallpapers/shadow-incident.png
-    ./wallpapers/malware-devil-hunt.png
-    ./wallpapers/edge-runner-deploy.png
-    ./wallpapers/subway-red-team.png
-    ./wallpapers/soc-after-midnight.png
-    ./wallpapers/physical-red-team-heist.png
-    ./wallpapers/container-harbor.png
-    ./wallpapers/cold-aisle-ghost.png
-    ./wallpapers/threat-hunter-archive.png
-    ./wallpapers/incident-response-bunker.png
-  ];
+  # Lists are synchronized by index: every position names the same scene in
+  # three aspect families. Hyprland selects the family matching the monitor,
+  # while the shared index keeps the same scene on mixed-aspect displays.
+  wallpapers = {
+    aspect16x9 = [
+      ./wallpapers/16x9/14-blood-certificate-domain.png
+    ];
+    aspect21x9 = [
+      ./wallpapers/21x9/14-blood-certificate-domain.png
+    ];
+    aspect32x9 = [
+      ./wallpapers/32x9/14-blood-certificate-domain.png
+    ];
+  };
   gtkTheme = "biscuit-dark";
   gtkThemeSource = "${inputs.biscuit-gtk}/biscuit-dark";
   iconTheme = "papirus-biscuit-dark";
