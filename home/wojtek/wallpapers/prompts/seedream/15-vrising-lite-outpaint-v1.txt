@@ -1,0 +1,20 @@
+Use case: precise-object-edit
+Asset type: native 5120x1440 OLED wallpaper master
+Input images: Image 1 is the accepted 2560x1440 V Rising core and must remain
+the unchanged right side of the wider image.
+
+Extend the existing castle domain naturally and only toward the left until the
+canvas is exactly 5120x1440. Continue the same isometric floor grid, Gothic
+arches, walls, crypt passages, material scale, moonless atmosphere, practical
+red lights, weak bounced light, ambient occlusion and contact shadows. Build a
+coherent foreground, midground and background through the far-left edge with
+organic OLED-black cavities and useful dark space for terminal windows.
+
+Preserve the supplied core exactly: Castle Heart, failed PRIMARY crypt, 6432
+connection gate, healthy REPLICA crypt, record capsule, shadow crown,
+characters, blood channels, all text, light and color. Do not duplicate or move
+the core, characters, Castle Heart, crypts, gate, labels or crossover. Add no
+new text, logo, character, technical prop or focal light.
+
+The result must be one continuous V Rising world with no seam, diptych, black
+panel, gradient veil, blur, repeated tile, empty sky, border or watermark.

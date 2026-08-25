@@ -1,0 +1,25 @@
+Use case: precise-object-edit
+Asset type: native 2560x1440 OLED wallpaper core
+Input images: Image 1 is the accepted clean V Rising edit target.
+
+Preserve the scene's camera, composition, Castle Heart, architecture, armored
+characters, materials, OLED shadows and color. Add one clear physical failover
+mechanism only in the existing crypt workspace around the Castle Heart.
+
+The Castle Heart feeds one compact Gothic connection gate. Beyond that gate,
+the blood channel forks to two matched database crypt reliquaries made from the
+existing coffins. The active main crypt is visibly failing: its ward is cracked
+and dim, a servant closes new writes at its inlet, and no essence enters it.
+Another servant turns the same gate so the already synchronized replica crypt
+becomes healthy and bright. A single small glowing record capsule remains
+intact inside the promoted replica, making successful controlled failover
+obvious without arrows or UI. Keep the flow physically continuous and readable:
+Castle Heart -> connection gate -> failed main or healthy replica.
+
+Add exactly one subordinate crossover: engrave Sung Jinwoo's recognizable
+shadow crown into the metal lid of the healthy replica crypt as a small dark
+relief catching faint violet-red light.
+
+Do not add letters, digits, words, port numbers, product logos, floating arrows,
+diagrams, UI, Redis, Ceph, Kubernetes, extra characters or other objects. Do
+not alter the dark left nave or create a seam, panel or watermark.

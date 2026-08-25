@@ -1,0 +1,26 @@
+Use case: precise-object-edit
+Asset type: native 2560x1440 OLED wallpaper core
+Input images: Image 1 is the accepted clean V Rising edit target.
+
+Preserve the scene's camera, composition, Castle Heart, architecture, armored
+characters, forge, chest, materials, OLED shadows and color. Turn only the
+existing right-side armory workspace into one compact physical artifact flow.
+
+The existing open source lectern releases one sealed blood-red recipe to a
+single servant with a subtle woodpecker-crested helmet. The existing first
+forge chamber tests that same recipe with one small red-or-green ward. The
+second chamber forges exactly one weapon and binds a short parchment inventory
+strip to its hilt. The existing Castle Heart apparatus presses a glowing
+cryptographic seal into that weapon. A servant stores the signed weapon inside
+the existing heavy chained registry chest, while one visibly unsigned duplicate
+is rejected into the smelter. Make this a readable material sequence through
+servant actions and one tracked weapon, without arrows or interface panels.
+
+Add exactly one subordinate crossover: a small yellow rubber duck wearing a
+tiny recognizable Stark helmet from Frieren rests naturally on the source
+lectern's lower shelf, with correct contact shadow and forge bounce light.
+
+Do not add letters, digits, words, labels, product logos, diagrams, UI, extra
+pipeline stages, deployment environments, Kubernetes, extra characters or
+other crossover objects. Do not alter the dark left workshop or create a seam,
+panel or watermark.

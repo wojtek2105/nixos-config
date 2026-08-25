@@ -1,0 +1,21 @@
+Use case: precise-object-edit
+Asset type: native 2560x1440 OLED wallpaper core
+Input images: Image 1 is the accepted V Rising signed-armory mechanism target.
+
+Change only three small diegetic label areas. Preserve the complete image,
+especially the source lectern, recipe, green test, two forge chambers, tracked
+weapon, parchment inventory, Castle Heart seal, heavy chained chest, rejected
+unsigned duplicate, large duck with helmet, characters, architecture, lighting
+and OLED shadows.
+
+1. Write the exact uppercase text "SBOM" on the short parchment inventory strip
+already bound to the successfully forged glowing weapon, using crisp dark ink
+that follows the parchment perspective.
+2. Engrave the exact lowercase text "sha256" into the existing brass lock plate
+of the heavy chained registry chest, following its perspective and forge light.
+3. Write the exact lowercase text "latest" on the small dangling rejection tag
+attached to the unsigned duplicate weapon entering the smelter.
+
+Keep all text physically integrated into its existing prop; no new plaques,
+rectangles, floating text or UI. Render each label exactly once. Add no other
+letters, digits, words, symbols, logos, objects or watermark.

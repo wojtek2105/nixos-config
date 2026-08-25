@@ -1,0 +1,20 @@
+Use case: precise-object-edit
+Asset type: native 2560x1440 OLED wallpaper core
+Input images: Image 1 is the accepted V Rising failover mechanism edit target.
+
+Change only three small diegetic label areas. Preserve the complete image,
+especially the Castle Heart, physical blood channels, central connection gate,
+failed left crypt, healthy violet replica crypt, intact glowing record capsule,
+shadow-crown engraving, characters, architecture, lighting and OLED shadows.
+
+1. Engrave the exact uppercase text "PRIMARY" into the front-facing dark-metal
+rim of the visibly failed, cracked crypt. All letters must be complete and
+readable together, following its perspective and red failure light.
+2. Engrave the exact uppercase text "REPLICA" into the front-facing metal rim
+of the healthy violet crypt. Keep the existing shadow crown on its lid visible.
+3. Engrave the exact digits "6432" into a small brass socket on the existing
+central Gothic connection gate, following the gate perspective.
+
+Use worn antique-gold V Rising engraving integrated into the original material;
+no separate plaques, rectangles, floating text or UI. Render each label exactly
+once. Add no other letters, digits, words, symbols, logos, objects or watermark.

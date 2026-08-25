@@ -1,0 +1,25 @@
+Use case: precise-object-edit
+Asset type: native 5120x1440 OLED wallpaper master
+Input images: Image 1 is the accepted 2560x1440 V Rising core and must remain
+the right side of the wider image.
+
+First correct exactly one existing typo on the brass lock plate of the heavy
+chained registry chest: replace "sha255" with the exact lowercase text
+"sha256" (s-h-a-2-5-6), preserving the same engraved antique-gold lettering,
+size, perspective, material and forge lighting. Change no other right-side
+detail; preserve "SBOM" and "latest" exactly.
+
+Extend the existing armory domain naturally and only toward the left until the
+canvas is exactly 5120x1440. Continue the same isometric floor grid, Gothic
+arches, workshop storage, material scale, moonless atmosphere, practical forge
+lights, weak bounced light, ambient occlusion and contact shadows. Build a
+coherent foreground, midground and background through the far-left edge with
+organic OLED-black cavities and useful dark terminal space.
+
+Preserve the complete supplied core except for that single digit: Castle Heart,
+lectern, recipe, green test, forge, tracked weapon, SBOM parchment, latest tag,
+sealed chest, characters, large helmeted duck, lighting and colors. Do not
+duplicate or move the core or add text, logos, characters, props or focal light.
+
+The result must be one continuous V Rising world with no seam, diptych, black
+panel, gradient veil, blur, repeated tile, empty sky, border or watermark.
