@@ -101,6 +101,14 @@ def upscale_tiled(
                 : patch.height * scale,
                 : patch.width * scale,
             ]
+            # BF16 ROCm inference can exceptionally emit NaN/Inf.  Never cast
+            # those values to pixels: that silently produces dark corrupt tiles.
+            if not torch.isfinite(enhanced).all().item():
+                raise FloatingPointError(
+                    f"Nieprawidłowe wartości modelu w kaflu {tile_number}/{tile_count} "
+                    f"(core={core_x0},{core_y0}-{core_x1},{core_y1}); "
+                    "ponów obraz z NOMOS_DTYPE=float32"
+                )
 
             crop_x0 = (core_x0 - patch_x0) * scale
             crop_y0 = (core_y0 - patch_y0) * scale
