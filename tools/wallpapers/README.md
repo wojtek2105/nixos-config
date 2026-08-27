@@ -93,8 +93,10 @@ Nomos8kDAT jest lokalnym, niepromptowanym modelem 4× super-resolution. Profil
 max-quality podaje cały master 5120×1440 do Nomos, wykonuje pełne 4× do
 20480×5760, a dopiero potem skaluje do celu i miesza wynik z oryginałem. Kafel
 512 ma 32-pikselowe halo; łagodne końcowe wyostrzenie ogranicza artefakty
-twarzy. Nomos zawsze czyta surowy master z `work/import-48/masters/`, przed
-końcową korektą czerni; ta korekta jest stosowana dopiero przy promocji wyniku.
+twarzy. Nomos czyta master z `work/import-48/masters/`, przed końcową korektą
+czerni dla 44 scen; cztery historyczne mastery bez surowego źródła są
+zachowanym fallbackiem po tej korekcie. Dla pozostałych scen korekta czerni
+jest stosowana dopiero przy promocji wyniku.
 Profil nie zmienia kadru. Wyniki trafiają do
 `work/import-48/upscaled-32x9-nomos8kdat/`; aktywna kolekcja nie jest zmieniana
 przez `test` ani `run`. Przy OOM profil automatycznie ponawia bieżącą tapetę z
