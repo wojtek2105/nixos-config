@@ -128,7 +128,7 @@ python_args=(
   python3 tools/wallpapers/upscale/nomos8kdat.py
   --model /runtime/models/4xNomos8kDAT.safetensors
   --manifest /repo/home/wojtek/wallpapers/collection.json
-  --input-dir /repo/home/wojtek/wallpapers/32x9
+  --input-dir /repo/home/wojtek/wallpapers/work/import-48/masters
   --output-dir "/repo/home/wojtek/wallpapers/work/import-48/$stage_name"
 )
 if [[ "$mode" == test ]]; then
