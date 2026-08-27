@@ -206,6 +206,7 @@ def main() -> int:
     blend = env_float("NOMOS_BLEND", 0.65)
     sharpen = env_int("NOMOS_SHARPEN", 15)
     source_scale = env_float("NOMOS_SOURCE_SCALE", 1.0)
+    min_vram_gib = env_float("NOMOS_MIN_VRAM_GIB", 0.0)
     requested_dtype = os.environ.get("NOMOS_DTYPE", "bfloat16").lower()
     overwrite = os.environ.get("NOMOS_OVERWRITE", "0") == "1"
     auto_tile = os.environ.get("NOMOS_AUTO_TILE", "1") not in {"0", "no", "false", "off"}
@@ -218,6 +219,13 @@ def main() -> int:
         raise ValueError("NOMOS_SOURCE_SCALE musi mieścić się w zakresie 0.25–1.0")
     if not torch.cuda.is_available() or torch.version.hip is None:
         raise RuntimeError("ROCm GPU jest niedostępne")
+    detected_vram_gib = torch.cuda.get_device_properties(0).total_memory / (1024**3)
+    if detected_vram_gib < min_vram_gib:
+        raise RuntimeError(
+            f"Wybrano GPU z {detected_vram_gib:.2f} GiB VRAM; "
+            f"profil wymaga co najmniej {min_vram_gib:.2f} GiB. "
+            "Ustaw właściwy NOMOS_GPU_ORDINAL."
+        )
 
     device = torch.device("cuda:0")
     descriptor = ModelLoader().load_from_file(args.model)
@@ -243,7 +251,8 @@ def main() -> int:
     descriptor.model.to(dtype=dtype)
     model = descriptor.cuda().eval()
     print(
-        f"GPU={torch.cuda.get_device_name(0)} HIP={torch.version.hip} "
+        f"GPU={torch.cuda.get_device_name(0)} VRAM={detected_vram_gib:.2f}GiB "
+        f"HIP={torch.version.hip} "
         f"dtype={requested_dtype} tile={tile} overlap={overlap} "
         f"source_scale={source_scale:.2f} blend={blend:.2f} sharpen={sharpen}",
         flush=True,
@@ -288,7 +297,7 @@ def main() -> int:
             if auto_tile:
                 tile_candidates.extend(
                     candidate
-                    for candidate in (576, 512, 448, 384, 320)
+                    for candidate in (832, 768, 704, 640, 576, 512, 448, 384, 320)
                     if candidate < tile
                 )
             for candidate_index, candidate_tile in enumerate(tile_candidates):

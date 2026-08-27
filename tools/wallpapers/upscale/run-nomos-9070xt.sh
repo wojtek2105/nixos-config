@@ -8,7 +8,6 @@ image="${NOMOS_ROCM_IMAGE:-rocm/pytorch:rocm7.2.4_ubuntu24.04_py3.12_pytorch_rel
 model="$runtime_root/models/4xNomos8kDAT.safetensors"
 python_dir="$runtime_root/python"
 stage_name="${UPSCALE_STAGE_NAME:-upscaled-32x9-nomos8kdat}"
-gpu_pci="${NOMOS_GPU_PCI:-0000:03:00.0}"
 mode="${1:-test}"
 slug="${2:-01-frieren}"
 
@@ -30,14 +29,47 @@ case "$mode" in
 esac
 
 for command in docker flock readlink stat; do
-  command -v "$command" >/dev/null 2>&1 || { printf 'Brak polecenia: %s\n' "$command" >&2; exit 1; }
+  command -v "$command" >/dev/null 2>&1 \
+    || { printf 'Brak polecenia: %s\n' "$command" >&2; exit 1; }
 done
 [[ -s "$model" && -d "$python_dir" ]] || {
   printf 'Brak modelu lub środowiska. Uruchom: tools/wallpapers/upscale/install-nomos8kdat-rocm.sh\n' >&2
   exit 1
 }
-[[ -e /dev/kfd && -d /dev/dri ]] || { printf 'Brak urządzeń ROCm /dev/kfd lub /dev/dri.\n' >&2; exit 1; }
+[[ -e /dev/kfd && -d /dev/dri ]] \
+  || { printf 'Brak urządzeń ROCm /dev/kfd lub /dev/dri.\n' >&2; exit 1; }
 docker info >/dev/null
+
+# Prefer the AMD DRM device with the largest dedicated VRAM allocation. This
+# distinguishes the 16 GiB RX 9070 XT from a small integrated Radeon without
+# hard-coding PCI topology from one desktop build.
+gpu_pci="${NOMOS_GPU_PCI:-}"
+best_vram=0
+if [[ -z "$gpu_pci" ]]; then
+  for card in /sys/class/drm/card[0-9]*; do
+    [[ -r "$card/device/vendor" && -r "$card/device/mem_info_vram_total" ]] || continue
+    [[ "$(<"$card/device/vendor")" == 0x1002 ]] || continue
+    vram="$(<"$card/device/mem_info_vram_total")"
+    if (( vram > best_vram )); then
+      best_vram="$vram"
+      gpu_pci="$(basename -- "$(readlink -f "$card/device")")"
+    fi
+  done
+fi
+[[ -n "$gpu_pci" ]] || { printf 'Nie znaleziono karty AMD DRM z raportem VRAM.\n' >&2; exit 1; }
+
+render_node=""
+for candidate in /sys/class/drm/renderD*; do
+  [[ -e "$candidate/device" ]] || continue
+  if [[ "$(basename -- "$(readlink -f "$candidate/device")")" == "$gpu_pci" ]]; then
+    render_node="/dev/dri/$(basename -- "$candidate")"
+    break
+  fi
+done
+[[ -n "$render_node" && -e "$render_node" ]] || {
+  printf 'Nie znaleziono render node dla RX 9070 XT PCI %s.\n' "$gpu_pci" >&2
+  exit 1
+}
 
 work_root="$repo_root/home/wojtek/wallpapers/work/import-48"
 mkdir -p "$work_root/$stage_name"
@@ -46,21 +78,7 @@ exec 9>"$work_root/nomos-rocm-gpu.lock"
 flock -w "${NOMOS_LOCK_TIMEOUT:-86400}" 9 \
   || { printf 'Nie udało się uzyskać blokady GPU.\n' >&2; exit 1; }
 
-render_node=""
-for candidate in /sys/class/drm/renderD*; do
-  [[ -e "$candidate/device" ]] || continue
-  candidate_pci="$(basename -- "$(readlink -f "$candidate/device")")"
-  if [[ "$candidate_pci" == "$gpu_pci" ]]; then
-    render_node="/dev/dri/$(basename -- "$candidate")"
-    break
-  fi
-done
-[[ -n "$render_node" && -e "$render_node" ]] || {
-  printf 'Nie znaleziono render node dla RX 6800S PCI %s.\n' "$gpu_pci" >&2
-  exit 1
-}
-
-container_name="wallpaper-nomos-6800s-$$"
+container_name="wallpaper-nomos-9070xt-$$"
 container_id=""
 stop_container() {
   if [[ -n "$container_id" ]]; then
@@ -70,6 +88,7 @@ stop_container() {
 trap 'stop_container; exit 130' INT TERM
 trap 'stop_container' EXIT
 
+gpu_ordinal="${NOMOS_GPU_ORDINAL:-0}"
 docker_args=(
   run --rm
   --name "$container_name"
@@ -81,23 +100,25 @@ docker_args=(
   -v "$runtime_root:/runtime"
   -w /repo
   -e PYTHONPATH=/runtime/python
-  -e HSA_OVERRIDE_GFX_VERSION="${HSA_OVERRIDE_GFX_VERSION:-10.3.0}"
-  -e ROCR_VISIBLE_DEVICES=0
+  -e ROCR_VISIBLE_DEVICES="$gpu_ordinal"
   -e HIP_VISIBLE_DEVICES=0
   -e PYTORCH_ALLOC_CONF=expandable_segments:True
   -e PYTORCH_HIP_ALLOC_CONF=expandable_segments:True
-  -e NOMOS_TILE="${NOMOS_TILE:-512}"
+  -e NOMOS_TILE="${NOMOS_TILE:-832}"
   -e NOMOS_AUTO_TILE="${NOMOS_AUTO_TILE:-1}"
   -e NOMOS_OVERLAP="${NOMOS_OVERLAP:-32}"
   -e NOMOS_PAD_MULTIPLE="${NOMOS_PAD_MULTIPLE:-64}"
   -e NOMOS_DTYPE="${NOMOS_DTYPE:-bfloat16}"
-  -e NOMOS_MIN_VRAM_GIB="${NOMOS_MIN_VRAM_GIB:-7.0}"
+  -e NOMOS_MIN_VRAM_GIB="${NOMOS_MIN_VRAM_GIB:-12.0}"
   -e NOMOS_SOURCE_SCALE="${NOMOS_SOURCE_SCALE:-1.0}"
   -e NOMOS_BLEND="${NOMOS_BLEND:-0.65}"
   -e NOMOS_SHARPEN="${NOMOS_SHARPEN:-15}"
   -e NOMOS_OVERWRITE="${NOMOS_OVERWRITE:-0}"
 )
 
+if [[ -n "${HSA_OVERRIDE_GFX_VERSION:-}" ]]; then
+  docker_args+=(-e HSA_OVERRIDE_GFX_VERSION="$HSA_OVERRIDE_GFX_VERSION")
+fi
 for device in /dev/kfd "$render_node"; do
   device_group="$(stat -c '%g' "$device")"
   docker_args+=(--group-add "$device_group")
@@ -120,10 +141,11 @@ elif [[ "$mode" == batch ]]; then
   python_args+=(--batch-index "$((slug - 1))" --batch-count 3)
 fi
 
-printf 'Nomos8kDAT RX 6800S: mode=%s dtype=%s source_scale=%s tile=%s overlap=%s blend=%s, GPU PCI=%s (%s)\n' \
+printf 'Nomos8kDAT RX 9070 XT: mode=%s dtype=%s source_scale=%s tile=%s overlap=%s blend=%s\n' \
   "$mode" "${NOMOS_DTYPE:-bfloat16}" "${NOMOS_SOURCE_SCALE:-1.0}" \
-  "${NOMOS_TILE:-512}" "${NOMOS_OVERLAP:-32}" "${NOMOS_BLEND:-0.65}" \
-  "$gpu_pci" "$render_node"
+  "${NOMOS_TILE:-832}" "${NOMOS_OVERLAP:-32}" "${NOMOS_BLEND:-0.65}"
+printf 'GPU PCI=%s render=%s ROCm ordinal=%s; bez HSA override.\n' \
+  "$gpu_pci" "$render_node" "$gpu_ordinal"
 printf 'Staging: home/wojtek/wallpapers/work/import-48/%s\n' "$stage_name"
 printf 'Ctrl+C zatrzyma kontener i proces ROCm tego przebiegu.\n'
 

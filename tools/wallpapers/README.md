@@ -69,6 +69,13 @@ tools/wallpapers/upscale/run-nomos-6800s.sh test 02-frieren
 tools/wallpapers/upscale/run-nomos-6800s.sh run
 tools/wallpapers/upscale/run-nomos-6800s.sh status
 
+# Ten sam pełny Nomos na RX 9070 XT 16 GiB; wspólny instalator/model
+tools/wallpapers/upscale/install-nomos8kdat-rocm.sh
+tools/wallpapers/upscale/run-nomos-9070xt.sh test 01-frieren
+tools/wallpapers/upscale/run-nomos-9070xt.sh batch 1
+tools/wallpapers/upscale/run-nomos-9070xt.sh batch 2
+tools/wallpapers/upscale/run-nomos-9070xt.sh batch 3
+
 # Generatywny test naprawy detali; instrukcja w flux2/README.md
 tools/wallpapers/flux2/install.sh
 tools/wallpapers/flux2/run-6800s.sh gpu-info
