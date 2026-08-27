@@ -5,7 +5,7 @@
   userDescription = "White Monster";
   homeProfile = "wojtek";
 
-  # Keep the complete portable ROG profile, but omit every laptop-specific
+  # Reuse the portable desktop profile, but omit every laptop-specific
   # integration. The generated hardware module remains unique to this PC.
   features = {
     amdGpuMetrics = true;

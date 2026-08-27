@@ -1,9 +1,11 @@
 # White Monster
 
-Ten host współdzieli profil `home/wojtek` oraz wszystkie przenośne funkcje
-ROG-a, ale nie importuje usług ASUS-a, obsługi baterii, pokrywy, podświetlenia
-matrycy ani automatyki eDP. Moduł `hardware-amd-gpu.nix` przygotowuje KMS dla
-Radeona RX 9070 XT, a host używa najnowszego jądra z przypiętego nixpkgs.
+Ten host współdzieli przenośny profil desktopowy `home/wojtek`: środowisko
+Hyprland, aplikacje, gaming, Docker, VR i nagrywanie ekranu. Nie importuje
+modułu `hardware-asus-laptop.nix`, usług `asusd`, ROG Control Center, obsługi
+baterii, pokrywy, podświetlenia matrycy ani automatyki eDP. Moduł
+`hardware-amd-gpu.nix` przygotowuje KMS dla Radeona RX 9070 XT, a host używa
+najnowszego jądra z przypiętego nixpkgs.
 
 Host pozostaje celowo niewidoczny w `nixosConfigurations`, dopóki nie ma jego
 własnego `hardware-configuration.nix`. Na White Monsterze, z repozytorium jako
