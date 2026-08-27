@@ -571,6 +571,18 @@ let
       return maximum
     end
 
+    -- Thermal bars start at the 40°C idle baseline and fill completely at
+    -- 100°C, keeping low idle readings visually quiet without changing alarms.
+    local function temperature_percentage(temperature)
+      local idle_baseline = 40
+      local full_scale = 100
+      return clamp((temperature - idle_baseline) * 100 / (full_scale - idle_baseline))
+    end
+
+    -- 85°C changes the thermal indicator from yellow to red, ahead of the
+    -- separate 90°C critical status threshold used by metric popups.
+    local thermal_alert_percentage = temperature_percentage(85)
+
     local cpu_temperature_paths = {}
     for _, name_path in ipairs(shell_paths("/sys/class/hwmon/hwmon*/name")) do
       local name = read_line(name_path)
@@ -768,7 +780,10 @@ let
             usage = (delta - (idle - state.cpu_idle)) * 100 / delta
           end
           state.cpu_total, state.cpu_idle = total, idle
-          return { clamp(usage), clamp(maximum_temperature(cpu_temperature_paths)) }
+          return {
+            clamp(usage),
+            temperature_percentage(maximum_temperature(cpu_temperature_paths)),
+          }
         end
 
         if component == "memory" then
@@ -838,7 +853,7 @@ let
             state.gpu_values = {
               clamp(usage),
               clamp(vram),
-              clamp(temperature),
+              temperature_percentage(temperature),
             }
             state.gpu_next_probe = now + 7
           end
@@ -899,7 +914,13 @@ let
           local fill = bar_height * displayed_value / 100
           if fill > 0 then
             fill = math.max(fill, 2)
-            local red, green, blue = rgb(colors[index] or colors[#colors])
+            local color = colors[index] or colors[#colors]
+            local is_thermal_indicator = (component == "cpu" and index == 2)
+              or (component == "gpu" and index == 3)
+            if is_thermal_indicator and value >= thermal_alert_percentage then
+              color = "${c.red}"
+            end
+            local red, green, blue = rgb(color)
             rounded_rectangle(
               cr,
               x,

@@ -12,6 +12,7 @@ fps="${CAPTURE_FPS:-60}"
 audio_mode="${CAPTURE_AUDIO:-auto}"
 audio_device="${CAPTURE_AUDIO_DEVICE:-}"
 audio_delay="${CAPTURE_AUDIO_DELAY:-0}"
+fallback_pixel_format="${CAPTURE_PIXEL_FORMAT:-mjpeg}"
 
 is_capture_device() {
   local device="$1"
@@ -59,6 +60,7 @@ if [[ -z "$device" ]]; then
 fi
 
 pixel_format=""
+video_input_args=()
 if command -v v4l2-ctl >/dev/null 2>&1; then
   formats="$(v4l2-ctl --device "$device" --list-formats-ext 2>/dev/null || true)"
   if grep -q "'MJPG'" <<< "$formats"; then
@@ -76,7 +78,20 @@ if command -v v4l2-ctl >/dev/null 2>&1; then
       || printf 'Uwaga: urządzenie odrzuciło żądany format %s. Używam bieżącego.\n' "$resolution" >&2
     v4l2-ctl --device "$device" --set-parm="$fps" >/dev/null 2>&1 \
       || printf 'Uwaga: urządzenie odrzuciło %s Hz. Używam bieżącego FPS.\n' "$fps" >&2
+
+    printf 'Tryb wynegocjowany przez urządzenie:\n'
+    v4l2-ctl --device "$device" --get-fmt-video 2>/dev/null || true
+    v4l2-ctl --device "$device" --get-parm 2>/dev/null || true
   fi
+else
+  # Direct execution may happen before the Home Manager wrapper (which adds
+  # v4l2-ctl) is activated. Request the mode through FFmpeg in that case.
+  video_input_args=(
+    --demuxer-lavf-format=video4linux2
+    --demuxer-lavf-o="video_size=$resolution,input_format=$fallback_pixel_format,framerate=$fps"
+  )
+  printf 'Brak v4l2-ctl: wymuszam przez MPV format %s, %s @ %s FPS.\n' \
+    "$fallback_pixel_format" "$resolution" "$fps"
 fi
 
 usb_root_for() {
@@ -136,11 +151,21 @@ else
   printf 'Dźwięk: wyłączony.\n'
 fi
 printf 'Zmiana parametrów: CAPTURE_RESOLUTION=3840x2160 CAPTURE_FPS=30 %s\n' "$0"
+printf 'Terminal pokazuje podczas pracy: wejściowy / dekodowany / ekranowy FPS.\n'
 
 exec mpv \
   --title="USB Capture — $device_name" \
   --profile=low-latency \
   --untimed \
   --cache=no \
+  --osd-level=1 \
+  --osd-align-x=right \
+  --osd-align-y=top \
+  --osd-margin-x=20 \
+  --osd-margin-y=20 \
+  --osd-font-size=22 \
+  --osd-msg1='IN ${container-fps} FPS | DECODE ${estimated-vf-fps} FPS | DISPLAY ${display-fps} Hz | DROP ${decoder-frame-drop-count}/${frame-drop-count}' \
+  --term-status-msg='capture input=${container-fps} | decoded=${estimated-vf-fps} | display=${display-fps}' \
+  "${video_input_args[@]}" \
   "${audio_args[@]}" \
   "av://v4l2:$device"

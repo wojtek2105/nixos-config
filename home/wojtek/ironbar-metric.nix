@@ -34,6 +34,31 @@ pkgs.writeShellApplication {
         "$label" "$color" "''${levels[index]}"
     }
 
+    temperature_percentage() {
+      local temperature="''${1:-0}"
+      # Skala zaczyna się od 40°C: poniżej temperatury spoczynkowej nie ma
+      # wypełnienia, a 100°C pozostaje pełną skalą termiczną.
+      local idle_baseline=40
+      local full_scale=100
+
+      (( temperature <= idle_baseline )) && {
+        printf '0\n'
+        return
+      }
+      (( temperature >= full_scale )) && {
+        printf '100\n'
+        return
+      }
+      printf '%s\n' "$(((temperature - idle_baseline) * 100 / (full_scale - idle_baseline)))"
+    }
+
+    temperature_indicator_color() {
+      local temperature="''${1:-0}"
+      # At 85°C the yellow thermal indicator becomes red to make sustained
+      # high heat visible before the existing 90°C critical status threshold.
+      (( temperature >= 85 )) && printf '%s\n' '${c.red}' || printf '%s\n' '${c.yellow}'
+    }
+
     markup_escape() {
       printf '%s' "$1" \
         | sed \
@@ -268,7 +293,9 @@ pkgs.writeShellApplication {
         cpu_temperature="$(max_temperature '^(k10temp|zenpower)$')"
         level=$usage
         (( cpu_temperature > level )) && level=$cpu_temperature
-        bars="$(gauge "$usage" '${c.violet}')$(gauge "$cpu_temperature" '${c.yellow}' '°')"
+        cpu_temperature_percentage="$(temperature_percentage "$cpu_temperature")"
+        cpu_temperature_bar_color="$(temperature_indicator_color "$cpu_temperature")"
+        bars="$(gauge "$usage" '${c.violet}')$(gauge "$cpu_temperature_percentage" "$cpu_temperature_bar_color" '°')"
         usage_color="$(status_color "$usage" '${p.cpu}')"
         temperature_color="$(status_color "$cpu_temperature" '${p.thermal}')"
 
@@ -531,7 +558,9 @@ pkgs.writeShellApplication {
         level=$usage
         (( vram_percentage > level )) && level=$vram_percentage
         (( gpu_temperature > level )) && level=$gpu_temperature
-        bars="$(gauge "$usage" '${c.blue}')$(gauge "$vram_percentage" '${c.magenta}' 'V')$(gauge "$gpu_temperature" '${c.yellow}' '°')"
+        gpu_temperature_percentage="$(temperature_percentage "$gpu_temperature")"
+        gpu_temperature_bar_color="$(temperature_indicator_color "$gpu_temperature")"
+        bars="$(gauge "$usage" '${c.blue}')$(gauge "$vram_percentage" '${c.magenta}' 'V')$(gauge "$gpu_temperature_percentage" "$gpu_temperature_bar_color" '°')"
         gpu_usage_color="$(status_color "$usage" '${p.gpu}')"
         vram_color="$(status_color "$vram_percentage" '${p.vram}')"
         gpu_temperature_color="$(status_color "$gpu_temperature" '${p.thermal}')"
