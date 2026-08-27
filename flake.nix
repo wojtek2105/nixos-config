@@ -25,6 +25,13 @@
       flake = false;
     };
 
+    # Upstream stays separate from the future personal Neovim repository.
+    # Update this input deliberately when refreshing the Kickstart baseline.
+    kickstart-nvim = {
+      url = "github:nvim-lua/kickstart.nvim";
+      flake = false;
+    };
+
     biscuit-gtk = {
       url = "github:Biscuit-Theme/gtk";
       flake = false;
@@ -63,6 +70,7 @@
         hardwareDiagnostics = false;
         laptop = false;
         schedulerBenchmark = false;
+        vr = false;
         personalApps = {
           discord = false;
           easyeffects = false;
@@ -74,7 +82,11 @@
         nixpkgs.lib.filterAttrs
           (name: type:
             type == "directory"
-            && builtins.pathExists (./hosts + "/${name}/default.nix"))
+            && builtins.pathExists (./hosts + "/${name}/default.nix")
+            # A staged host is intentionally invisible until its own generated
+            # hardware module is present. This prevents evaluating or, worse,
+            # installing it with disk UUIDs copied from another machine.
+            && builtins.pathExists (./hosts + "/${name}/hardware-configuration.nix"))
           (builtins.readDir ./hosts);
       mkHost = hostName:
         {
@@ -108,6 +120,7 @@
             "laptop"
             "schedulerBenchmark"
             "screenRecording"
+            "vr"
           ];
           invalidBooleanFeatures = builtins.filter
             (name: !(builtins.isBool resolvedFeatures.${name}))
@@ -166,7 +179,8 @@
               ++ nixpkgs.lib.optionals resolvedFeatures.gaming [ ./modules/gaming.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.schedulerBenchmark [ ./modules/scheduler-benchmark.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.screenRecording [ ./modules/screen-recording.nix ]
-              ++ nixpkgs.lib.optionals resolvedFeatures.hardwareDiagnostics [ ./modules/hardware-diagnostics.nix ];
+              ++ nixpkgs.lib.optionals resolvedFeatures.hardwareDiagnostics [ ./modules/hardware-diagnostics.nix ]
+              ++ nixpkgs.lib.optionals resolvedFeatures.vr [ ./modules/vr.nix ];
           };
     in
     {

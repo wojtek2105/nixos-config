@@ -1,8 +1,0 @@
-Correct only the elf mage. Refine her face into a clean, balanced anime design
-with symmetrical vivid green eyes and a calm, observant expression. Make both
-long pointed ears clearly visible through silver hair arranged in two low tails,
-with small gold earrings. Replace the dark blue cape with a simple ivory mage
-robe and short shoulder cape, using restrained gold piping and black accents.
-Retain her exact pose, scale, hands and staff. Preserve every other pixel-level
-design choice: the crypt, camera, lighting, floor, roots, archive cabinet, brass
-mechanism, and the exact labels "flake.lock", "main" and "signed".

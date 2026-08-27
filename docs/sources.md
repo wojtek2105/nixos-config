@@ -16,6 +16,11 @@ Preferowane są oficjalne repozytoria GitHub i dokumentacja pierwotna.
 - [SuperTuxKart](https://github.com/supertuxkart/stk-code) — rzeczywisty silnik gry i wbudowany deterministyczny benchmark replayu dla profili gaming CPU i GPU.
 - [FeralInteractive/gamemode](https://github.com/FeralInteractive/gamemode) —
   optymalizacje uruchamiane na żądanie dla procesu gry.
+- [ALVR](https://github.com/alvr-org/ALVR) — otwarty streamer i sterownik
+  SteamVR używany do połączenia Quest 2 z Linuksem.
+- [ALVR: połączenie przewodowe](https://github.com/alvr-org/ALVR/wiki/ALVR-wired-setup-%28ALVR-over-USB%29) — wymagania trybu natywnego przez ADB i awaryjne przekierowanie portów.
+- [ALVR: instalacja](https://github.com/alvr-org/ALVR/wiki/Installation-guide) — instalacja klienta, streamera oraz rejestracja sterownika SteamVR.
+- [ALVR: diagnostyka Linuksa](https://github.com/alvr-org/ALVR/wiki/Linux-troubleshooting) — aktualne obejście uruchamiania SteamVR przez `vrmonitor.sh`.
 - [ValveSoftware/gamescope](https://github.com/ValveSoftware/gamescope) —
   składnia zagnieżdżonego mikrokompozytora, skalowania i limitu odświeżania.
 - [Moduł NixOS dla GPU Screen Recordera](https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/programs/gpu-screen-recorder.nix) — integracja, pakiet UI i wymagane wrappery capabilities.
@@ -41,6 +46,8 @@ Preferowane są oficjalne repozytoria GitHub i dokumentacja pierwotna.
 - [Awww](https://github.com/LGFae/awww) — lekki daemon tapet, skalowanie i animowane przejścia.
 - [Biscuit-Theme/biscuit](https://github.com/Biscuit-Theme/biscuit) — oficjalna paleta Biscuit de Mar Dark.
 - [Biscuit-Theme/nvim](https://github.com/Biscuit-Theme/nvim) — oficjalny motyw Biscuit dla Neovim.
+- [nvim-lua/kickstart.nvim](https://github.com/nvim-lua/kickstart.nvim) — oficjalny,
+  edukacyjny punkt wyjścia dla przyszłej osobistej konfiguracji Neovima.
 - [Biscuit-Theme/gtk](https://github.com/Biscuit-Theme/gtk) — oficjalny motyw GTK i wariant ikon Papirus.
 - [OldJobobo/omarchy-biscuit-de-mar-dark-theme](https://github.com/OldJobobo/omarchy-biscuit-de-mar-dark-theme) — przypięta tapeta, motyw btop i referencja integracji całego pulpitu.
 - [basecamp/omarchy](https://github.com/basecamp/omarchy) — inspiracja dla logicznych skrótów i referencyjny mechanizm wygaszacza TTE.
@@ -63,6 +70,9 @@ Preferowane są oficjalne repozytoria GitHub i dokumentacja pierwotna.
 
 ## Oficjalne źródła poza GitHubem
 
+- [Meta Horizon Link](https://developers.meta.com/horizon/documentation/unity/unity-development-overview/) — oficjalne ograniczenie Link do systemu Windows.
+- [NixOS: VR](https://wiki.nixos.org/wiki/VR/en) — zachowanie SteamVR na NixOS,
+  ograniczenia `CAP_SYS_NICE` i ryzyka obejść ingerujących w bubblewrap lub jądro.
 - [SuperTuxKart: Performance Testing](https://supertuxkart.net/Performance_testing) — opis deterministycznego replayu, jego powtarzalności i metryk Steady/Mostly Steady/Typical FPS.
 - [OpenBenchmarking: SuperTuxKart](https://openbenchmarking.org/test/pts/supertuxkart) — zweryfikowany replay testowy STK 1.5 i historyczna referencja ustawień Low/Ultimate dla Vulkan; bieżący profil GPU używa natywnego OpenGL Ultimate, aby wymagać pełnej ścieżki shaderowej.
 - [SuperTuxKart: Vulkan uruchamia fixed pipeline](https://github.com/supertuxkart/stk-code/issues/4815) — upstreamowe zgłoszenie regresji uzasadniające użycie shaderowego OpenGL w bieżącym profilu GPU.

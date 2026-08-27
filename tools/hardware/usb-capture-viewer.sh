@@ -1,0 +1,146 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if ! command -v mpv >/dev/null 2>&1; then
+  printf 'Brak mpv w PATH. Jest deklarowany w home/wojtek/desktop.nix.\n' >&2
+  exit 1
+fi
+
+requested_device="${1:-${CAPTURE_DEVICE:-}}"
+resolution="${CAPTURE_RESOLUTION:-1920x1080}"
+fps="${CAPTURE_FPS:-60}"
+audio_mode="${CAPTURE_AUDIO:-auto}"
+audio_device="${CAPTURE_AUDIO_DEVICE:-}"
+audio_delay="${CAPTURE_AUDIO_DELAY:-0}"
+
+is_capture_device() {
+  local device="$1"
+  if command -v v4l2-ctl >/dev/null 2>&1; then
+    v4l2-ctl --device "$device" --all 2>/dev/null \
+      | grep -qE 'Video Capture|Video Capture Multiplanar'
+  else
+    [[ -c "$device" ]]
+  fi
+}
+
+if [[ -n "$requested_device" ]]; then
+  [[ -c "$requested_device" ]] || {
+    printf 'Urządzenie nie istnieje albo nie jest urządzeniem znakowym: %s\n' "$requested_device" >&2
+    exit 1
+  }
+  device="$requested_device"
+else
+  device=""
+  best_score=-1
+  for sys_device in /sys/class/video4linux/video*; do
+    [[ -e "$sys_device" ]] || continue
+    candidate="/dev/$(basename -- "$sys_device")"
+    is_capture_device "$candidate" || continue
+
+    name="$(<"$sys_device/name")"
+    lower_name="${name,,}"
+    score=0
+    [[ "$(readlink -f "$sys_device/device")" == *'/usb'* ]] && score=$((score + 20))
+    [[ "$lower_name" =~ (capture|hdmi|grabber|uvc) ]] && score=$((score + 100))
+    # A built-in webcam is also USB/UVC, so penalize it strongly enough that a
+    # generically named external capture card (for example "USB3 Video") wins.
+    [[ "$lower_name" =~ (integrated|webcam|camera) ]] && score=$((score - 200))
+    if (( score > best_score )); then
+      best_score="$score"
+      device="$candidate"
+    fi
+  done
+fi
+
+if [[ -z "$device" ]]; then
+  printf 'Nie znaleziono wejścia wideo. Podłącz rejestrator i sprawdź: ls /dev/video*\n' >&2
+  printf 'Możesz wymusić urządzenie: CAPTURE_DEVICE=/dev/video2 %s\n' "$0" >&2
+  exit 1
+fi
+
+pixel_format=""
+if command -v v4l2-ctl >/dev/null 2>&1; then
+  formats="$(v4l2-ctl --device "$device" --list-formats-ext 2>/dev/null || true)"
+  if grep -q "'MJPG'" <<< "$formats"; then
+    pixel_format="MJPG"
+  elif grep -q "'NV12'" <<< "$formats"; then
+    pixel_format="NV12"
+  elif grep -q "'YUYV'" <<< "$formats"; then
+    pixel_format="YUYV"
+  fi
+
+  if [[ "$resolution" =~ ^([0-9]+)x([0-9]+)$ ]]; then
+    format_request="width=${BASH_REMATCH[1]},height=${BASH_REMATCH[2]}"
+    [[ -n "$pixel_format" ]] && format_request+=",pixelformat=$pixel_format"
+    v4l2-ctl --device "$device" --set-fmt-video="$format_request" >/dev/null 2>&1 \
+      || printf 'Uwaga: urządzenie odrzuciło żądany format %s. Używam bieżącego.\n' "$resolution" >&2
+    v4l2-ctl --device "$device" --set-parm="$fps" >/dev/null 2>&1 \
+      || printf 'Uwaga: urządzenie odrzuciło %s Hz. Używam bieżącego FPS.\n' "$fps" >&2
+  fi
+fi
+
+usb_root_for() {
+  local current
+  current="$(readlink -f "$1")"
+  while [[ "$current" != / ]]; do
+    if [[ -r "$current/idVendor" && -r "$current/idProduct" ]]; then
+      printf '%s\n' "$current"
+      return 0
+    fi
+    current="$(dirname -- "$current")"
+  done
+  return 1
+}
+
+audio_args=(--audio=no)
+if [[ ! "$audio_mode" =~ ^(0|no|false|off)$ ]]; then
+  if [[ -z "$audio_device" ]]; then
+    video_usb_root="$(usb_root_for "/sys/class/video4linux/$(basename -- "$device")/device" || true)"
+    if [[ -n "$video_usb_root" ]]; then
+      for sound_card in /sys/class/sound/card[0-9]*; do
+        [[ -e "$sound_card/device" ]] || continue
+        card_name="$(basename -- "$sound_card")"
+        card_index="${card_name#card}"
+        [[ -d "/proc/asound/$card_name/pcm0c" ]] || continue
+        sound_usb_root="$(usb_root_for "$sound_card/device" || true)"
+        if [[ "$sound_usb_root" == "$video_usb_root" ]]; then
+          audio_device="hw:$card_index,0"
+          break
+        fi
+      done
+    fi
+  fi
+
+  if [[ -n "$audio_device" ]]; then
+    audio_args=(
+      --audio-file="av://alsa:$audio_device"
+      --audio-file-auto=no
+      --audio-delay="$audio_delay"
+    )
+  elif [[ "$audio_mode" != auto ]]; then
+    printf 'Nie znaleziono wejścia audio tej samej karty USB.\n' >&2
+    exit 1
+  fi
+fi
+
+device_name_file="/sys/class/video4linux/$(basename -- "$device")/name"
+if [[ -r "$device_name_file" ]]; then
+  device_name="$(<"$device_name_file")"
+else
+  device_name="USB capture"
+fi
+printf 'Otwieram %s (%s), %s @ %s Hz.\n' "$device_name" "$device" "$resolution" "$fps"
+if [[ -n "$audio_device" && ! "$audio_mode" =~ ^(0|no|false|off)$ ]]; then
+  printf 'Dźwięk: %s (automatycznie powiązany z tym samym urządzeniem USB).\n' "$audio_device"
+else
+  printf 'Dźwięk: wyłączony.\n'
+fi
+printf 'Zmiana parametrów: CAPTURE_RESOLUTION=3840x2160 CAPTURE_FPS=30 %s\n' "$0"
+
+exec mpv \
+  --title="USB Capture — $device_name" \
+  --profile=low-latency \
+  --untimed \
+  --cache=no \
+  "${audio_args[@]}" \
+  "av://v4l2:$device"

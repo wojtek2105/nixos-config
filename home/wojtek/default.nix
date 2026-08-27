@@ -34,7 +34,6 @@ let
     (shortcut "Super+N" "Pokaż lub ukryj centrum powiadomień SwayNC")
     (shortcut "Super+L" "Zablokuj sesję przez Hyprlock")
     (shortcut "Super+Escape" "Otwórz menu zasilania Wleave")
-    (shortcut "Super+Shift+E" "Otwórz menu zasilania (alias)")
     (shortcut "Super+Shift+V" "Wybierz wpis historii schowka i wklej go")
     (shortcut "Super+F1" "Otwórz to centrum skrótów")
   ]
@@ -242,24 +241,6 @@ let
         --margin-right "$margin_x" \
         --margin-top "$margin_y" \
         --margin-bottom "$margin_y"
-    '';
-  };
-
-  clipboard-history = pkgs.writeShellApplication {
-    name = "clipboard-history";
-    runtimeInputs = with pkgs; [
-      cliphist
-      fuzzel
-      wl-clipboard
-      wtype
-    ];
-    text = ''
-      chosen="$(cliphist list | fuzzel --dmenu --prompt 'Schowek: ')" || exit 0
-      [[ -n "$chosen" ]] || exit 0
-
-      printf '%s\n' "$chosen" | cliphist decode | wl-copy
-      sleep 0.1
-      wtype -M ctrl -k v -m ctrl
     '';
   };
 
@@ -531,12 +512,15 @@ let
         local title="$1"
         local renderer="$2"
 
+        # Sixteen 34 px rows leave room for the prompt and padding on the
+        # laptop's 800 px logical display; longer sections remain scrollable.
         "$renderer" | fuzzel \
           --dmenu \
           --only-match \
+          --minimal-lines \
           --prompt "$title  ›  " \
           --width 92 \
-          --lines 24 \
+          --lines 16 \
           >/dev/null
       }
 
@@ -941,9 +925,12 @@ in
 {
   imports = [
     inputs.zen-browser.homeModules.twilight
+    ./agent-manager.nix
+    ./clipboard.nix
     ./desktop.nix
     ./hyprland.nix
     ./ironbar.nix
+    ./neovim.nix
     ./notifications.nix
     ./osd.nix
     ./zen.nix
@@ -956,8 +943,6 @@ in
 
     packages =
       (with pkgs; [
-        cliphist
-        clipboard-history
         playerctl
         power-menu
         screenshot-menu
@@ -1099,29 +1084,6 @@ in
         defaultFgColor = [ "#${c.foreground}" ];
       };
     };
-  };
-
-  programs.neovim = {
-    enable = true;
-    defaultEditor = true;
-    viAlias = true;
-    vimAlias = true;
-    plugins = [
-      {
-        plugin = pkgs.vimUtils.buildVimPlugin {
-          pname = "biscuit-nvim";
-          version = "unstable-2026-08-23";
-          src = inputs.biscuit-nvim;
-        };
-        config = "colorscheme biscuit";
-      }
-    ];
-    initLua = ''
-      vim.opt.termguicolors = true
-      vim.opt.number = true
-      vim.opt.cursorline = true
-      vim.opt.signcolumn = "yes"
-    '';
   };
 
   xdg.configFile."gpu-screen-recorder/config_ui" = lib.mkIf screenRecordingEnabled {

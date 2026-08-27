@@ -47,8 +47,8 @@ wylogowaniu; nie dodaje procesu do normalnej sesji ani do autologowania.
 Tuigreet udostępnia również wybór użytkownika, sesji i polecenia oraz menu
 wyłączenia i restartu pod `F12`.
 
-`Super+Escape` i `Super+Shift+E` uruchamiają wrapper `power-menu`, który otwiera
-Wleave na aktualnie aktywnym monitorze. Pięć równych kafli mieści się w jednym,
+`Super+Escape` uruchamia wrapper `power-menu`, który otwiera Wleave na aktualnie
+aktywnym monitorze. Pięć równych kafli mieści się w jednym,
 wycentrowanym rzędzie zajmującym na mniejszych ekranach około 84% szerokości i
 32% wysokości; na dużych wyjściach rozmiar jest ograniczony do `1240×320`
 logicznych pikseli. Każdy kafel stale pokazuje opis i klawisz akcji. Fokus ma
@@ -77,7 +77,10 @@ sekcję pulpitu albo aplikację, a następnie otrzymuje opisaną mapę klawiszy.
 Menu obejmuje wszystkie deklarowane skróty Hyprlanda, w tym opcjonalny GPU
 Screen Recorder i klawisze laptopa, oraz najważniejsze mapy Yazi, tmux, Neovim
 i Wleave. Te same widoki można wywołać z terminala, np. przez
-`shortcut-menu yazi`, `shortcut-menu tmux` albo `shortcut-menu nvim`.
+`shortcut-menu yazi`, `shortcut-menu tmux` albo `shortcut-menu nvim`. Krótkie
+sekcje dopasowują wysokość do zawartości, a dłuższe pokazują maksymalnie 16
+wierszy i pozostają przewijalne, dzięki czemu menu mieści się na ekranie
+laptopa przy skali logicznej `2`.
 
 ## Skalowanie
 
@@ -115,20 +118,27 @@ Dark mode jest deklaratywny:
 - ikony `papirus-biscuit-dark`,
 - kursor `Bibata-Modern-Amber` w GTK i Hyprcursor.
 
-Foot, Fish/Tide, tmux, nvim, btop, Lazygit, Yazi, Fuzzel, Ironbar, MPV/uosc,
+Foot, Fish/Tide, tmux, nvim, odizolowany `nvim-kickstart`, btop, Lazygit, Yazi,
+Fuzzel, Ironbar, MPV/uosc,
 SwayNC, Zen, Hyprland, Hyprlock, Wleave i wygaszacz korzystają z tej samej palety
 generowanej przez Home Managera.
 
-Awww jest przygotowany na nową kolekcję Biscuit OLED v3. Po pełnym resecie nie
-ma jeszcze zaakceptowanej sceny; trzy listy rotatora wskazują tymczasowo na
-techniczne, czyste czarne fallbacki o właściwych proporcjach. Docelowe 22
-tapety dzielą się na Frieren, Wiedźmina 3, Palworld, V Rising, Valheim i
-Chainsaw Man, zachowując oryginalny język wizualny każdego świata. Cały core
-sceny skupia się w prawym 36% źródła, natomiast dodatkowa szerokość monitorów
-ultrawide odsłania foreground, midground i background tej samej lokacji.
-Perspektywa, materiały, AO/GI i słabsze światło odbite pozostają ciągłe; nie ma
-gradientowej maski, blurra ani doklejonej czerni. Spokojna góra nie konkuruje z
-Ironbarem, a małe źródła światła utrzymują niski średni poziom jasności OLED.
+Awww korzysta z zaakceptowanych kolekcji Biscuit OLED w katalogach `16x9/`,
+`21x9/` i `32x9/`. Ostatnie 18 nowych scen dzieli się po równo na Frieren,
+Chainsaw Man, Solo Leveling, Valheim, V Rising i Palworld, zachowując oryginalny
+język wizualny każdego świata bez crossoverów i technicznych metafor. Cała
+akcja, postacie i najmocniejsze światła znajdują się po prawej. Dodatkowa
+szerokość monitorów ultrawide odsłania foreground, midground i background tej
+samej lokacji, które stopniowo wygasają w kierunku lewego brzegu.
+Perspektywa, materiały, global illumination, AO, cienie kontaktowe i słabsze
+światło odbite pozostają ciągłe. Naturalne ciemne gradienty światła, mgły,
+nieba i głębi są płynne i pozbawione bandingu; sztuczna maska gradientowa,
+blur i doklejona czerń są niedopuszczalne. Niski średni poziom jasności nie
+usuwa bogatych kolorów ani mocnego lokalnego kontrastu OLED, tylko ogranicza
+szerokie oślepiające powierzchnie, agresywny bloom i przepalone światła.
+Większość fizycznego `#000000` przypada na lewą stronę. Lite osiąga to przez
+coraz rzadszą geometrię, słabsze GI, głębszą okluzję i naturalny spadek światła,
+a nie przez pusty prostokąt lub pionową granicę.
 Kierunek artystyczny opisuje
 [wallpapers/CONCEPTS.md](../home/wojtek/wallpapers/CONCEPTS.md), natomiast
 [wallpapers/INVENTORY.md](../home/wojtek/wallpapers/INVENTORY.md) przechowuje
@@ -145,8 +155,8 @@ rzeczywistej częstotliwości odświeżania przejścia.
 
 ## Autostart sesji
 
-Usługi użytkownika systemd uruchamiają Ironbar, SwayNC, SwayOSD, Awww i
-Hypridle.
+Usługi użytkownika systemd uruchamiają Ironbar, SwayNC, SwayOSD, Awww,
+Hypridle i Stash.
 Awww rotuje aktualnie dostępne tapety Biscuit co pięć minut. Krótkotrwały timer przeplata fale,
 okrągłe rozwinięcia i zwinięcia oraz ukośne odsłonięcia; kierunek, punkt startu
 i geometria fali zmieniają się deterministycznie razem z indeksem tapety.
@@ -156,10 +166,14 @@ monitora; poza
 zmianą tapety daemon nie wykonuje pracy animacji. Pierwsze wywołanie następuje
 dwie sekundy po starcie sesji, gdy daemon Awww jest już gotowy; ponieważ
 wcześniej nie dostał obrazu, pierwsza tapeta rozwija się okręgiem od środka.
-Hyprland uruchamia również:
-
-- obserwatory tekstu i obrazów dla `cliphist`,
-- agent uwierzytelniania Polkit.
+Rustowy Stash prowadzi historię przez jeden natywny, zdarzeniowy watcher
+Waylanda. Historia obejmuje tekst i obrazy, preferuje surowy obraz zamiast
+przeglądarkowego HTML, przechowuje
+najwyżej 200 wpisów po maksymalnie 30 MiB i wygasza je po 30 dniach. Wpisy
+oznaczone przez menedżer haseł jako poufne oraz pochodzące z aplikacji Bitwarden
+nie trafiają do bazy. `Super+Shift+V` nadal używa Fuzzela i automatycznie wkleja
+wybór, ale tryb dmenu nie zapisuje własnego cache. Hyprland uruchamia już tylko
+sesyjnego agenta uwierzytelniania Polkit.
 
 GPU Screen Recorder UI uruchamia się dopiero przy pierwszym skrócie nagrywania.
 Eliminuje to stały koszt procesu po zalogowaniu, a `gsr-control` serializuje zimny
@@ -306,7 +320,10 @@ strony nowej karty, ustawień, dodatków i menedżera haseł. Zwykłe i przypię
 karty są po restarcie odtwarzane na żądanie: ich pozycje pozostają w sesji, ale
 zawartość i ruch sieciowy pojawiają się dopiero po wybraniu karty. `Super+B`
 fokusuje ostatnio używane okno Zen również na innym pulpicie; uruchamia nowy
-proces tylko wtedy, gdy Hyprland nie widzi żadnego okna `zen-twilight`.
+proces tylko wtedy, gdy Hyprland nie widzi żadnego okna Zen. Skrypt rozpoznaje
+zarówno klasę `zen`, jak i klasy kanałów w rodzaju `zen-twilight`, korzysta z
+lua-owego dispatchera aktualnego Hyprlanda i blokuje zdublowany start podczas
+mapowania pierwszego okna.
 
 Historyczne wyniki porównania Ironbara, Waybara i Noctalii są zachowane w
 osobnym archiwum [benchmarków pulpitu](benchmarks.md).
@@ -320,11 +337,14 @@ osobnym archiwum [benchmarków pulpitu](benchmarks.md).
 - okno wygaszacza przejmuje fokus i włącza raportowanie ruchu myszy w Foot;
   dowolny klawisz, ruch albo kliknięcie zamyka nakładkę, natomiast syntetyczne
   zdarzenie wznowienia generowane przy mapowaniu okna jest ignorowane,
-- po 6 minutach sesja jest blokowana,
-- po 10 minutach ekran jest wyłączany przez DPMS zarówno na baterii, jak i na
-  zasilaczu,
+- od 5. do 10. minuty animowany wygaszacz pozostaje widoczny,
+- po 10 minutach sesja jest blokowana, a sekundę później ekran jest wyłączany
+  przez DPMS zarówno na baterii, jak i na zasilaczu,
 - po 30 minutach system przechodzi w suspend wyłącznie na baterii; przy
   zasilaniu zewnętrznym nigdy nie usypia się automatycznie,
+- wewnętrzna matryca laptopa automatycznie używa 60 Hz na baterii i najwyższego
+  trybu dla bieżącej rozdzielczości po podłączeniu zasilania; watcher reaguje w
+  obie strony i ponawia ustawienie po wznowieniu systemu,
 - zamknięcie pokrywy jest ignorowane na baterii, zasilaczu i w stacji dokującej,
 - natywny przełącznik caffeine w Ironbarze blokuje wygaszacz, blokadę, DPMS oraz
   automatyczny suspend do czasu ponownego kliknięcia,

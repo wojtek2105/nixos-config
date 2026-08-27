@@ -9,6 +9,7 @@ Ten katalog opisuje stan konfiguracji, sposób jej obsługi oraz plan rozbudowy.
 - [Pulpit](desktop.md) — Hyprland, aplikacje, dark mode i usługi sesji.
 - [Granie i GameMode](gaming.md) — ustawienie opcji uruchamiania Steam,
   weryfikacja GameMode oraz wariant z Gamescope.
+- [Quest 2 i PCVR](vr.md) — ALVR, SteamVR i przewodowe połączenie przez USB-C.
 - [Benchmarki](benchmarks.md) — historyczne wyniki pulpitu oraz powtarzalne
   porównanie EEVDF, bpfland, LAVD i Flash dla CPU, z opcjonalną diagnostyką GPU.
 - [Wyniki benchmarków](benchmark-results/README.md) — katalog raportów Markdown,

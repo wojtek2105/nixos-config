@@ -1,0 +1,21 @@
+OUTPAINT ONLY TO THE LEFT. The supplied 2560x1440 image is the complete
+right-hand core of a native 5120x1440 desktop wallpaper. Preserve the person in
+the reference exactly: face and eyes, dark violet hair, pale patterned robe,
+sword, pose, the hanging flowers, small butterflies, color palette, camera
+angle, lighting and every important pixel of the supplied core. Do not redraw,
+move, crop, resize or reinterpret the core, and do not add a second person.
+
+Continue the same quiet wisteria garden naturally and continuously into the new
+left canvas: extend the hanging flower canopy, connected branches,
+the dark tree trunk, stone wall, ground cover and the receding garden path in
+the exact perspective and material scale. The result must look like one
+coherent wide camera view rather than a pasted extension. Preserve the soft
+violet dusk illumination and butterfly glow, but let it weaken naturally toward
+the left through denser occlusion, deeper foliage, quieter blossoms and distant
+garden depth. Form real pockets of true #000000 at the far-left edge without a
+flat black veil, harsh boundary or artificial gradient.
+
+Add no people, creatures, buildings, lanterns, weapons, text, letters, logos,
+UI, watermark, crossover or new focal event. No diptych seam, vertical cutoff,
+gradient mask, blur, tiling, repeated flower wall, padding or oversized object.
+Output one unified native 5120x1440 OLED wallpaper.

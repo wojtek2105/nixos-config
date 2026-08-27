@@ -31,6 +31,11 @@
     # nastawiony na responsywny pulpit i stabilne czasy klatek.
     gaming = true;
 
+    # Instaluje ALVR, Steam i ADB dla Quest 2 po USB-C. Jest to przewodowy
+    # transport ALVR, nie Meta Quest Link; nie otwiera portów ani nie uruchamia
+    # procesu w tle. Tryb deweloperski i USB debugging w goglach są wymagane.
+    vr = true;
+
     # Instaluje GPU Screen Recorder i dodaje skróty replay. UI uruchamia się
     # dopiero przy pierwszym użyciu, więc nie zajmuje pamięci po zalogowaniu.
     screenRecording = true;

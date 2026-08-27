@@ -11,6 +11,14 @@ nixosConfigurations.rog-polamaniec
 
 Domyślny `devShell` zapewnia Codex, Git i Neovim do pracy nad konfiguracją.
 
+Profil Home Managera instaluje Agent Manager jako warstwę operacyjną nad
+trwałymi sesjami Codexa w tmux. Osobne launchery używają lekkiego
+`gpt-5.6-luna` z rozumowaniem `medium` dla kierownika oraz mocniejszego
+`gpt-5.6-terra` z rozumowaniem `high` dla workerów. Kierownik deleguje przez MCP
+Agent Managera, dzięki czemu workerzy pozostają widoczni w TUI; natywne
+subagenty Codexa są w tych profilach wyłączone, aby nie tworzyć drugiego,
+ukrytego drzewa.
+
 Pulpit korzysta wyłącznie z Ironbara. Kod Waybara, Noctalii i narzędzia do ich
 porównywania został usunięty, a historyczne wyniki pozostały w dokumentacji.
 
@@ -19,7 +27,8 @@ Główne wejścia:
 - `nixpkgs` z gałęzi `nixos-unstable`,
 - `home-manager`,
 - `zen-browser`,
-- przypięte źródła Biscuit dla nvim, GTK i pulpitu.
+- przypięte źródła Biscuit dla nvim, GTK i pulpitu,
+- przypięty upstream Kickstart jako odizolowany PoC przyszłej konfiguracji Neovima.
 
 Home Manager działa jako moduł NixOS i korzysta z globalnego zestawu pakietów.
 Manifest hosta wybiera nazwę konta oraz profil z `home/<profil>/`.
@@ -45,6 +54,9 @@ nie odbierała responsywności aktywnym aplikacjom.
 Opcjonalny `modules/gaming.nix` uruchamia `scx_bpfland` z rustowego zestawu SCX.
 Scheduler rozpoznaje interaktywny charakter obciążenia zamiast na stałe
 blokować CPU w maksymalnym profilu; dotyczy tylko hostów z `features.gaming`.
+Opcjonalny `modules/vr.nix` dodaje ALVR, Steam i ADB dla przewodowego Quest 2.
+Nie uruchamia demona, nie włącza Avahi i zachowuje zamknięte porty LAN, dopóki
+użytkownik świadomie nie przełączy konfiguracji na bezprzewodowy ALVR.
 
 ## Układ katalogów
 
@@ -56,27 +68,34 @@ blokować CPU w maksymalnym profilu; dotyczy tylko hostów z `features.gaming`.
 │   │   ├── default.nix
 │   │   ├── configuration.nix
 │   │   └── hardware-configuration.nix
+│   └── white-monster/
+│       ├── README.md
+│       ├── default.nix
+│       └── configuration.nix
 ├── modules/
 │   ├── common.nix
 │   ├── desktop.nix
 │   ├── development-core.nix
-│   ├── development.nix
 │   ├── docker.nix
 │   ├── gaming.nix
 │   ├── hardware-diagnostics.nix
 │   ├── hardware-amd-gpu.nix
 │   ├── hardware-asus-laptop.nix
 │   ├── scheduler-benchmark.nix
-│   └── screen-recording.nix
+│   ├── screen-recording.nix
+│   └── vr.nix
 ├── tools/
 │   └── scheduler-benchmark/
 ├── home/
 │   └── wojtek/
+│       ├── clipboard.nix
+│       ├── agent-manager.nix
 │       ├── default.nix
 │       ├── desktop.nix
 │       ├── hyprland.lua
 │       ├── hyprland.nix
 │       ├── ironbar.nix
+│       ├── neovim.nix
 │       ├── notifications.nix
 │       ├── osd.nix
 │       ├── scripts.nix

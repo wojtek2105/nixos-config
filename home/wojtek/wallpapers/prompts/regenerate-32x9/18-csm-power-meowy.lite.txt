@@ -1,0 +1,21 @@
+OUTPAINT ONLY TO THE LEFT. The supplied 2560x1440 image is the complete
+right-hand core of a native 5120x1440 desktop wallpaper. Preserve Power, Meowy,
+their faces and eyes, horns, hair, clothing, pose, the moon, rooftop rail,
+lighting and every important pixel of the supplied core exactly. Do not redraw,
+move, crop, resize or reinterpret the core.
+
+Extend the same Chainsaw Man rooftop scene naturally and continuously into the
+new left canvas: continue the parapet and its perspective, worn metal seams,
+roof access structures, cables, vents, low city silhouettes and the same deep
+blue moonlit cloud layers. The extension must read as one uninterrupted camera
+view, with matching scale, horizon, weather, material texture and cinematic
+night color. Let the left side become progressively quieter through real roof
+occlusion, shadowed structures, distant silhouettes and thinner cloud detail,
+ending in organic true #000000 pockets at the far-left edge while retaining
+depth and smooth band-free tonal transitions.
+
+Keep the moonlight direction and restrained highlights coherent with the
+original. Add no new people, devils, animals, lamps, signs, text, logos, UI,
+watermarks or focal props. Do not create a diptych, vertical seam, black panel,
+gradient mask, blur, tiling, repeated objects, padding or oversized foreground
+blocker. Output one unified native 5120x1440 OLED wallpaper.

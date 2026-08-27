@@ -1,0 +1,23 @@
+OUTPAINT ONLY TO THE LEFT. The supplied 2560x1440 image is the complete
+right-hand core of a native 5120x1440 desktop wallpaper. Preserve the seated
+adult character, her face and eyes, hair, clothing, pose, the sleeping cat,
+lamp, cushions, open book, rug, curtains, furniture, warm practical light and
+every important pixel of the supplied core exactly. Do not redraw, move, crop,
+resize or reinterpret the core.
+
+Extend the same quiet apartment naturally and continuously into the new left
+canvas as one uninterrupted camera view. Continue the existing wood floor and
+rug edge, wall and doorway perspective, kitchen opening, curtains, low shelves,
+subtle room clutter and warm shadow structure at the same scale and linework.
+The single lamp remains the only practical light; carry its warm bounce and
+soft contact shadows into the extension with physically coherent falloff. Let
+the far-left room become progressively darker through real furniture occlusion,
+doorway depth, curtain folds and unlit corners, with organic true #000000
+pockets but no flat black wall or abrupt tonal boundary.
+
+Keep the original calm illustrated rendering, material texture, perspective and
+color separation. Add no people, animals, lamps, signs, posters, text, letters,
+logos, UI, watermark, crossover or new focal event. Do not create a diptych,
+vertical seam, pasted rectangle, artificial gradient mask, blur, tiling, repeated
+furniture, padding or oversized foreground blocker. Output one unified native
+5120x1440 OLED wallpaper.

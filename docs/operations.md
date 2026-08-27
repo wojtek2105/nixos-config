@@ -33,6 +33,61 @@ Po ręcznym sprawdzeniu pulpitu, sieci, dźwięku i nagrywania:
 sudo nixos-rebuild switch --flake path:.#rog-polamaniec
 ```
 
+## PoC Neovima z Kickstart
+
+`nvim-kickstart` korzysta z osobnego `NVIM_APPNAME`, więc nie modyfikuje
+zwykłego `~/.config/nvim` ani jego pluginów. Przy pierwszym uruchomieniu tworzy
+zapisywalny katalog `~/.config/nvim-kickstart` z wersji Kickstart przypiętej w
+`flake.lock`. Kolejne aktualizacje inputu nie nadpisują tego katalogu, aby nie
+niszczyć lokalnych zmian przygotowywanych do przyszłego repozytorium.
+
+Po pierwszym starcie sprawdź `:checkhealth`. Pełne usunięcie PoC wymaga usunięcia
+osobnych katalogów `nvim-kickstart` z `~/.config`, `~/.local/share`,
+`~/.local/state` i `~/.cache`; zwykły profil Neovima pozostaje wtedy nietknięty.
+
+## Zespół Codexa w Agent Managerze
+
+Uruchom panel z terminala:
+
+```bash
+agent-manager
+```
+
+Przy pierwszym zadaniu utwórz sesję narzędziem `codex-manager`. Jest to lekki
+kierownik na `gpt-5.6-luna` z poziomem rozumowania `medium`, wystarczającym do
+podziału pracy, koordynacji i odbioru wyników. Kierownik tworzy workerów przez
+MCP, zawsze wybierając narzędzie `codex`; ten wpis uruchamia `codex-worker` na
+mocniejszym `gpt-5.6-terra` z poziomem `high`. Ten podział rezerwuje większy
+budżet rozumowania dla ograniczonych zadań wykonawczych, bez mnożenia kosztu
+sesji zarządzającej. Domyślny bezpiecznik instrukcji ogranicza zespół do czterech
+workerów, o ile zadanie jawnie nie wymaga większej liczby.
+
+Najważniejsze operacje w panelu:
+
+- `n` tworzy sesję; dla korzenia wybierz `codex-manager`,
+- `Enter` otwiera zaznaczoną sesję, a `Ctrl+Q` wraca do panelu,
+- `Space` wysyła wiadomość bez przełączania sesji,
+- `Ctrl+R` otwiera przegląd zmian workera,
+- `x` zatrzymuje sesję z zachowaniem rekordu, a `v` ją wznawia,
+- `q` zamyka tylko panel; sesje nadal działają w prywatnym serwerze tmux.
+
+Po aktywacji sprawdź ręcznie, że manager widzi serwer MCP, tworzy workera jako
+`codex`, czeka na jego wynik i pokazuje jego status oraz diff w panelu. Logowanie
+Codexa i limity konta są współdzielone z normalnym CLI; konfiguracja nie zapisuje
+żadnych tokenów ani danych uwierzytelniających w repozytorium.
+
+Wersja Agent Managera jest przypięta razem z oficjalnym hashem, aby build i
+rollback były powtarzalne. Aktualizacja do najnowszego taga sprowadza się do:
+
+```bash
+update-agent-manager
+```
+
+Polecenie należy uruchomić z katalogu repozytorium. Odczytuje `releases/latest`,
+pobiera archiwum i oficjalne `checksums.txt`, weryfikuje SHA-256, aktualizuje
+wersję oraz hash w module i pokazuje diff. Nie buduje ani nie aktywuje systemu;
+po przejrzeniu zmian należy użyć zwykłych poleceń walidacji z początku dokumentu.
+
 ## Generacje i garbage collection
 
 Lista zachowanych generacji systemu:
@@ -176,12 +231,24 @@ sysctl vm.swappiness vm.page-cluster
 
 Oczekiwane wartości to odpowiednio `100` i `0`.
 
+## Historia schowka
+
+Stan Rustowego watchera Stash i rozmiar historii można sprawdzić bez zmiany
+danych:
+
+```bash
+systemctl --user status stash-clipboard.service
+stash db stats
+```
+
+`Super+Shift+V` powinno pokazać tekst oraz opisy zapisanych obrazów, skopiować
+wybrany wpis z powrotem do schowka i wkleić go do aktywnego okna.
+
 ## Minimalna kontrola po aktywacji
 
 1. Otworzyć Foot przez `Super+Enter`.
 2. Sprawdzić launcher, aktywny panel i powiadomienia. Otworzyć Wleave przez
-   `Super+Escape`, zamknąć je przez `Esc` i ponownie otworzyć przejściowym
-   aliasem `Super+Shift+E`.
+   `Super+Escape` i zamknąć je przez `Esc`.
 3. Otworzyć aplikację GTK3 i GTK4, potwierdzając ciemny motyw.
 4. Przetestować historię schowka przez `Super+Shift+V`.
 5. Sprawdzić głośność, mikrofon, Bluetooth i klawisze multimedialne.
@@ -208,14 +275,19 @@ Oczekiwane wartości to odpowiednio `100` i `0`.
 12. Najpierw uruchomić wygaszacz przez `Super+Ctrl+S`, potwierdzić, że pozostaje
     widoczny, a następnie zamyka się po klawiszu, ruchu albo kliknięciu myszy.
     Przy wyłączonym Caffeine potwierdzić jego automatyczny start po 5 minutach,
-    blokadę po 6 minutach i DPMS po 10 minutach na dowolnym zasilaniu oraz
+    animację od 5. do 10. minuty, blokadę po 10 minutach i DPMS sekundę później
+    na dowolnym zasilaniu oraz
     suspend po 30 minutach wyłącznie na baterii. Na zasilaczu automatyczny
     suspend nie może wystąpić; po włączeniu Caffeine cała sekwencja ma pozostać
     zablokowana. Podczas wygaszacza sprawdzić w `pgrep -af tte`, że na baterii
     używa `--frame-rate 60`, a po podłączeniu zasilacza kolejny efekt wraca do
     pełnej częstotliwości monitora.
-13. Po docelowym `switch` i restarcie potwierdzić jednosekundowe menu
+13. Na laptopie sprawdzić `display-power-refresh status`, odłączyć zasilacz i
+    potwierdzić przez `hyprctl monitors`, że matryca przeszła na 60 Hz. Po
+    ponownym podłączeniu zasilacza ma automatycznie wrócić do najwyższego trybu
+    tej samej rozdzielczości, obecnie 120 Hz.
+14. Po docelowym `switch` i restarcie potwierdzić jednosekundowe menu
     systemd-boot; `nixos-rebuild test` nie instaluje tej zmiany na następny boot.
-14. Po restarcie sprawdzić aktywny `scx_bpfland`, uruchomić `gamemoded -t`, a
+15. Po restarcie sprawdzić aktywny `scx_bpfland`, uruchomić `gamemoded -t`, a
     następnie porównać tę samą grę z `gamemoderun %command%` i bez niego;
     obserwować przede wszystkim płynność i 1% low, nie tylko średni FPS.

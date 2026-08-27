@@ -1,8 +1,0 @@
-Image 1 is the edit target. Image 2 is the visual reference for the elf mage.
-Correct only the elf mage in Image 1. Match the reference character's facial
-design and identity cues: balanced face, vivid green eyes, long pointed ears,
-silver hair in two low tails, small gold earrings, and the same clean ivory robe
-with restrained gold trim. Keep the pose, scale, hands and staff from Image 1.
-Keep every background and archive detail in Image 1 unchanged, especially the
-cabinet, brass mechanism, roots, lighting, framing and all three exact labels.
-Do not transfer any background, wheel, text or prop from Image 2.

@@ -94,7 +94,8 @@ cp hosts/rog-polamaniec/configuration.nix hosts/nowy-host/
 Celowo nie kopiuj `hardware-configuration.nix`. Dzięki temu nie da się przez
 przypadek zbudować nowego hosta z UUID-ami dysków i modułami ROG-a.
 
-Nazwa katalogu automatycznie staje się:
+Po dodaniu własnego `hardware-configuration.nix` nazwa katalogu automatycznie
+staje się:
 
 - nazwą outputu flake: `nixosConfigurations.nowy-host`,
 - wartością `networking.hostName`.
@@ -163,6 +164,9 @@ Poniższy szablon pokazuje wszystkie obsługiwane pola manifestu hosta:
 
     # Steam, Proton-GE, Gamescope, GameMode i biblioteki 32-bit.
     gaming = false;
+
+    # ALVR, Steam i ADB dla Quest 2 po USB-C; bez otwierania portów LAN.
+    vr = false;
 
     # GPU Screen Recorder, uruchamiany na żądanie, skróty i konfiguracja replay.
     screenRecording = false;
@@ -318,7 +322,7 @@ Minimalny, komentowany szablon oparty na ROG-u:
 }
 ```
 
-`flake.nix` automatycznie dołącza `docker.nix`, `gaming.nix`,
+`flake.nix` automatycznie dołącza `docker.nix`, `gaming.nix`, `vr.nix`,
 `screen-recording.nix`, `hardware-diagnostics.nix` i `scheduler-benchmark.nix`
 według mapy `features` z manifestu. Nie należy powtarzać tych importów w
 `configuration.nix`.
@@ -330,9 +334,9 @@ według mapy `features` z manifestu. Nie należy powtarzać tych importów w
 | `common.nix` | Flakes, ZRAM skalowany do 50% RAM-u, strefę Warszawa, polskie locale, Git, curl, jq, fd i ripgrep | Praktycznie na każdym hoście |
 | `desktop.nix` | Hyprland/UWSM, automatyczną sesję greetd dla wybranego użytkownika, PipeWire, Bluetooth, awaryjny Thunar, Polkit i fonty | Na hostach graficznych |
 | `development-core.nix` | Fish, Codex i GNU Make | Gdy potrzebne są podstawowe narzędzia deweloperskie bez Dockera |
-| `development.nix` | Zgodnościowy agregat `development-core.nix` i `docker.nix` | Dla starszych hostów importujących cały stos; nowe powinny używać mapy `features` |
 | `docker.nix` | Docker uruchamiany ręcznie, grupę `docker`, Compose, lazydocker i lazyssh | Gdy `features.docker = true` |
 | `gaming.nix` | Steam, Proton-GE, Gamescope, GameMode oraz grafikę i ALSA 32-bit | Gdy `features.gaming = true` |
+| `vr.nix` | ALVR, Steam i ADB dla przewodowego Quest 2; bez usług i otwierania portów | Gdy `features.vr = true` |
 | `scheduler-benchmark.nix` | Zachowany harness, stress-ng, SuperTuxKart i schedulery SCX | Doraźnie, gdy `features.schedulerBenchmark = true` |
 | `screen-recording.nix` | GPU Screen Recorder i oficjalne UI | Gdy `features.screenRecording = true` |
 | `hardware-amd-gpu.nix` | `amdgpu` w initrd i systemową obsługę grafiki | Tylko dla GPU AMD |
@@ -348,7 +352,7 @@ po skopiowaniu konfiguracji nie wymaga ręcznej zmiany.
 
 ### Jedno źródło prawdy: `features`
 
-- `docker`, `gaming`, `screenRecording`, `hardwareDiagnostics` i
+- `docker`, `gaming`, `vr`, `screenRecording`, `hardwareDiagnostics` i
   `schedulerBenchmark` warunkowo importują kompletne moduły systemowe,
 - `amdGpuMetrics`, `docker`, `screenRecording`, `laptop` i `personalApps` są
   przekazywane także do Home Managera i sterują wyłącznie pasującym interfejsem,
@@ -361,11 +365,12 @@ po skopiowaniu konfiguracji nie wymaga ręcznej zmiany.
 
 | Plik w `home/<profil>/` | Odpowiedzialność |
 |---|---|
-| `default.nix` | Punkt wejścia, pakiety użytkownika, Fish, tmux, Neovim, btop, Git i konfiguracja replay |
+| `default.nix` | Punkt wejścia, pakiety użytkownika, Fish, tmux, btop, Git i konfiguracja replay |
 | `desktop.nix` | Aplikacje pulpitu, GTK, Foot, Fuzzel, MPV i Yazi |
 | `hyprland.nix` oraz `hyprland.lua` | Sesja Hyprlanda, autostart, skróty i reguły okien |
 | `ironbar.nix` | Panel, moduły statusu, metryki, popupy i usługa użytkownika |
 | `ironbar-metric.nix` | Pobieranie i formatowanie metryk CPU, RAM, sieci, dysku i AMD GPU |
+| `neovim.nix` | Codzienny Neovim oraz odizolowany PoC oparty na Kickstart |
 | `notifications.nix` | Centrum i wygląd powiadomień SwayNC |
 | `osd.nix` | SwayOSD dla głośności i jasności |
 | `scripts.nix` | Współdzielone skrypty sesji |

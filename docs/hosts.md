@@ -22,9 +22,19 @@ Laptop to ASUS ROG Zephyrus G14 GA402RK. Moduł AMD zapewnia grafikę i wczesne
 `nixpkgs`, ładuje `asus-armoury` oraz uruchamia `asusd`; polecenie `asusctl`
 i ROG Control Center są dostępne deklaratywnie.
 
-Flake automatycznie wystawia katalogi `hosts/<nazwa>/` zawierające `default.nix`.
+Flake automatycznie wystawia katalogi `hosts/<nazwa>/` zawierające `default.nix`
+i własny `hardware-configuration.nix`.
 Allowlista w `.gitignore` decyduje, które hosty i profile użytkowników mogą być
 wersjonowane. Sekrety, hasła, profile Wi-Fi i klucze SSH pozostają poza repo.
+
+## White Monster
+
+`hosts/white-monster/` jest przygotowany dla desktopa z Radeonem RX 9070 XT.
+Współdzieli profil `home/wojtek`, pulpit, tapety, aplikacje, Docker, gaming,
+nagrywanie i przewodowy ALVR, ale ma `features.laptop = false` i nie importuje
+modułu ASUS-a ani ustawień pokrywy. Do czasu wygenerowania na tym komputerze
+jego własnego `hardware-configuration.nix` host pozostaje bezpiecznie pominięty
+przez flake; dokładna komenda znajduje się w `hosts/white-monster/README.md`.
 
 ## Nowy host i użytkownik
 

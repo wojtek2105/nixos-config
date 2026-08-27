@@ -12,7 +12,6 @@ kończyć się `nix flake check` oraz pełnym buildem dotkniętych hostów.
 - [ ] Przetestować wklejanie tekstu i obrazów z historii schowka.
 - [ ] Przetestować jakość replay w dynamicznej grze przy 2560x1600.
 - [ ] Sprawdzić kolejność i synchronizację trzech ścieżek audio.
-- [ ] Usunąć przejściowe aliasy skrótów po utrwaleniu nowego układu.
 - [x] Przeprowadzić audyt pakietów, wydzielić opcjonalne funkcje i usunąć
       domyślne narzędzia diagnostyczne GPU; audyt okresowo powtarzać.
 

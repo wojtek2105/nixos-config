@@ -1,8 +1,0 @@
-Edit the supplied 2560x1440 image only inside three small rectangles on the
-existing archive cabinet. Add a compact brass plaque reading "flake.lock" at
-x=1640..1900, y=570..650; a compact brass plaque reading "main" at
-x=2040..2200, y=570..650; and a compact brass plaque reading "signed" at
-x=1760..1960, y=1090..1170. Use exact crisp dark lettering. Preserve every
-pixel outside those rectangles, including the character, Nix mechanism, roots,
-cabinet, background and lighting. Add no parchment, branch, root, large tag or
-other text.

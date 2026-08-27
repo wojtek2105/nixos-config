@@ -1,0 +1,11 @@
+Enhance this existing ultrawide anime wallpaper while preserving the exact
+composition, character identity, pose, costume, camera, lighting direction,
+color palette, background layout, and all object positions. Reconstruct clean,
+symmetrical, naturally aligned eyes with coherent pupils and eyelids. Add
+high-quality intentional detail to hair strands, fabric, armor, environmental
+materials, contact shadows, and subtle reflected light. Keep crisp controlled
+anime linework and natural gradients. Preserve the deep OLED blacks and the
+quiet dark area on the left. Do not add or remove characters or objects. Do not
+move, crop, enlarge, or redesign the subject. No text, logo, watermark, UI,
+extra limbs, duplicate features, excessive bloom, oversharpening, noise, or
+checkerboard texture.

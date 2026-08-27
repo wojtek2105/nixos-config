@@ -91,8 +91,6 @@ hl.animation({ leaf = "fade", enabled = true, speed = 5, bezier = "easeOutQuint"
 hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "easeOutQuint", style = "slide" })
 
 hl.on("hyprland.start", function()
-  hl.exec_cmd("wl-paste --type text --watch cliphist store")
-  hl.exec_cmd("wl-paste --type image --watch cliphist store")
   hl.exec_cmd("@POLKIT_AGENT@")
 end)
 
@@ -109,7 +107,6 @@ bind_exec(mod .. " + N", "swaync-client -t -sw")
 bind_exec(mod .. " + L", "hyprlock")
 bind_exec(mod .. " + F1", "shortcut-menu")
 bind_exec(mod .. " + ESCAPE", "power-menu")
-bind_exec(mod .. " + SHIFT + E", "power-menu")
 @BIND_PERSONAL_APPS@
 
 @BIND_SCREEN_RECORDING@

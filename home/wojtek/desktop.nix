@@ -33,10 +33,25 @@ let
         -e yazi "$target"
     '';
   };
+  usb-capture-viewer = pkgs.writeShellApplication {
+    name = "usb-capture-viewer";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.gnugrep
+      pkgs.mpv
+      pkgs.v4l-utils
+    ];
+    text = ''
+      exec ${pkgs.bash}/bin/bash ${../../tools/hardware/usb-capture-viewer.sh} "$@"
+    '';
+  };
 in
 {
   home.packages =
-    [ yazi-file-manager ]
+    [
+      yazi-file-manager
+      usb-capture-viewer
+    ]
     ++ lib.optionals easyeffectsEnabled [ pkgs.easyeffects ]
     ++ lib.optionals plexampEnabled [ pkgs.plexamp ];
 

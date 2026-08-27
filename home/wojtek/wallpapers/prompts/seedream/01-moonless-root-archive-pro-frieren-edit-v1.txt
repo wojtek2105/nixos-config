@@ -1,8 +1,0 @@
-Image 1 is the 2560x1440 edit target. Image 2 is the identity and canonical
-wardrobe reference for Frieren. Edit only the character in Image 1 so she is
-immediately recognizable as canonical Frieren: accurate face, green eyes,
-clearly visible elf ears, silver twin tails, gold earrings and her standard
-ivory-and-gold mage travel outfit. Preserve her existing pose, body placement,
-hands and staff. Preserve every non-character detail from Image 1 exactly,
-including the camera, crypt, lighting, archive cabinet, Nix mechanism and the
-three labels. Do not copy the background or props from Image 2.

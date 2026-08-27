@@ -1,104 +1,204 @@
-# Tapety Biscuit OLED v3
+# Tapety Biscuit OLED
 
-Katalog opisuje projektowaną od zera kolekcję 22 tapet. Storyboard, logiczne
-easter eggi i podział na światy są w [CONCEPTS.md](CONCEPTS.md), a stan
-rzeczywistych plików w [INVENTORY.md](INVENTORY.md).
+Zaakceptowane obrazy znajdują się wyłącznie w katalogach `16x9/`, `21x9/`
+i `32x9/`. Ich zawartość jest archiwum wynikowym: porządki w zapleczu nie
+mogą usuwać, zmieniać nazw ani nadpisywać tych plików. Czarne obrazy w
+`fallback/` zapewniają bezpieczny stan konfiguracji.
 
-Każda scena ma jeden kompletny, technicznie poprawny przepływ systemowy od
-wejścia do wyniku i obsługi błędu. Produkty są rekwizytami o konkretnej roli,
-nie kolekcją logo; mapa wszystkich 22 przepływów znajduje się w `CONCEPTS.md`.
+Surowe obrazy wejściowe są oddzielone od wyników w `raw/16x9/`. Importowana
+seria jest opisana przez `collection.json`; katalog `work/import-48/` zawiera
+wyłącznie odtwarzalne mastery, znaczniki etapów i robocze kopie. Surowy master
+32:9 spoza kolekcji znajduje się w `raw/32x9/` i nie trafia do rotacji.
 
-## Kolejność pracy
+Ostatnia seria obejmuje 18 nowych scen: po trzy z `Frieren`, `Chainsaw Man`,
+`Solo Leveling`, `Valheim`, `V Rising` i `Palworld`. Storyboard znajduje się
+w [CONCEPTS.md](CONCEPTS.md), stan w [INVENTORY.md](INVENTORY.md), a komplet
+36 promptów w `prompts/final-18/`.
 
-1. Zatwierdzamy storyboard i produkcyjne prompty.
-2. Seedream 5.0 Pro generuje krótko opisany, kompletny rdzeń `2560×1440`.
-3. Oglądamy rdzeń 16:9 przed każdą kolejną warstwą. Pro poprawia osobno jeden
-   element wizualny, a potem najwyżej dwa–trzy krótkie napisy.
-4. Seedream 5.0 Lite rozszerza zaakceptowany rdzeń wyłącznie w lewo do
-   `5120×1440`, nie przemalowując prawego kadru.
-5. Odrzucamy obraz z generycznym światem, przypadkowymi napisami, słabą
-   kompozycją, widocznym łączeniem albo sztuczną czernią.
-6. Dopiero zaakceptowane źródło przechodzi mastering do `32x9/`, `21x9/` i
-   `16x9/` oraz zostaje dodane do trzech list w `theme.nix`.
+## Archiwalny pipeline scen 18 (Pro → Lite)
 
-Po resecie katalogi wynikowe są puste, a konfiguracja korzysta z technicznych
-czarnych fallbacków. Żaden prompt ani sam wynik API nie aktywuje tapety.
+Każda scena zużywa dokładnie dwa prompty i dwa wywołania modelu:
 
-## Warstwowy workflow Seedream Pro → Lite
+1. `*.pro.txt` tworzy kompletny rdzeń `2560×1440`. Domyślnie używamy Seedream
+   5.0 Pro. Jeżeli filtr odrzuci prompt, uruchamiamy bez zmian ten sam plik
+   w Seedream 5.0 Lite, nadal w `2560×1440`.
+2. Po ręcznej akceptacji rdzenia `*.lite.txt` rozszerza obraz wyłącznie w lewo
+   do `5120×1440`, zachowując zaakceptowany rdzeń po prawej.
+3. Dla każdego mastera zapisujemy osobne poziome przesunięcie kadru 16:9 i
+   21:9. Dzięki temu postać, twarz i główny punkt sceny nie są ślepo cięte
+   według jednej geometrii dla całej kolekcji.
+4. `tools/wallpapers/processing/finalize-imported.sh` tworzy z mastera wybrany kadr 16:9
+   `2560×1440`, wybrany kadr 21:9 `3440×1440` i pełne 32:9 `5120×1440`.
 
-Pro otrzymuje krótki prompt obejmujący wyłącznie rozpoznawalną postać lub świat,
-jedną scenę, kompozycję 16:9 i kierunek OLED. Nie dokładamy w pierwszym wywołaniu
-całej historii technicznej, wszystkich etykiet, crossoveru, pełnej palety oraz
-długiej listy zakazów. Minimalny test z samą Frieren przeszedł moderację Pro;
-trzy przeładowane warianty tej samej sceny zostały odrzucone dopiero przez filtr
-wyniku. To wskazuje na przeciążenie semantyczne promptu, a nie blokadę postaci.
+Rdzeń Pro:
 
-Kolejne wywołania są małymi edycjami image-to-image:
+```bash
+env SEEDREAM_MODEL=dola-seedream-5-0-pro-260628 \
+  SEEDREAM_WALLPAPER_SIZE=2560x1440 \
+  ./tools/wallpapers/generation/seedream-generate.sh \
+  home/wojtek/wallpapers/prompts/final-18/01-frieren-grimoire-vault.pro.txt \
+  /tmp/01-frieren-grimoire-vault-core.png
+```
 
-1. Pro tworzy finalny wizualnie rdzeń `2560×1440` bez napisów.
-2. Pro dodaje lub poprawia jeden mechanizm techniczny, nie zmieniając reszty.
-3. Pro dodaje najwyżej dwa–trzy krótkie napisy w jednym przebiegu. Typografię,
-   której model nadal nie zapisuje dokładnie, poprawiamy deterministycznie przy
-   masteringu zamiast ponawiać całą ilustrację. Taka poprawka musi należeć do
-   świata sceny: haft na fladze, grawer w metalu albo tekst na ekranie. Nie
-   dokładamy płaskich plakietek, paneli UI ani napisów unoszących się w kadrze.
-4. Lite dostaje zaakceptowany rdzeń jako referencję i dopowiada tylko naturalną
-   architekturę, teren, światło i głębię po lewej stronie do `5120×1440`.
-5. Wariant `3440×1440` jest prawostronnym cropem mastera, natomiast
-   `2560×1440` zachowuje zaakceptowany rdzeń Pro.
+Fallback Lite po odrzuceniu przez filtr zmienia tylko model:
 
-Każdą warstwę ogląda użytkownik przed następnym płatnym wywołaniem. Oryginały są
-wersjonowane; edycja nigdy nie nadpisuje ostatniego zaakceptowanego obrazu.
+```bash
+env SEEDREAM_MODEL=seedream-5-0-lite-260128 \
+  SEEDREAM_WALLPAPER_SIZE=2560x1440 \
+  ./tools/wallpapers/generation/seedream-generate.sh \
+  home/wojtek/wallpapers/prompts/final-18/01-frieren-grimoire-vault.pro.txt \
+  /tmp/01-frieren-grimoire-vault-core-lite.png
+```
 
-## Rozdzielczości
+Outpaint zaakceptowanego rdzenia:
 
-- rdzeń Pro: natywne `2560×1440`, bez pasów i paddingu;
-- źródło/master Lite: natywne `5120×1440`, bez pasów i paddingu;
-- `32x9/`: `5120×1440`;
-- `21x9/`: `3440×1440`;
-- `16x9/`: `2560×1440`.
+```bash
+env SEEDREAM_MODEL=seedream-5-0-lite-260128 \
+  SEEDREAM_WALLPAPER_SIZE=5120x1440 \
+  ./tools/wallpapers/generation/seedream-edit.sh \
+  /tmp/01-frieren-grimoire-vault-core.png \
+  home/wojtek/wallpapers/prompts/final-18/01-frieren-grimoire-vault.lite.txt \
+  /tmp/01-frieren-grimoire-vault-master.png
+```
 
-Wysokość jest zawsze dokładnie `1440 px`. Lite dodaje szerokość tylko po lewej
-stronie zaakceptowanego rdzenia; niczego nie rozciągamy. Szersze warianty
-odsłaniają kolejne warstwy tej samej sceny; nie używamy osobnego tła,
-gradientowej maski, blurra, tilingu ani czarnej zasłony do wypełnienia lewej
-strony.
+## Import kolekcji 48 RAW-ów (aktywny pipeline)
 
-## OLED i Biscuit
+`collection.json` zawiera 48 kanonicznych scen. Źródła wejściowe są w
+`raw/16x9/`, mastery w `work/import-48/masters/`, a znaczniki etapów w
+`generated/`, `accepted/` i `finalized/`. Potok uruchamia się kolejno:
 
-Scena powinna już ze źródła mieć niski poziom światła i organiczne obszary
-`#000000`. Mastering utrwala czerń, lecz nie naprawia jasnej, płaskiej albo źle
-skomponowanej generacji. Kolory wynikają z Biscuit de Mar Dark; zakazane są
-duże białe powierzchnie, szaro-niebieski wash, neonowa ściana i osobny pasek
-pod Ironbar.
+```bash
+bash tools/wallpapers/processing/import-collection.sh generate
+bash tools/wallpapers/processing/review-master.sh accept SLUG CROP_16_X CROP_21_X
+bash tools/wallpapers/processing/finalize-queue.sh
+```
 
-## Narzędzia
+Worker generatora pracuje scenami po kolei i zapisuje tylko mastery oraz
+znaczniki w `work/import-48/`; nie nadpisuje gotowych pozycji. Worker QA
+porównuje master z RAW-em, zapisując plan `accepted/SLUG.json` z osobnym
+`crop16X` i `crop21X`. Worker crop/mastering bierze zatwierdzony plan i zapisuje
+trzy finalne warianty w katalogach `16x9/`, `21x9/` i `32x9/`. Końcowy worker
+audytu sprawdza komplet 48 nazw i wymiary:
 
-- `tools/generate-wallpaper-seedream.sh [PROMPT] [WYNIK]` generuje wersjonowany
-  kandydat przez wybrany `SEEDREAM_MODEL` i `SEEDREAM_WALLPAPER_SIZE`;
-- `tools/edit-wallpaper-seedream.sh [ŹRÓDŁO] [PROMPT] [WYNIK]` wykonuje
-  zachowawczą edycję image-to-image bez publicznego hostowania źródła;
-- `tools/generate-wallpapers.sh [OD] [DO]` łączy kontrakt globalny z jednym
-  numerowanym promptem i zapisuje źródło wraz z dokładnym sidecarem;
-- `tools/master-wallpapers.sh [OD] [DO]` tworzy trzy warianty i zapisuje
-  pomiary czerni w `METRICS.tsv`.
-- `tools/finalize-vrising14-core.sh` zachowuje historyczny prototyp lokalnej
-  kompozycji sceny 14; finalna tapeta używa zaakceptowanego rdzenia Pro v3 z
-  napisami i dużą Pochitą wygenerowanymi przez AI;
-- `tools/finalize-vrising14-wallpapers.sh` składa jego źródło oraz trzy
-  gotowe proporcje bez ponownego generowania obrazu.
+```bash
+bash tools/wallpapers/processing/audit-collection.sh
+```
 
-Oficjalny sygnet w `assets/traefik-labs-icon.svg` pochodzi z press kitu
-Traefik Labs. Finalizer używa go jako przygaszonego haftu w świecie V Rising,
-bez produktowego wordmarku i bez płaskiego tła.
+## Lokalny upscale 32:9
 
-Klucze pozostają poza repozytorium w prywatnym katalogu
-`${XDG_CONFIG_HOME:-$HOME/.config}/nixos-config/secrets/`. Domyślne pliki to
-`gemini-wallpapers.key`, `byteplus-wallpapers.key` i `bfl-wallpapers.key`;
-zmienne `GEMINI_API_KEY_FILE`, `ARK_API_KEY_FILE` oraz `BFL_API_KEY_FILE`
-pozwalają wskazać inne ścieżki. Katalog ma uprawnienia `0700`, a klucze `0600`.
+Do nocnego przebiegu służy `tools/wallpapers/upscale/collection.sh`. Skrypt
+przetwarza istniejące mastery `32x9/` w skali 4× zgodnej z modelem
+`realesrgan-x4plus-anime` (NCNN-owa wersja checkpointu
+`RealESRGAN_x4plus_anime_6B`, dla ilustracji), a następnie zmniejsza wynik
+Lanczosem do `5120×1440`. Wyniki pośrednie zapisuje w
+`work/import-48/upscaled-32x9/`; tryb `promote` tworzy kopię zapasową w
+`pre-upscale-32x9/` i dopiero wtedy odświeża rotowane pliki oraz cropy.
 
-Punkt wznowienia sceny 01 po restarcie: użyć minimalnego, działającego promptu
-`prompts/seedream/00-frieren-minimal-pro-test.txt` jako wzorca krótkiej formy,
-przygotować wersjonowany produkcyjny rdzeń Pro `2560×1440`, pokazać go
-użytkownikowi i dopiero po akceptacji dodać mechanizm Nix w osobnej edycji.
+Oficjalny pakiet `realesrgan-ncnn-vulkan` zawiera binarkę i modele dla Linuxa.
+Na NixOS podaj ścieżki jawnie (binarka jest uruchamiana przez systemowy loader):
+
+```bash
+mkdir -p "$HOME/.local/share/realesrgan-ncnn-vulkan"
+curl -L --fail \
+  -o /tmp/realesrgan-ncnn-vulkan.zip \
+  https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-ubuntu.zip
+unzip -o /tmp/realesrgan-ncnn-vulkan.zip \
+  -d "$HOME/.local/share/realesrgan-ncnn-vulkan"
+chmod +x "$HOME/.local/share/realesrgan-ncnn-vulkan/realesrgan-ncnn-vulkan"
+export REALESRGAN_BIN="$HOME/.local/share/realesrgan-ncnn-vulkan/realesrgan-ncnn-vulkan"
+export REALESRGAN_MODELS="$HOME/.local/share/realesrgan-ncnn-vulkan/models"
+export REALESRGAN_MODEL=realesrgan-x4plus-anime
+export REALESRGAN_SCALE=4  # model anime 4×; wynik jest potem redukowany do 1440p
+export REALESRGAN_TILE=256  # sprawdzone na RX 6800S 8 GiB; 512 wywołuje reset GPU
+export REALESRGAN_GPU_ID=1   # dedykowany RX 6800S; 0 to zintegrowany 680M
+tools/wallpapers/upscale/run-night.sh
+tools/wallpapers/upscale/collection.sh status
+tools/wallpapers/upscale/collection.sh promote
+```
+
+Wrapper można uruchomić w `tmux`; sam uruchamia cztery shardy i zapisuje logi
+`upscale-logs/shard-*.log`. Liczbę shardów można zmienić przez
+`UPSCALE_SHARDS`, ale blokada GPU nadal serializuje inferencję.
+
+Na mocniejszym komputerze z Radeonem RX 9070 XT (16 GiB) użyj gotowego profilu:
+
+```bash
+tools/wallpapers/upscale/install-animesharp-ncnn.sh
+tools/wallpapers/upscale/run-9070xt.sh
+```
+
+Ten sam jakościowy model działa na laptopowym RX 6800S 8 GiB z mniejszym
+tile 128, jednym workerem i właściwym identyfikatorem GPU 1:
+
+```bash
+tools/wallpapers/upscale/install-animesharp-ncnn.sh
+tools/wallpapers/upscale/run-6800s.sh run
+tools/wallpapers/upscale/run-6800s.sh status
+# Dopiero po obejrzeniu stagingu:
+tools/wallpapers/upscale/run-6800s.sh promote
+```
+
+Oba profile AnimeSharp korzystają z osobnego stagingu
+`work/import-48/upscaled-32x9-animesharp/`, więc pozostałości wcześniejszego
+przebiegu Real-ESRGAN nie są uznawane za gotowe wyniki nowego modelu. Na 6800S
+można później ostrożnie spróbować `REALESRGAN_TILE=160`, ale domyślne 128
+zastępuje niestabilne 192 i ogranicza ryzyko resetu Vulkan oraz czarnych lub
+uszkodzonych kafli.
+
+Profil wybiera pełny `4x-AnimeSharp-fp16` zamiast małego
+`RealESRGAN_x4plus_anime_6B`. Model autora jest przypięty do konkretnej rewizji,
+sprawdzany sumami SHA-256 i objęty licencją CC BY-NC-SA 4.0. Jest przeznaczony
+do prywatnego, niekomercyjnego użycia. Upscale działa w skali 4× i z tile 384.
+Jeśli pojedynczy przebieg przejdzie bez resetu sterownika, można spróbować
+większych bloków: `REALESRGAN_TILE=512 tools/wallpapers/upscale/run-9070xt.sh`.
+Gdy karta nie jest urządzeniem Vulkan 0, ustaw `REALESRGAN_GPU_ID` jawnie.
+
+Launcher korzysta z NCNN i Vulkan/RADV. DirectML jest backendem Windows, a
+ROCm nie jest potrzebny do tego modelu. RX 9070 XT jest obsługiwany przez ROCm,
+lecz oficjalna macierz AMD nie wymienia NixOS jako wspieranego systemu hosta;
+na tej samej konfiguracji NixOS Vulkan jest więc wariantem przenośnym. Backend
+nie decyduje o jakości obrazu — robi to model i parametry; ROCm nie poprawiłby
+oczu w porównaniu z tym samym checkpointem uruchomionym przez Vulkan.
+
+Skrypt obrabia mastery 32:9 i zapisuje wynik wyłącznie w
+`work/import-48/upscaled-32x9/`. Dopiero osobne polecenie `promote` tworzy backup
+i podmienia aktywny master, po czym odtwarza 16:9 i 21:9 według zaakceptowanych
+offsetów cropu. AnimeSharp lepiej rekonstruuje kontury i drobne detale niż
+model 6B, ale nie jest generatorem: nie naprawi źle narysowanych lub zezujących
+oczu obecnych już w masterze. Taką scenę trzeba poprawić na etapie generacji.
+
+Shardy mogą działać równolegle, ale blokada `upscale-gpu.lock` przepuszcza
+tylko jeden worker naraz przez GPU. Dzięki temu nie konkurują o VRAM. Na
+laptopie pozostaje lekki `realesrgan-x4plus-anime`; profil 9070 XT wybiera
+większy AnimeSharp. Dla fotorealistycznych źródeł nadal można jawnie ustawić
+`REALESRGAN_MODELS` i `REALESRGAN_MODEL=realesrgan-x4plus`.
+
+Pierwszy krok używa Seedream 5 Lite; Seedream 4.5 jest tylko moderacyjnym
+fallbackiem. QA zapisuje osobne przesunięcia cropu po porównaniu z RAW-em,
+więc finalne 16:9 pochodzi z ostrego mastera, ale zachowuje jego oryginalną
+kompozycję.
+
+## Kontrakt OLED
+
+- Rdzeń ma natywne `2560×1440`, a master natywne `5120×1440`.
+- Bohaterowie, twarze, główna akcja, najważniejsze rekwizyty i najmocniejsze
+  akcenty światła mieszczą się całkowicie po prawej stronie.
+- Lewa krawędź rdzenia jest już bardzo ciemna, lecz zawiera naturalne linie
+  środowiska gotowe do dalszego wygaszenia przez outpaint.
+- Około 35–50% każdego widoku tworzy organiczne, rzeczywiste `#000000`, z jego
+  wyraźną większością po lewej stronie. Sceneria, GI i kolory stopniowo
+  narastają w kierunku prawej strony oraz głównej akcji.
+- Lite prowadzi lewą scenerię przez coraz rzadszą geometrię, słabsze GI,
+  głębszą okluzję i płynne ciemne gradienty aż do przewagi `#000000` przy
+  lewym brzegu. Nie może to być pionowe odcięcie ani doklejony prostokąt.
+- Czerń zachowuje objętość dzięki AO, cieniom kontaktowym i śladowemu bounced
+  light, dopóki widoczna jest jeszcze geometria środowiska.
+- Światła są małe, miękkie i lokalne. Bez dużych białych powierzchni, bloom,
+  ostrego HDR, agresywnego neonu i męczącego mikrokontrastu.
+- Nie używamy crossoverów, easter eggów, technicznych metafor, tekstu, logo,
+  UI ani znaków wodnych. Liczy się wyłącznie piękny i spójny świat.
+- Nie stosujemy gradientowej maski, blurra, tilingu, paddingu ani rozciągania.
+
+Obraz odrzucamy tylko wtedy, gdy plik jest nieczytelny lub ma zły wymiar.
+W kolekcji 48 QA akceptuje poprawne pliki automatycznie, a porównanie z RAW-em
+służy do wyznaczenia najlepszego przesunięcia kadru.

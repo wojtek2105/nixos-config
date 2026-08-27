@@ -33,7 +33,6 @@ aplikacji pozostają dostępne w ich kontekstowej pomocy.
 | `Super+N` | Pokaż lub ukryj centrum powiadomień SwayNC |
 | `Super+L` | Zablokuj sesję przez Hyprlock |
 | `Super+Escape` | Otwórz menu zasilania Wleave |
-| `Super+Shift+E` | Otwórz menu zasilania — przejściowy alias |
 | `Super+Shift+V` | Wybierz wpis historii schowka i automatycznie go wklej |
 | `Super+F1` | Otwórz centrum pomocy ze skrótami |
 
@@ -157,6 +156,13 @@ oraz przeciągać krawędzie podziału.
 Profil nie nadpisuje obecnie domyślnej mapy Neovim; poniżej znajduje się
 praktyczny zestaw wbudowanych poleceń zgodny z aktywną konfiguracją.
 
+Polecenie `nvim-kickstart` uruchamia oficjalny Kickstart w osobnym profilu.
+Nie zmienia konfiguracji ani danych zwykłego `nvim`. Mapowania dodane przez
+Kickstart można odkrywać przez `Space`, `:Telescope keymaps` i `:checkhealth`.
+Przy pierwszym uruchomieniu wrapper kopiuje przypięty przez Nix szablon do
+zapisywalnego `~/.config/nvim-kickstart`; ten katalog można później bezpośrednio
+zamienić w osobne repozytorium Git.
+
 | Skrót | Działanie |
 | --- | --- |
 | `i` / `a` | Wejdź w tryb Insert przed / za kursorem |
@@ -185,7 +191,7 @@ praktyczny zestaw wbudowanych poleceń zgodny z aktywną konfiguracją.
 
 ## Menu zasilania Wleave
 
-Po otwarciu przez `Super+Escape` lub `Super+Shift+E`:
+Po otwarciu przez `Super+Escape`:
 
 | Klawisz | Działanie |
 | --- | --- |

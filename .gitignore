@@ -10,6 +10,8 @@
 /.agents/skills/*
 !/.agents/skills/manage-nixos-config/
 !/.agents/skills/manage-nixos-config/**
+!/.agents/skills/nixos-manager/
+!/.agents/skills/nixos-manager/**
 /.codex/
 .env
 .env.*
@@ -19,6 +21,8 @@
 /hosts/*/
 !/hosts/rog-polamaniec/
 !/hosts/rog-polamaniec/**
+!/hosts/white-monster/
+!/hosts/white-monster/**
 
 # User home configurations explicitly approved for versioning
 /home/*/
@@ -35,9 +39,15 @@
 /docs/benchmark-results/*
 !/docs/benchmark-results/README.md
 
-# Paid-generation review intermediates stay local. Accepted source masters,
-# prompts, metrics and final aspect-ratio variants remain versioned.
-/home/wojtek/wallpapers/candidates/
+# Paid-generation review intermediates stay local. Accepted aspect-ratio
+# variants and the authored prompt set remain versioned.
+/home/wojtek/wallpapers/raw/
+/home/wojtek/wallpapers/work/
+
+# Local npm experiment; the declarative Nix configuration does not consume it.
+/node_modules/
+/package.json
+/package-lock.json
 
 # Editor and temporary files
 *~

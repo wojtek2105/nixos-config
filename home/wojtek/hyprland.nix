@@ -267,6 +267,23 @@ in
 
   services.awww.enable = true;
 
+  home.packages = lib.optionals laptopEnabled [ scripts.display-power-refresh ];
+
+  systemd.user.services.display-power-refresh = lib.mkIf laptopEnabled {
+    Unit = {
+      Description = "Switch the internal display refresh rate with power source";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+      ConditionEnvironment = "WAYLAND_DISPLAY";
+    };
+    Service = {
+      ExecStart = "${scripts.display-power-refresh}/bin/display-power-refresh watch";
+      Restart = "on-failure";
+      RestartSec = "2s";
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
+  };
+
   systemd.user.services.rotate-wallpaper = {
     Unit = {
       Description = "Rotate Biscuit wallpapers";
@@ -303,7 +320,11 @@ in
       general = {
         lock_cmd = "pidof hyprlock || hyprlock";
         before_sleep_cmd = "loginctl lock-session";
-        after_sleep_cmd = "hyprctl dispatch dpms on";
+        after_sleep_cmd = lib.concatStringsSep "; " (
+          [ "hyprctl dispatch 'hl.dsp.dpms({ action = \"enable\" })'" ]
+          ++ lib.optional laptopEnabled
+            "${scripts.display-power-refresh}/bin/display-power-refresh apply"
+        );
         ignore_dbus_inhibit = false;
         ignore_systemd_inhibit = false;
       };
@@ -313,13 +334,17 @@ in
           on-timeout = "pidof hyprlock || screensaver";
         }
         {
-          timeout = 360;
+          # Keep the animated saver visible for a full five minutes. Lock just
+          # before DPMS powers the panel down so wake-up still requires auth.
+          timeout = 600;
           on-timeout = "loginctl lock-session";
         }
         {
-          timeout = 600;
-          on-timeout = "hyprctl dispatch dpms off";
-          on-resume = "hyprctl dispatch dpms on";
+          timeout = 601;
+          # Lua-configured Hyprland 0.55+ expects a Lua dispatcher expression;
+          # the old `dispatch dpms off` form is rejected as invalid syntax.
+          on-timeout = "hyprctl dispatch 'hl.dsp.dpms({ action = \"disable\" })'";
+          on-resume = "hyprctl dispatch 'hl.dsp.dpms({ action = \"enable\" })'";
         }
         {
           timeout = 1800;
