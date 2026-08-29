@@ -28,10 +28,41 @@ let
     end
   '';
 
-  command = if cfg.role == "server" then
-    "${pkgs.deskflow}/bin/deskflow-core server -s ${serverConfig}"
-  else
-    "${pkgs.deskflow}/bin/deskflow-core client ${cfg.serverAddress}";
+  settings = pkgs.writeText "Deskflow.conf" ''
+    [core]
+    coreMode=${if cfg.role == "server" then "2" else "1"}
+    computerName=${hostName}
+    port=24800
+
+    ${lib.optionalString (cfg.role == "server") ''
+      [server]
+      externalConfig=true
+      externalConfigFile=deskflow-server.conf
+    ''}
+
+    ${lib.optionalString (cfg.role == "client") ''
+      [client]
+      remoteHost=${cfg.serverAddress}
+    ''}
+  '';
+
+  # Deskflow resolves externalConfigFile relative to the settings file. Keep
+  # both generated files in one directory so the immutable Nix store path does
+  # not get reduced to /nix/store/deskflow-server.conf at runtime.
+  settingsDirectory = pkgs.linkFarm "deskflow-${cfg.role}-settings" (
+    [
+      {
+        name = "Deskflow.conf";
+        path = settings;
+      }
+    ]
+    ++ lib.optional (cfg.role == "server") {
+      name = "deskflow-server.conf";
+      path = serverConfig;
+    }
+  );
+
+  command = "${pkgs.deskflow}/bin/deskflow-core ${cfg.role} --settings ${settingsDirectory}/Deskflow.conf";
 in
 {
   options.services.deskflow = {
