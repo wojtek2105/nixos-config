@@ -324,6 +324,14 @@ let
 
     start = [
       {
+        type = "label";
+        name = "global-menu";
+        class = "island global-menu";
+        label = "";
+        tooltip = "Menu pulpitu\nAplikacje, narzędzia, screenshoty i zasilanie\nSuper+D";
+        on_click_left = "global-menu";
+      }
+      {
         type = "workspaces";
         name = "workspace-island";
         class = "island";
@@ -1155,6 +1163,20 @@ in
         color: @bright;
         background-color: alpha(@panel-hover, 0.95);
         border-color: alpha(@active, 0.76);
+      }
+
+      #global-menu {
+        min-width: 28px;
+        padding: 0 7px;
+        color: @active;
+        font-size: 16px;
+        font-weight: 800;
+      }
+
+      #global-menu:hover {
+        color: @base;
+        background-color: @active;
+        border-color: alpha(@bright, 0.54);
       }
 
       #workspace-island {
