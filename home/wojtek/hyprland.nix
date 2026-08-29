@@ -177,11 +177,14 @@ in
     package = null;
     portalPackage = null;
     configType = "lua";
-    systemd.enable = true;
-    systemd.enableXdgAutostart = true;
+    # UWSM owns graphical-session.target and XDG autostart. Home Manager's
+    # parallel Hyprland target stops graphical-session.target during startup,
+    # which tears down the UWSM compositor immediately after login.
+    systemd.enable = false;
     extraLuaFiles."config" = builtins.replaceStrings
       [
         "@POLKIT_AGENT@"
+        "@UWSM_FINALIZE@"
         "@ACTIVE_BORDER@"
         "@ACTIVE_BORDER_ALT@"
         "@INACTIVE_BORDER@"
@@ -193,6 +196,7 @@ in
       ]
       [
         "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1"
+        "${pkgs.uwsm}/bin/uwsm finalize"
         c.accent
         c.yellow
         c.muted

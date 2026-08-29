@@ -153,7 +153,9 @@ tools/wallpapers/upscale/run-nomos-6800s.sh batch 3
 
 ## Katalogi danych
 
-- `home/wojtek/wallpapers/raw/` — materiały źródłowe.
+- `home/wojtek/wallpapers/raw/16x9/` — materiały źródłowe; JPEG-i są
+  wersjonowane jako wejście do upscale'u i outpaintu 32:9, a pozostałe formaty
+  RAW pozostają lokalne.
 - `home/wojtek/wallpapers/work/import-48/masters/` — mastery przed finalizacją.
 - `home/wojtek/wallpapers/work/import-48/accepted/` — decyzje QA i offsety.
 - `home/wojtek/wallpapers/work/import-48/upscale-logs/` — logi lokalnego SR.

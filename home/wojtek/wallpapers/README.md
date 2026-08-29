@@ -5,10 +5,13 @@ i `32x9/`. Ich zawartość jest archiwum wynikowym: porządki w zapleczu nie
 mogą usuwać, zmieniać nazw ani nadpisywać tych plików. Czarne obrazy w
 `fallback/` zapewniają bezpieczny stan konfiguracji.
 
-Surowe obrazy wejściowe są oddzielone od wyników w `raw/16x9/`. Importowana
-seria jest opisana przez `collection.json`; katalog `work/import-48/` zawiera
-wyłącznie odtwarzalne mastery, znaczniki etapów i robocze kopie. Surowy master
-32:9 spoza kolekcji znajduje się w `raw/32x9/` i nie trafia do rotacji.
+Surowe obrazy wejściowe są oddzielone od wyników w `raw/16x9/`. Oryginalne
+pliki `.jpg` i `.jpeg` w tym katalogu są wersjonowane jako wejście do upscale'u
+i późniejszego outpaintu 32:9; pozostałe formaty RAW pozostają lokalne.
+Importowana seria jest opisana przez `collection.json`; katalog
+`work/import-48/` zawiera wyłącznie odtwarzalne mastery, znaczniki etapów i
+robocze kopie. Surowy master 32:9 spoza kolekcji znajduje się w `raw/32x9/` i
+nie trafia do rotacji ani do Git.
 
 Ostatnia seria obejmuje 18 nowych scen: po trzy z `Frieren`, `Chainsaw Man`,
 `Solo Leveling`, `Valheim`, `V Rising` i `Palworld`. Storyboard znajduje się

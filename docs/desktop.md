@@ -12,7 +12,9 @@ przez Hyprlanda jako `This config is a STUB`, aby nie mógł przejąć kolejnej 
 
 ## Składniki
 
-- Hyprland uruchamiany przez UWSM,
+- Hyprland uruchamiany przez UWSM i potwierdzający gotowość przez `uwsm finalize`;
+  integracja systemd Home Managera jest wyłączona, aby nie tworzyła drugiego,
+  konkurencyjnego celu `hyprland-session.target`,
 - Greetd i Tuigreet,
 - Wleave jako uruchamiane na żądanie menu zasilania,
 - Foot,
