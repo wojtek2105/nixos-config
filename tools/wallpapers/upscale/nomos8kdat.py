@@ -61,7 +61,42 @@ def upscale_tiled(
     pad_multiple: int,
     scale: int,
 ) -> Image.Image:
-    width, height = image.size
+    original_width, original_height = image.size
+    padded_width = math.ceil(original_width / tile) * tile
+    padded_height = math.ceil(original_height / tile) * tile
+    if (padded_width, padded_height) != image.size:
+        # Nomos can become numerically unstable on a narrow final core tile.
+        # Reflect-pad only the working canvas to full cores, then crop the SR
+        # result back to the exact source dimensions below.
+        source_array = np.asarray(image, dtype=np.uint8)
+        padded_array = np.pad(
+            source_array,
+            (
+                (0, padded_height - original_height),
+                (0, padded_width - original_width),
+                (0, 0),
+            ),
+            mode="reflect",
+        )
+        working_image = Image.fromarray(padded_array)
+    else:
+        working_image = image
+
+    width, height = working_image.size
+    # Every core, including top-left, needs the same halo.  Clamping patch
+    # coordinates at image edges gave the first 256 px core less context than
+    # interior tiles and made Nomos deterministically paint a bad square.
+    # Reflect-padding the working canvas supplies real neighbouring texture
+    # without ever using the source image as the output fallback.
+    if overlap:
+        context_array = np.pad(
+            np.asarray(working_image, dtype=np.uint8),
+            ((overlap, overlap), (overlap, overlap), (0, 0)),
+            mode="reflect",
+        )
+        context_image = Image.fromarray(context_array)
+    else:
+        context_image = working_image
     result = Image.new("RGB", (width * scale, height * scale))
     tiles_x = math.ceil(width / tile)
     tiles_y = math.ceil(height / tile)
@@ -75,11 +110,18 @@ def upscale_tiled(
             core_x1 = min(core_x0 + tile, width)
             tile_number += 1
 
-            patch_x0 = max(0, core_x0 - overlap)
-            patch_y0 = max(0, core_y0 - overlap)
-            patch_x1 = min(width, core_x1 + overlap)
-            patch_y1 = min(height, core_y1 + overlap)
-            patch = image.crop((patch_x0, patch_y0, patch_x1, patch_y1))
+            patch_x0 = core_x0 - overlap
+            patch_y0 = core_y0 - overlap
+            patch_x1 = core_x1 + overlap
+            patch_y1 = core_y1 + overlap
+            patch = context_image.crop(
+                (
+                    patch_x0 + overlap,
+                    patch_y0 + overlap,
+                    patch_x1 + overlap,
+                    patch_y1 + overlap,
+                )
+            )
             tile_started = time.monotonic()
             print(
                 f"  START tile {tile_number}/{tile_count} "
@@ -102,7 +144,9 @@ def upscale_tiled(
                 enhanced = model(tensor)
             finite = torch.isfinite(enhanced)
             if not finite.all().item():
-                invalid_values = enhanced.numel() - int(finite.sum().item())
+                # ``sum`` on a large bool tensor has produced nonsensical
+                # values on some HIP builds; count the invalid entries instead.
+                invalid_values = int((~finite).count_nonzero().item())
                 raise FloatingPointError(
                     "Model zwrócił NaN/Inf "
                     f"dla kafla core={core_x0},{core_y0}-{core_x1},{core_y1} "
@@ -138,7 +182,7 @@ def upscale_tiled(
                 flush=True,
             )
 
-    return result
+    return result.crop((0, 0, original_width * scale, original_height * scale))
 
 
 def enhance_one(
@@ -247,6 +291,7 @@ def main() -> int:
     black_preserve_threshold = env_int("NOMOS_BLACK_PRESERVE_THRESHOLD", 0)
     source_scale = env_float("NOMOS_SOURCE_SCALE", 1.0)
     min_vram_gib = env_float("NOMOS_MIN_VRAM_GIB", 0.0)
+    min_free_vram_gib = env_float("NOMOS_MIN_FREE_VRAM_GIB", 0.0)
     requested_dtype = os.environ.get("NOMOS_DTYPE", "bfloat16").lower()
     overwrite = os.environ.get("NOMOS_OVERWRITE", "0") == "1"
     auto_tile = os.environ.get("NOMOS_AUTO_TILE", "1") not in {"0", "no", "false", "off"}
@@ -259,6 +304,8 @@ def main() -> int:
         raise ValueError("NOMOS_SOURCE_SCALE musi mieścić się w zakresie 0.25–1.0")
     if not 0 <= black_preserve_threshold <= 255:
         raise ValueError("NOMOS_BLACK_PRESERVE_THRESHOLD musi mieścić się w zakresie 0–255")
+    if min_free_vram_gib < 0.0:
+        raise ValueError("NOMOS_MIN_FREE_VRAM_GIB nie może być ujemne")
     if (args.input_file is None) != (args.output_file is None):
         raise ValueError("--input-file i --output-file muszą wystąpić razem")
     if not torch.cuda.is_available() or torch.version.hip is None:
@@ -272,6 +319,14 @@ def main() -> int:
         )
 
     device = torch.device("cuda:0")
+    free_vram_bytes, total_vram_bytes = torch.cuda.mem_get_info(device)
+    free_vram_gib = free_vram_bytes / (1024**3)
+    if free_vram_gib < min_free_vram_gib:
+        raise RuntimeError(
+            f"Przed ładowaniem modelu wolne jest tylko {free_vram_gib:.2f} GiB VRAM "
+            f"z {total_vram_bytes / (1024**3):.2f} GiB; profil wymaga co najmniej "
+            f"{min_free_vram_gib:.2f} GiB. Zamknij procesy używające GPU i spróbuj ponownie."
+        )
     descriptor = ModelLoader().load_from_file(args.model)
     if not isinstance(descriptor, ImageModelDescriptor):
         raise TypeError("Checkpoint nie jest modelem obrazu obsługiwanym przez Spandrel")

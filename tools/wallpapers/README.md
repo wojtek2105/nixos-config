@@ -71,10 +71,12 @@ tools/wallpapers/upscale/run-nomos-6800s.sh status
 
 # Ten sam pełny Nomos na RX 9070 XT 16 GiB; wspólny instalator/model
 tools/wallpapers/upscale/install-nomos8kdat-rocm.sh
-# Test kontrolny jest domyślnie FP32 i trafia do oddzielnego stagingu.
+# Test kontrolny jest domyślnie BF16 i trafia do oddzielnego stagingu.
 tools/wallpapers/upscale/run-nomos-9070xt.sh test 01-frieren
 # Dowolny obraz, także 16:9, podaj pełną ścieżką; oryginał jest montowany tylko do odczytu.
 tools/wallpapers/upscale/run-nomos-9070xt.sh file /pełna/ścieżka/do/tapety-16x9.png
+# FP32: uruchomi się tylko przy co najmniej 14 GiB wolnego VRAM; zaczyna od tile 256.
+tools/wallpapers/upscale/run-nomos-9070xt.sh file-fp32 /pełna/ścieżka/do/tapety-16x9.png
 # Po czystym teście BF16 dla wybranej listy; każdy wynik zostaje w stagingu.
 tools/wallpapers/upscale/run-nomos-9070xt.sh slugs 01-frieren 02-frieren
 tools/wallpapers/upscale/run-nomos-9070xt.sh batch 1
@@ -108,10 +110,21 @@ przez `test` ani `run`. Przy OOM profil automatycznie ponawia bieżącą tapetę
 kaflami 512, 448, 384, a następnie 320. Mechanizm można wyłączyć przez
 `NOMOS_AUTO_TILE=0`; siłę efektu reguluje `NOMOS_BLEND` od 0 do 1. DAT nie deklaruje bezpiecznego FP16, dlatego
 profil 6800S używa domyślnie BF16; zgodnościowy, wolniejszy fallback to
-`NOMOS_DTYPE=float32`. Profil RX 9070 XT uruchamia `test` domyślnie w FP32:
-wykrywa tym niestabilność numeryczną zanim długi przebieg przejdzie na BF16.
-Po udanym teście `slugs SLUG...`, `batch` i `run` używają BF16, chyba że
-`NOMOS_DTYPE` zostanie ustawione jawnie.
+`NOMOS_DTYPE=float32`. Profil RX 9070 XT używa domyślnie BF16 we wszystkich
+trybach: model w FP32 potrzebuje około 11 GiB VRAM jeszcze przed aktywacjami,
+więc na 16 GiB nie zostawia bezpiecznego miejsca na inferencję. BF16 jest
+bezpiecznym formatem tego checkpointu i nie zmienia zauważalnie jakości obrazu.
+FP32 można wymusić wyłącznie przy dużym zapasie wolnego VRAM przez
+`NOMOS_DTYPE=float32`.
+
+Tryb `file-fp32 /pełna/ścieżka.png` jest gotowym profilem najwyższej precyzji:
+używa `NOMOS_DTYPE=float32` i bezpiecznego `NOMOS_TILE=256`. Przed załadowaniem
+modelu sprawdza co najmniej 14 GiB wolnego VRAM i kończy się jasnym komunikatem,
+zamiast wpadać w OOM. Wynik trafia do oddzielnego stagingu `fp32-file`.
+
+Na RX 9070 XT domyślny `NOMOS_TILE=512` zostawia miejsce na wagi modelu i
+aktywacje 4×; większe 832 może próbować zaalokować ponad 8 GiB na jeden kafel.
+Jeśli 512 nadal zgłosi OOM, runner automatycznie ponowi plik z 448, 384 i 320.
 
 Każdy tensor zwrócony przez Nomos jest sprawdzany pod kątem `NaN` i `Inf`
 zanim zostanie przekonwertowany do PNG. Błąd przerywa tylko daną tapetę,
@@ -119,9 +132,16 @@ zapisuje współrzędne kafla w logu i nie tworzy wyniku stagingowego ani nie
 dotyka aktywnej kolekcji. Nie należy maskować błędu przez `nan_to_num`, bo
 ukryłoby to artefakt jako czarne albo białe piksele.
 
+Gdy szerokość lub wysokość nie dzieli się przez `NOMOS_TILE`, runner odbija
+obraz tylko w roboczym buforze do pełnej siatki kafli. Dodaje też odbite halo
+na wszystkich czterech brzegach: każdy kafel, również lewy-górny narożnik,
+dostaje identyczny kontekst 32 px. Nomos nie dostaje wtedy wąskiego ani
+pozbawionego kontekstu kafla brzegowego podatnego na artefakty, a gotowy obraz
+jest przycinany dokładnie do pierwotnego wymiaru.
+
 Tryb `file /pełna/ścieżka.png` działa także dla 16:9 i innych proporcji. Zachowuje
 rozdzielczość wejścia, a wynik zapisuje wyłącznie do
-`work/import-48/upscaled-32x9-nomos8kdat-fp32-file/external/`, z hashem źródła
+`work/import-48/upscaled-32x9-nomos8kdat-bf16-file/external/`, z hashem źródła
 w nazwie. Nie wymaga wpisu w `collection.json` i montuje katalog wejściowy do
 kontenera tylko do odczytu.
 

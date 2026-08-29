@@ -125,6 +125,18 @@ Długość klipu w opisie menu pochodzi z
 | `q` | Zamknij Yazi; wrapper `y` może przejąć bieżący katalog |
 | `F1` / `~` | Otwórz pełną, kontekstową pomoc Yazi |
 
+## Swayimg
+
+Yazi otwiera obrazy bezpośrednio w Swayimg po naciśnięciu `Enter`.
+
+| Klawisz | Działanie |
+| --- | --- |
+| `Esc` | Zamknij przeglądarkę |
+| `f` | Przełącz pełny ekran |
+| `PgDown` / `PgUp` | Pokaż następny / poprzedni obraz |
+| `[` / `]` | Obróć obraz w lewo / w prawo |
+| `Enter` | Przełącz między widokiem obrazu i galerią |
+
 ## tmux
 
 `Ctrl+B` jest domyślnym prefiksem. Przecinek oznacza kolejny klawisz naciskany

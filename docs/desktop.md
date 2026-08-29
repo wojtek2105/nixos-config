@@ -14,7 +14,9 @@ przez Hyprlanda jako `This config is a STUB`, aby nie mógł przejąć kolejnej 
 
 - Hyprland uruchamiany przez UWSM i potwierdzający gotowość przez `uwsm finalize`;
   integracja systemd Home Managera jest wyłączona, aby nie tworzyła drugiego,
-  konkurencyjnego celu `hyprland-session.target`,
+  konkurencyjnego celu `hyprland-session.target`; środowisko UWSM dodaje profil
+  użytkownika i systemowe katalogi aplikacji do `XDG_DATA_DIRS`, aby portale
+  uruchamiane przez systemd widziały deklaratywne skojarzenia MIME,
 - Greetd i Tuigreet,
 - Wleave jako uruchamiane na żądanie menu zasilania,
 - Foot,
@@ -25,7 +27,8 @@ przez Hyprlanda jako `This config is a STUB`, aby nie mógł przejąć kolejnej 
 - Yazi jako domyślny menedżer plików oraz Thunar jako awaryjny interfejs GUI,
 - Hyprlock i Hypridle,
 - Awww jako backend tapety,
-- MPV z uosc i thumbfast jako lekki podgląd obrazów i odtwarzacz wideo,
+- Swayimg jako lekka, natywna dla Waylanda przeglądarka obrazów,
+- MPV z uosc i thumbfast jako odtwarzacz wideo i audio,
 - Zen Twilight jako domyślna przeglądarka.
 - animowany wygaszacz inspirowany Omarchy, z napisem `WOJTECH`.
 - CommitMono Nerd Font z kolorowymi emoji.
@@ -314,11 +317,16 @@ uprawnień, sterowanie panelem podglądu, zoom obrazów, skok po pierwszym znaku
 listę zmienionych plików Git oraz porównanie dwóch plików. Thunar pozostaje
 dostępny pod `Super+Alt+E` jako awaryjny menedżer GUI na czas testów Yazi.
 
-MPV jest głównie napisany w C i korzysta z akceleracji sprzętowej. Interfejs
-uosc oraz miniatury thumbfast są napisane w Lua, a małe narzędzie pomocnicze
-uosc w Go. Program nie uruchamia stałego demona: pojawia się tylko po otwarciu
-obrazu lub filmu. Home Manager przypisuje MPV jako domyślną aplikację dla
-najczęstszych formatów obrazów i wideo, a kolory uosc pochodzą z palety Biscuit.
+Swayimg jest lekką przeglądarką napisaną w C, korzystającą bezpośrednio z
+Waylanda bez ciężkiego toolkitu GUI. Obsługuje galerie, animacje, EXIF, RAW,
+AVIF, JPEG XL, SVG i inne popularne formaty oraz wstępnie ładuje kolejne obrazy
+w osobnym wątku. Yazi uruchamia go bezpośrednio dla `image/*`, a Home Manager
+przypisuje jego wpis `swayimg.desktop` jako systemową aplikację dla obrazów.
+
+MPV pozostaje odtwarzaczem wideo i audio korzystającym z akceleracji
+sprzętowej. Interfejs uosc oraz miniatury thumbfast są napisane w Lua, a małe
+narzędzie pomocnicze uosc w Go. Żaden z programów nie uruchamia stałego demona;
+pojawiają się tylko po otwarciu pliku. Kolory uosc pochodzą z palety Biscuit.
 
 ## Zen Browser
 
