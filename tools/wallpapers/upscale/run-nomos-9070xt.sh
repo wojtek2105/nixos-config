@@ -151,6 +151,7 @@ docker_args=(
   # default; override only after a clean control run.
   -e NOMOS_TILE="${NOMOS_TILE:-$default_tile}"
   -e NOMOS_AUTO_TILE="${NOMOS_AUTO_TILE:-1}"
+  -e NOMOS_WARMUP="${NOMOS_WARMUP:-1}"
   -e NOMOS_OVERLAP="${NOMOS_OVERLAP:-32}"
   -e NOMOS_PAD_MULTIPLE="${NOMOS_PAD_MULTIPLE:-64}"
   -e NOMOS_DTYPE="${NOMOS_DTYPE:-$default_dtype}"
@@ -200,6 +201,8 @@ elif [[ "$mode" == file || "$mode" == file-fp32 ]]; then
   python_args+=(
     --input-file "/input/$input_name"
     --output-file "/repo/home/wojtek/wallpapers/work/import-48/$stage_name/external/$output_name"
+    --target-width "${NOMOS_FILE_TARGET_WIDTH:-2560}"
+    --target-height "${NOMOS_FILE_TARGET_HEIGHT:-1440}"
   )
 fi
 

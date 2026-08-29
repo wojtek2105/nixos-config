@@ -51,6 +51,18 @@ def tensor_to_image(tensor: torch.Tensor) -> Image.Image:
     return Image.fromarray(np.rint(array * 255.0).astype(np.uint8), "RGB")
 
 
+def resize_crop_left(image: Image.Image, target_width: int, target_height: int) -> Image.Image:
+    """Resize without distortion, discarding only excess pixels on the left."""
+    resized_width = math.ceil(image.width * target_height / image.height)
+    if resized_width < target_width:
+        raise ValueError(
+            f"{image.width}x{image.height} jest węższy niż docelowe "
+            f"{target_width}x{target_height}; nie można przyciąć tylko lewej strony"
+        )
+    resized = image.resize((resized_width, target_height), Image.Resampling.LANCZOS)
+    return resized.crop((resized_width - target_width, 0, resized_width, target_height))
+
+
 def upscale_tiled(
     image: Image.Image,
     model: ImageModelDescriptor,
@@ -60,6 +72,7 @@ def upscale_tiled(
     overlap: int,
     pad_multiple: int,
     scale: int,
+    warmup: bool,
 ) -> Image.Image:
     original_width, original_height = image.size
     padded_width = math.ceil(original_width / tile) * tile
@@ -98,6 +111,27 @@ def upscale_tiled(
     else:
         context_image = working_image
     result = Image.new("RGB", (width * scale, height * scale))
+
+    if warmup:
+        # ROCm 7.2 can return a visually corrupted but finite first DAT result
+        # while its kernels initialize.  Execute the exact first patch once,
+        # discard it, then start the real tiled render from a warm model.
+        warmup_patch = context_image.crop((0, 0, tile + 2 * overlap, tile + 2 * overlap))
+        warmup_tensor = image_to_tensor(warmup_patch, device, dtype)
+        warmup_pad_right = (-warmup_tensor.shape[-1]) % pad_multiple
+        warmup_pad_bottom = (-warmup_tensor.shape[-2]) % pad_multiple
+        if warmup_pad_right or warmup_pad_bottom:
+            warmup_tensor = functional.pad(
+                warmup_tensor,
+                (0, warmup_pad_right, 0, warmup_pad_bottom),
+                mode="reflect",
+            )
+        print(f"  WARMUP patch={warmup_patch.width}x{warmup_patch.height}; wynik odrzucony", flush=True)
+        with torch.inference_mode():
+            warmup_output = model(warmup_tensor)
+        del warmup_tensor, warmup_output
+        torch.cuda.empty_cache()
+
     tiles_x = math.ceil(width / tile)
     tiles_y = math.ceil(height / tile)
     tile_count = tiles_x * tiles_y
@@ -199,11 +233,19 @@ def enhance_one(
     blend: float,
     sharpen: int,
     black_preserve_threshold: int,
+    warmup: bool,
+    target_width: int | None,
+    target_height: int | None,
 ) -> None:
     with Image.open(input_path) as source_image:
         source = source_image.convert("RGB")
+    if target_width is None:
+        output_source = source
+    else:
+        assert target_height is not None
+        output_source = resize_crop_left(source, target_width, target_height)
     source_black = np.all(
-        np.asarray(source, dtype=np.uint8) <= black_preserve_threshold,
+        np.asarray(output_source, dtype=np.uint8) <= black_preserve_threshold,
         axis=2,
     )
 
@@ -220,7 +262,7 @@ def enhance_one(
     print(
         f"  model input={model_source.width}x{model_source.height} "
         f"4x output={model_source.width * scale}x{model_source.height * scale} "
-        f"target={source.width}x{source.height}",
+        f"target={output_source.width}x{output_source.height}",
         flush=True,
     )
     four_x = upscale_tiled(
@@ -232,13 +274,18 @@ def enhance_one(
         overlap,
         pad_multiple,
         scale,
+        warmup,
     )
-    enhanced = four_x.resize(source.size, Image.Resampling.LANCZOS)
+    if target_width is None:
+        enhanced = four_x.resize(output_source.size, Image.Resampling.LANCZOS)
+    else:
+        assert target_height is not None
+        enhanced = resize_crop_left(four_x, target_width, target_height)
     del four_x
 
     # Keeping part of the original limits hallucinated facial details while
     # retaining the extra high-frequency information recovered by the model.
-    final = Image.blend(source, enhanced, blend)
+    final = Image.blend(output_source, enhanced, blend)
     if sharpen > 0:
         final = final.filter(ImageFilter.UnsharpMask(radius=0.6, percent=sharpen, threshold=3))
     if source_black.any():
@@ -270,6 +317,8 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         help="Required together with --input-file; destination stays under staging",
     )
+    parser.add_argument("--target-width", type=int, help="Optional final output width")
+    parser.add_argument("--target-height", type=int, help="Optional final output height")
     parser.add_argument(
         "--slug",
         action="append",
@@ -295,6 +344,7 @@ def main() -> int:
     requested_dtype = os.environ.get("NOMOS_DTYPE", "bfloat16").lower()
     overwrite = os.environ.get("NOMOS_OVERWRITE", "0") == "1"
     auto_tile = os.environ.get("NOMOS_AUTO_TILE", "1") not in {"0", "no", "false", "off"}
+    warmup = os.environ.get("NOMOS_WARMUP", "1") not in {"0", "no", "false", "off"}
 
     if tile < 64 or overlap < 0 or overlap * 2 >= tile:
         raise ValueError("NOMOS_TILE >= 64 oraz 0 <= NOMOS_OVERLAP < NOMOS_TILE/2")
@@ -308,6 +358,12 @@ def main() -> int:
         raise ValueError("NOMOS_MIN_FREE_VRAM_GIB nie może być ujemne")
     if (args.input_file is None) != (args.output_file is None):
         raise ValueError("--input-file i --output-file muszą wystąpić razem")
+    if (args.target_width is None) != (args.target_height is None):
+        raise ValueError("--target-width i --target-height muszą wystąpić razem")
+    if args.target_width is not None and (args.target_width < 1 or args.target_height < 1):
+        raise ValueError("Docelowy wymiar musi być dodatni")
+    if args.target_width is not None and args.input_file is None:
+        raise ValueError("Docelowy wymiar jest dostępny tylko z --input-file")
     if not torch.cuda.is_available() or torch.version.hip is None:
         raise RuntimeError("ROCm GPU jest niedostępne")
     detected_vram_gib = torch.cuda.get_device_properties(0).total_memory / (1024**3)
@@ -379,6 +435,9 @@ def main() -> int:
             blend,
             sharpen,
             black_preserve_threshold,
+            warmup,
+            args.target_width,
+            args.target_height,
         )
         return 0
 
@@ -442,6 +501,9 @@ def main() -> int:
                         blend,
                         sharpen,
                         black_preserve_threshold,
+                        warmup,
+                        None,
+                        None,
                     )
                     if candidate_tile != tile:
                         print(f"  ukończono z fallback tile={candidate_tile}", flush=True)

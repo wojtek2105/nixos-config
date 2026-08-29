@@ -139,11 +139,20 @@ dostaje identyczny kontekst 32 px. Nomos nie dostaje wtedy wąskiego ani
 pozbawionego kontekstu kafla brzegowego podatnego na artefakty, a gotowy obraz
 jest przycinany dokładnie do pierwotnego wymiaru.
 
+ROCm może zwrócić wizualnie uszkodzony, lecz liczbowo skończony pierwszy wynik
+Nomos po zimnym starcie. Domyślne `NOMOS_WARMUP=1` wykonuje i odrzuca dokładnie
+taki pierwszy kafel przed właściwym renderem; nie miesza ani nie zachowuje
+oryginału. Ustaw `NOMOS_WARMUP=0` tylko do diagnostyki.
+
 Tryb `file /pełna/ścieżka.png` działa także dla 16:9 i innych proporcji. Zachowuje
-rozdzielczość wejścia, a wynik zapisuje wyłącznie do
+docelowe `2560×1440`: bez rozciągania skaluje do wysokości 1440 i odcina nadmiar
+wyłącznie z lewej strony, więc kompozycja po prawej zostaje nienaruszona. Wynik
+zapisuje wyłącznie do
 `work/import-48/upscaled-32x9-nomos8kdat-bf16-file/external/`, z hashem źródła
 w nazwie. Nie wymaga wpisu w `collection.json` i montuje katalog wejściowy do
-kontenera tylko do odczytu.
+kontenera tylko do odczytu. `NOMOS_FILE_TARGET_WIDTH` i
+`NOMOS_FILE_TARGET_HEIGHT` pozwalają jawnie zmienić docelowy format; źródło
+węższe niż wybrana proporcja zostanie odrzucone zamiast rozciągnięte.
 
 Domyślnie `NOMOS_BLACK_PRESERVE_THRESHOLD=0`: piksele, które w źródle są
 dokładnie `#000000`, są po rekonstrukcji, blendzie i wyostrzeniu ponownie

@@ -1,4 +1,4 @@
-{ backlightDevice, desktopFeatures, inputs, lib, pkgs, uiScale, ... }:
+{ backlightDevice, desktopFeatures, inputs, lib, pkgs, uiScale, username, ... }:
 
 let
   theme = import ./theme.nix { inherit inputs; };
