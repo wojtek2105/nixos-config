@@ -48,7 +48,9 @@ def tensor_to_image(tensor: torch.Tensor) -> Image.Image:
         .cpu()
         .numpy()
     )
-    return Image.fromarray(np.rint(array * 255.0).astype(np.uint8), "RGB")
+    # A three-channel uint8 array is inferred as RGB by Pillow.  Omitting the
+    # deprecated explicit mode keeps the output identical and the log clean.
+    return Image.fromarray(np.rint(array * 255.0).astype(np.uint8))
 
 
 def resize_crop_left(image: Image.Image, target_width: int, target_height: int) -> Image.Image:
@@ -72,7 +74,7 @@ def upscale_tiled(
     overlap: int,
     pad_multiple: int,
     scale: int,
-    warmup: bool,
+    warmup_passes: int,
 ) -> Image.Image:
     original_width, original_height = image.size
     padded_width = math.ceil(original_width / tile) * tile
@@ -112,25 +114,33 @@ def upscale_tiled(
         context_image = working_image
     result = Image.new("RGB", (width * scale, height * scale))
 
-    if warmup:
+    if warmup_passes:
         # ROCm 7.2 can return a visually corrupted but finite first DAT result
-        # while its kernels initialize.  Execute the exact first patch once,
-        # discard it, then start the real tiled render from a warm model.
+        # while its kernels initialize.  Execute the exact first patch more
+        # than once, discard every result, then start the real tiled render.
         warmup_patch = context_image.crop((0, 0, tile + 2 * overlap, tile + 2 * overlap))
-        warmup_tensor = image_to_tensor(warmup_patch, device, dtype)
-        warmup_pad_right = (-warmup_tensor.shape[-1]) % pad_multiple
-        warmup_pad_bottom = (-warmup_tensor.shape[-2]) % pad_multiple
-        if warmup_pad_right or warmup_pad_bottom:
-            warmup_tensor = functional.pad(
-                warmup_tensor,
-                (0, warmup_pad_right, 0, warmup_pad_bottom),
-                mode="reflect",
+        for warmup_index in range(1, warmup_passes + 1):
+            warmup_tensor = image_to_tensor(warmup_patch, device, dtype)
+            warmup_pad_right = (-warmup_tensor.shape[-1]) % pad_multiple
+            warmup_pad_bottom = (-warmup_tensor.shape[-2]) % pad_multiple
+            if warmup_pad_right or warmup_pad_bottom:
+                warmup_tensor = functional.pad(
+                    warmup_tensor,
+                    (0, warmup_pad_right, 0, warmup_pad_bottom),
+                    mode="reflect",
+                )
+            print(
+                f"  WARMUP {warmup_index}/{warmup_passes} "
+                f"patch={warmup_patch.width}x{warmup_patch.height}; wynik odrzucony",
+                flush=True,
             )
-        print(f"  WARMUP patch={warmup_patch.width}x{warmup_patch.height}; wynik odrzucony", flush=True)
-        with torch.inference_mode():
-            warmup_output = model(warmup_tensor)
-        del warmup_tensor, warmup_output
-        torch.cuda.empty_cache()
+            with torch.inference_mode():
+                warmup_output = model(warmup_tensor)
+            # ROCm work is asynchronous.  Do not let tile 1 start while a
+            # flaky kernel initialization is still in flight.
+            torch.cuda.synchronize(device)
+            del warmup_tensor, warmup_output
+            torch.cuda.empty_cache()
 
     tiles_x = math.ceil(width / tile)
     tiles_y = math.ceil(height / tile)
@@ -233,7 +243,7 @@ def enhance_one(
     blend: float,
     sharpen: int,
     black_preserve_threshold: int,
-    warmup: bool,
+    warmup_passes: int,
     target_width: int | None,
     target_height: int | None,
 ) -> None:
@@ -274,7 +284,7 @@ def enhance_one(
         overlap,
         pad_multiple,
         scale,
-        warmup,
+        warmup_passes,
     )
     if target_width is None:
         enhanced = four_x.resize(output_source.size, Image.Resampling.LANCZOS)
@@ -344,7 +354,8 @@ def main() -> int:
     requested_dtype = os.environ.get("NOMOS_DTYPE", "bfloat16").lower()
     overwrite = os.environ.get("NOMOS_OVERWRITE", "0") == "1"
     auto_tile = os.environ.get("NOMOS_AUTO_TILE", "1") not in {"0", "no", "false", "off"}
-    warmup = os.environ.get("NOMOS_WARMUP", "1") not in {"0", "no", "false", "off"}
+    warmup_enabled = os.environ.get("NOMOS_WARMUP", "1") not in {"0", "no", "false", "off"}
+    warmup_passes = env_int("NOMOS_WARMUP_PASSES", 2) if warmup_enabled else 0
 
     if tile < 64 or overlap < 0 or overlap * 2 >= tile:
         raise ValueError("NOMOS_TILE >= 64 oraz 0 <= NOMOS_OVERLAP < NOMOS_TILE/2")
@@ -356,6 +367,8 @@ def main() -> int:
         raise ValueError("NOMOS_BLACK_PRESERVE_THRESHOLD musi mieścić się w zakresie 0–255")
     if min_free_vram_gib < 0.0:
         raise ValueError("NOMOS_MIN_FREE_VRAM_GIB nie może być ujemne")
+    if not 0 <= warmup_passes <= 4:
+        raise ValueError("NOMOS_WARMUP_PASSES musi mieścić się w zakresie 0–4")
     if (args.input_file is None) != (args.output_file is None):
         raise ValueError("--input-file i --output-file muszą wystąpić razem")
     if (args.target_width is None) != (args.target_height is None):
@@ -410,7 +423,7 @@ def main() -> int:
         f"HIP={torch.version.hip} "
         f"dtype={requested_dtype} tile={tile} overlap={overlap} "
         f"source_scale={source_scale:.2f} blend={blend:.2f} sharpen={sharpen} "
-        f"black_preserve_threshold={black_preserve_threshold}",
+        f"black_preserve_threshold={black_preserve_threshold} warmup_passes={warmup_passes}",
         flush=True,
     )
 
@@ -435,7 +448,7 @@ def main() -> int:
             blend,
             sharpen,
             black_preserve_threshold,
-            warmup,
+            warmup_passes,
             args.target_width,
             args.target_height,
         )
@@ -501,7 +514,7 @@ def main() -> int:
                         blend,
                         sharpen,
                         black_preserve_threshold,
-                        warmup,
+                        warmup_passes,
                         None,
                         None,
                     )
