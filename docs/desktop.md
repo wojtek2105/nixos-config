@@ -82,6 +82,17 @@ sekcje dopasowują wysokość do zawartości, a dłuższe pokazują maksymalnie 
 wierszy i pozostają przewijalne, dzięki czemu menu mieści się na ekranie
 laptopa przy skali logicznej `2`.
 
+`Super+D` otwiera lekkie globalne menu pulpitu w stylu Omarchy. Jest to
+jednorazowy widok Fuzzela, bez demona ani pętli odświeżania: prowadzi do
+launchera aplikacji, Foota, Zen, Yazi, narzędzi zrzutu ekranu, historii
+schowka, pomocy skrótów i Wleave. Na hostach z `features.screenRecording = true`
+pojawiają się w nim również sterowanie nakładką GPU Screen Recorder, zapis
+replay i przełącznik bufora replay. Lewy przycisk dedykowanego elementu
+Ironbara wywołuje to samo polecenie `global-menu`, więc skrót i panel zawsze
+mają ten sam zestaw działań. Lista ma osiem podstawowych, ikonowych wierszy
+(jedenaście z nagrywaniem), kompaktowy prompt `Pulpit ›` i dziedziczy kontrast,
+odstępy oraz różowy fokus Biscuit z konfiguracji Fuzzela.
+
 ## Skalowanie
 
 Wbudowana matryca laptopa działa w natywnym `2560x1600` ze skalą logiczną `2`.

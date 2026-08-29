@@ -25,6 +25,7 @@ aplikacji pozostają dostępne w ich kontekstowej pomocy.
 | --- | --- |
 | `Super+Enter` | Uruchom terminal Foot |
 | `Super+Space` | Otwórz launcher aplikacji Fuzzel |
+| `Super+D` | Otwórz globalne menu pulpitu |
 | `Super+B` | Pokaż ostatnio używane okno Zen albo uruchom przeglądarkę |
 | `Super+E` | Uruchom Yazi w osobnym oknie Foot |
 | `Super+Alt+E` | Uruchom awaryjny menedżer plików Thunar |

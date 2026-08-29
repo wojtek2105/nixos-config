@@ -28,6 +28,7 @@ let
   systemShortcuts = [
     (shortcut "Super+Enter" "Uruchom terminal Foot")
     (shortcut "Super+Space" "Otwórz launcher aplikacji Fuzzel")
+    (shortcut "Super+D" "Otwórz globalne menu pulpitu")
     (shortcut "Super+B" "Pokaż istniejące okno Zen albo uruchom przeglądarkę")
     (shortcut "Super+E" "Uruchom Yazi w osobnym oknie Foot")
     (shortcut "Super+Alt+E" "Uruchom awaryjny menedżer plików Thunar")
@@ -442,6 +443,60 @@ let
           "Nakładka działa, ale nie przyjęła akcji: $action."
         exit 1
       fi
+    '';
+  };
+
+  global-menu = pkgs.writeShellApplication {
+    name = "global-menu";
+    runtimeInputs = with pkgs; [
+      config.programs.yazi.finalPackage
+      foot
+      fuzzel
+      thunar
+    ] ++ [
+      power-menu
+      screenshot-menu
+      scripts.zen-run-or-raise
+      shortcut-menu
+    ] ++ lib.optionals screenRecordingEnabled [ gsr-control ];
+    text = ''
+      choice="$(
+        {
+          printf '%s\n' \
+            '󰀻  Aplikacje' \
+            '󰆍  Terminal' \
+            '󰖟  Przeglądarka Zen' \
+            '󰉋  Pliki w Yazi' \
+            '󰄀  Zrzut ekranu' \
+            '󰃀  Historia schowka' \
+            '󰈙  Pomoc skrótów' \
+            '󰐥  Zasilanie'
+          ${lib.optionalString screenRecordingEnabled "printf '%s\\n' '󰑋  Nagrywanie ekranu' '󰆉  Zapisz replay' '󰚀  Przełącz bufor replay'"}
+        } | fuzzel \
+          --dmenu \
+          --only-match \
+          --minimal-lines \
+          --prompt 'Pulpit  ›  ' \
+          --width 48 \
+          --lines ${if screenRecordingEnabled then "11" else "8"}
+      )" || exit 0
+
+      # Every label maps to a fixed command. The selection is never evaluated
+      # as shell input, so menu text cannot become an executable command.
+      case "$choice" in
+        *"Aplikacje") exec fuzzel ;;
+        *"Terminal") exec foot ;;
+        *"Przeglądarka Zen") exec zen-run-or-raise ;;
+        *"Pliki w Yazi") exec yazi-file-manager ;;
+        *"Zrzut ekranu") exec screenshot-menu ;;
+        *"Nagrywanie ekranu") exec gsr-control toggle-show ;;
+        *"Zapisz replay") exec gsr-control replay-save ;;
+        *"Przełącz bufor replay") exec gsr-control toggle-replay ;;
+        *"Historia schowka") exec clipboard-history ;;
+        *"Pomoc skrótów") exec shortcut-menu ;;
+        *"Zasilanie") exec power-menu ;;
+        *) exit 0 ;;
+      esac
     '';
   };
 
@@ -948,6 +1003,7 @@ in
         screenshot-menu
         screensaver
         shortcut-menu
+        global-menu
         desktop-panel
         wl-clipboard
       ])
