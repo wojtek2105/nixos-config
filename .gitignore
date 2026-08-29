@@ -23,11 +23,15 @@
 !/hosts/rog-polamaniec/**
 !/hosts/white-monster/
 !/hosts/white-monster/**
+!/hosts/izakomp/
+!/hosts/izakomp/**
 
 # User home configurations explicitly approved for versioning
 /home/*/
 !/home/wojtek/
 !/home/wojtek/**
+!/home/izakomp/
+!/home/izakomp/**
 
 # Large local machine and installation images
 *.img
