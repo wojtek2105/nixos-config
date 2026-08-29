@@ -4,12 +4,128 @@ let
   theme = import ./theme.nix { inherit inputs; };
   c = theme.colors;
   s = theme.semantic;
+  # Ironbar 0.19 dispatches legacy workspace commands, which Hyprland's Lua
+  # provider rejects. Keep the upstream fix local until Nixpkgs includes it.
+  ironbar = pkgs.ironbar.overrideAttrs (old: {
+    patches = (old.patches or [ ]) ++ [
+      (builtins.toFile "ironbar-lua-workspace-click.patch" ''
+        diff --git a/Cargo.toml b/Cargo.toml
+        index 4bba58231..f483a2802 100644
+        --- a/Cargo.toml
+        +++ b/Cargo.toml
+        @@ -117,7 +117,7 @@ volume = ["libpulse-binding"]
+         workspaces = ["futures-lite"]
+         "workspaces+all" = ["workspaces", "workspaces+sway", "workspaces+hyprland", "workspaces+niri"]
+         "workspaces+sway" = ["workspaces", "sway"]
+        -"workspaces+hyprland" = ["workspaces", "hyprland"]
+        +"workspaces+hyprland" = ["workspaces", "hyprland", "dep:serde_json"]
+         "workspaces+niri" = ["workspaces", "niri"]
+        ${" "}
+         sway = ["swayipc-async", "futures-lite"]
+        diff --git a/src/clients/compositor/hyprland.rs b/src/clients/compositor/hyprland.rs
+        index e538e80de..061f7961e 100644
+        --- a/src/clients/compositor/hyprland.rs
+        +++ b/src/clients/compositor/hyprland.rs
+        @@ -12,6 +12,12 @@ use hyprland::dispatch::{Dispatch, DispatchType, WorkspaceIdentifierWithSpecial}
+         use hyprland::event_listener::EventListener;
+         use hyprland::prelude::*;
+         use hyprland::shared::{HyprDataVec, WorkspaceType};
+        +#[cfg(feature = "workspaces+hyprland")]
+        +use serde::Deserialize;
+        +#[cfg(feature = "workspaces+hyprland")]
+        +use std::io::{Read, Write};
+        +#[cfg(feature = "workspaces+hyprland")]
+        +use std::os::unix::net::UnixStream;
+         use tokio::sync::broadcast::{Receiver, Sender, channel};
+         use tracing::{debug, error, info, warn};
+        ${" "}
+        @@ -35,6 +41,9 @@ pub struct Client {
+             #[cfg(feature = "workspaces+hyprland")]
+             workspace: TxRx<WorkspaceUpdate>,
+        ${" "}
+        +    #[cfg(feature = "workspaces+hyprland")]
+        +    use_lua_dispatch: bool,
+        +
+             #[cfg(feature = "keyboard+hyprland")]
+             keyboard_layout: TxRx<KeyboardLayoutUpdate>,
+        ${" "}
+        @@ -47,6 +56,8 @@ impl Client {
+             let instance = Self {
+                 #[cfg(feature = "workspaces+hyprland")]
+                 workspace: TxRx::new(),
+        +        #[cfg(feature = "workspaces+hyprland")]
+        +        use_lua_dispatch: detect_lua_config(),
+                 #[cfg(feature = "keyboard+hyprland")]
+                 keyboard_layout: TxRx::new(),
+                 #[cfg(feature = "bindmode+hyprland")]
+        @@ -406,9 +417,15 @@ impl Client {
+        #[cfg(feature = "workspaces+hyprland")]
+        impl super::WorkspaceClient for Client {
+             fn focus(&self, id: i64) {
+        -        let identifier = WorkspaceIdentifierWithSpecial::Id(id as i32);
+        +        let res = if self.use_lua_dispatch {
+        +            let arg = format!("{{workspace=\"{id}\"}}");
+        +            Dispatch::call(DispatchType::Custom("hl.dsp.focus", &arg))
+        +        } else {
+        +            let identifier = WorkspaceIdentifierWithSpecial::Id(id as i32);
+        +            Dispatch::call(DispatchType::Workspace(identifier))
+        +        };
+        ${" "}
+        -        if let Err(e) = Dispatch::call(DispatchType::Workspace(identifier)) {
+        +        if let Err(e) = res {
+                     error!("Couldn't focus workspace '{id}': {e:#}");
+                 }
+             }
+        @@ -497,6 +514,40 @@ impl BindModeClient for Client {
+            }
+        }
+        ${" "}
+        +#[cfg(feature = "workspaces+hyprland")]
+        +fn detect_lua_config() -> bool {
+        +    match get_hyprland_config_provider() {
+        +        Ok(provider) => provider == "lua",
+        +        Err(err) => {
+        +            warn!("Failed to detect Hyprland config provider, assuming legacy: {err}");
+        +            false
+        +        }
+        +    }
+        +}
+        +
+        +#[cfg(feature = "workspaces+hyprland")]
+        +#[derive(Deserialize)]
+        +struct HyprlandStatus {
+        +    #[serde(rename = "configProvider")]
+        +    config_provider: String,
+        +}
+        +
+        +#[cfg(feature = "workspaces+hyprland")]
+        +fn get_hyprland_config_provider() -> std::result::Result<String, Box<dyn std::error::Error>> {
+        +    let runtime_dir = std::env::var("XDG_RUNTIME_DIR")
+        +        .or_else(|_| std::env::var("UID").map(|uid| format!("/run/user/{uid}")))?;
+        +    let instance = std::env::var("HYPRLAND_INSTANCE_SIGNATURE")?;
+        +    let socket_path = format!("{runtime_dir}/hypr/{instance}/.socket.sock");
+        +
+        +    let mut stream = UnixStream::connect(socket_path)?;
+        +    stream.write_all(b"j/status")?;
+        +
+        +    let mut response = String::new();
+        +    stream.read_to_string(&mut response)?;
+        +
+        +    Ok(serde_json::from_str::<HyprlandStatus>(&response)?.config_provider)
+        +}
+        +
+         fn get_workspace_name(name: WorkspaceType) -> String {
+             match name {
+                 WorkspaceType::Regular(name) => name,
+      '')
+    ];
+  });
   ironbarMetric = import ./ironbar-metric.nix { inherit inputs pkgs; };
   metricPopupRefresh = pkgs.writeShellApplication {
     name = "ironbar-metric-popup-refresh";
     runtimeInputs = [
       pkgs.coreutils
-      pkgs.ironbar
+      ironbar
       pkgs.util-linux
       ironbarMetric
     ];
@@ -59,7 +175,7 @@ let
     name = "ironbar-metric-popup";
     runtimeInputs = [
       pkgs.coreutils
-      pkgs.ironbar
+      ironbar
       pkgs.systemd
       pkgs.util-linux
       ironbarMetric
@@ -264,7 +380,7 @@ let
         interval = 60000;
         tooltip = "#docker_tooltip";
         on_mouse_enter = ''
-          ${pkgs.ironbar}/bin/ironbar var set docker_tooltip "$(docker-status tooltip)"
+          ${ironbar}/bin/ironbar var set docker_tooltip "$(docker-status tooltip)"
         '';
         on_click_left = "desktop-panel docker";
       }
@@ -967,7 +1083,7 @@ let
 in
 {
   home.packages = [
-    pkgs.ironbar
+    ironbar
     ironbarMetric
   ];
 
@@ -1655,7 +1771,7 @@ in
       ConditionEnvironment = "WAYLAND_DISPLAY";
     };
     Service = {
-      ExecStart = "${pkgs.ironbar}/bin/ironbar --config ${homeDirectory}/.config/ironbar/config.json";
+      ExecStart = "${ironbar}/bin/ironbar --config ${homeDirectory}/.config/ironbar/config.json";
       Restart = "on-failure";
       RestartSec = 2;
       Environment = [
