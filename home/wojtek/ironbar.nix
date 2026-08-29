@@ -5,9 +5,37 @@ let
   c = theme.colors;
   s = theme.semantic;
   # Ironbar 0.19 dispatches legacy workspace commands, which Hyprland's Lua
-  # provider rejects. Keep the upstream fix local until Nixpkgs includes it.
+  # provider rejects. Keep the focused compatibility patch local until a
+  # Nixpkgs update includes Ironbar's upstream fix (PR #1554).
   ironbar = pkgs.ironbar.overrideAttrs (old: {
     patches = (old.patches or [ ]) ++ [
+      (builtins.toFile "ironbar-lua-workspace-click-minimal.patch" ''
+        diff --git a/src/clients/compositor/hyprland.rs b/src/clients/compositor/hyprland.rs
+        index e538e80de..b88778145 100644
+        --- a/src/clients/compositor/hyprland.rs
+        +++ b/src/clients/compositor/hyprland.rs
+        @@ -9,5 +9,5 @@ use hyprland::ctl::switch_xkb_layout;
+         use hyprland::data::{Devices, Workspace as HWorkspace, Workspaces};
+        -use hyprland::dispatch::{Dispatch, DispatchType, WorkspaceIdentifierWithSpecial};
+        +use hyprland::dispatch::{Dispatch, DispatchType};
+         use hyprland::event_listener::EventListener;
+         use hyprland::prelude::*;
+         use hyprland::shared::{HyprDataVec, WorkspaceType};
+        @@ -406,9 +406,9 @@ impl Client {
+        ${" "}#[cfg(feature = "workspaces+hyprland")]
+        ${" "}impl super::WorkspaceClient for Client {
+             fn focus(&self, id: i64) {
+        -        let identifier = WorkspaceIdentifierWithSpecial::Id(id as i32);
+        +        let arguments = format!("{{workspace=\"{id}\"}}");
+        ${" "}
+        -        if let Err(e) = Dispatch::call(DispatchType::Workspace(identifier)) {
+        +        if let Err(e) = Dispatch::call(DispatchType::Custom("hl.dsp.focus", &arguments)) {
+                     error!("Couldn't focus workspace '{id}': {e:#}");
+                 }
+             }
+      '')
+      /* Historical malformed patch retained only until this repair is
+         committed; it is deliberately excluded from the patches list.
       (builtins.toFile "ironbar-lua-workspace-click.patch" ''
         diff --git a/Cargo.toml b/Cargo.toml
         index 4bba58231..f483a2802 100644
@@ -117,7 +145,7 @@ let
          fn get_workspace_name(name: WorkspaceType) -> String {
              match name {
                  WorkspaceType::Regular(name) => name,
-      '')
+      '') */
     ];
   });
   ironbarMetric = import ./ironbar-metric.nix { inherit inputs pkgs; };
