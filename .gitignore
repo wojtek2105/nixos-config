@@ -39,9 +39,14 @@
 /docs/benchmark-results/*
 !/docs/benchmark-results/README.md
 
-# Paid-generation review intermediates stay local. Accepted aspect-ratio
-# variants and the authored prompt set remain versioned.
-/home/wojtek/wallpapers/raw/
+# Paid-generation review intermediates stay local. Keep the original 16:9 JPEG
+# inputs versioned so upscale and later 32:9 outpaint can start from the same
+# source files on every machine; other RAW formats and work products stay local.
+/home/wojtek/wallpapers/raw/*
+!/home/wojtek/wallpapers/raw/16x9/
+/home/wojtek/wallpapers/raw/16x9/*
+!/home/wojtek/wallpapers/raw/16x9/*.jpg
+!/home/wojtek/wallpapers/raw/16x9/*.jpeg
 /home/wojtek/wallpapers/work/
 
 # Local npm experiment; the declarative Nix configuration does not consume it.

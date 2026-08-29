@@ -91,6 +91,9 @@ hl.animation({ leaf = "fade", enabled = true, speed = 5, bezier = "easeOutQuint"
 hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "easeOutQuint", style = "slide" })
 
 hl.on("hyprland.start", function()
+  -- UWSM is the sole session manager. Export Hyprland's Wayland and IPC
+  -- variables and notify its compositor unit that startup completed.
+  hl.exec_cmd("@UWSM_FINALIZE@")
   hl.exec_cmd("@POLKIT_AGENT@")
 end)
 

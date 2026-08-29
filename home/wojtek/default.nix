@@ -410,39 +410,65 @@ let
           ;;
       esac
 
-      # Serialize a cold start so two shortcuts cannot launch competing UIs.
-      lock_file="''${XDG_RUNTIME_DIR:?}/gsr-control.lock"
-      exec 9>"$lock_file"
-      flock 9
+      # The Nix wrapper changes the process name visible to pgrep, so match the
+      # executable in the full command line instead of relying on `pgrep -x`.
+      gsr_running() {
+        pgrep -f '[/]bin/gsr-ui([[:space:]]|$)' >/dev/null
+      }
 
-      if ! pgrep -x gsr-ui >/dev/null; then
-        gsr-ui launch-hide >/dev/null 2>&1 &
+      umask 077
+      log_file="$XDG_RUNTIME_DIR/gsr-ui.log"
+      if ! gsr_running; then
+        # Serialize only the cold start. Never queue shortcut processes: one
+        # owner will start the UI and all later key presses can try again.
+        # Use a dedicated start lock; the old controller used a lock inherited
+        # by gsr-ui, so reusing that pathname would preserve the live deadlock
+        # until the current graphical session ends.
+        lock_file="$XDG_RUNTIME_DIR/gsr-control-start.lock"
+        exec 9>"$lock_file"
+        if ! flock --nonblock 9; then
+          exit 0
+        fi
 
-        started=false
-        for _ in {1..80}; do
-          if pgrep -x gsr-ui >/dev/null; then
-            # The process appears before its control socket is always ready.
-            sleep 0.35
-            started=true
-            break
-          fi
-          sleep 0.05
-        done
-
-        if [[ "$started" != true ]]; then
-          notify-send --urgency=critical \
-            "GPU Screen Recorder" \
-            "Nie udało się uruchomić nakładki."
-          exit 1
+        # Another controller may have completed startup before this one took
+        # the lock, so check again before launching a second UI.
+        if gsr_running; then
+          exec 9>&-
+        else
+          # Graphics and PipeWire initialization completes after the process is
+          # visible. Keep stderr private and probe the real control interface
+          # below instead of guessing readiness from a fixed sleep. Close the
+          # lock descriptor in the child: otherwise the long-lived UI inherits
+          # it and every future shortcut waits forever.
+          {
+            exec 9>&-
+            printf '\n[%s] starting gsr-ui\n' "$(date --iso-8601=seconds)"
+            exec gsr-ui launch-hide
+          } >>"$log_file" 2>&1 &
         fi
       fi
 
-      if ! gsr-ui-cli "$action"; then
+      # A short timeout prevents a stale socket from hanging a keybinding. The
+      # 15-second wall-clock deadline covers a cold GPU/PipeWire startup while
+      # successful actions still return immediately.
+      deadline=$((SECONDS + 15))
+      while (( SECONDS < deadline )); do
+        if timeout 0.5s gsr-ui-cli "$action"; then
+          exit 0
+        fi
+        sleep 0.1
+      done
+
+      if gsr_running; then
         notify-send --urgency=critical \
           "GPU Screen Recorder" \
-          "Nakładka działa, ale nie przyjęła akcji: $action."
-        exit 1
+          "Nakładka działa, ale interfejs sterujący nie przyjął akcji: $action."
+      else
+        notify-send --urgency=critical \
+          "GPU Screen Recorder" \
+          "Nie udało się uruchomić nakładki. Szczegóły: $log_file"
       fi
+      exit 1
     '';
   };
 

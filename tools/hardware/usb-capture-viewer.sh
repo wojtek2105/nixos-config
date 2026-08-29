@@ -13,6 +13,33 @@ audio_mode="${CAPTURE_AUDIO:-auto}"
 audio_device="${CAPTURE_AUDIO_DEVICE:-}"
 audio_delay="${CAPTURE_AUDIO_DELAY:-0}"
 fallback_pixel_format="${CAPTURE_PIXEL_FORMAT:-mjpeg}"
+# Raw YUY2 capture frames have no reliable color metadata. This card delivers
+# 1080p60 as PC/full range; mpv otherwise assumes limited range and crushes
+# shadows. Use CAPTURE_COLOR_LEVELS=limited only if a different source looks
+# washed out. Valid values: auto, limited, full.
+color_levels="${CAPTURE_COLOR_LEVELS:-full}"
+color_matrix="${CAPTURE_COLOR_MATRIX:-bt.709}"
+# Optional crop applied after colour interpretation, e.g. 1728:1080 for a
+# centred 16:10 view from 1080p. It preserves geometry; do not use an aspect
+# override here because that would stretch circles and UI.
+capture_crop="${CAPTURE_CROP:-}"
+
+case "$color_levels" in
+  auto|limited|full) ;;
+  *)
+    printf 'Nieprawidłowy CAPTURE_COLOR_LEVELS=%s (dozwolone: auto, limited, full).\n' "$color_levels" >&2
+    exit 1
+    ;;
+esac
+
+if [[ -n "$capture_crop" && ! "$capture_crop" =~ ^[0-9]+:[0-9]+(:[0-9]+(:[0-9]+)?)?$ ]]; then
+  printf 'Nieprawidłowy CAPTURE_CROP=%s (format: szerokość:wysokość[:x:y]).\n' \
+    "$capture_crop" >&2
+  exit 1
+fi
+
+video_filter="format:colormatrix=$color_matrix:colorlevels=$color_levels"
+[[ -n "$capture_crop" ]] && video_filter+=",crop=$capture_crop"
 
 is_capture_device() {
   local device="$1"
@@ -63,11 +90,27 @@ pixel_format=""
 video_input_args=()
 if command -v v4l2-ctl >/dev/null 2>&1; then
   formats="$(v4l2-ctl --device "$device" --list-formats-ext 2>/dev/null || true)"
-  if grep -q "'MJPG'" <<< "$formats"; then
+  requested_pixel_format="${CAPTURE_PIXEL_FORMAT:-}"
+  case "${requested_pixel_format,,}" in
+    "") ;;
+    mjpeg|mjpg) pixel_format="MJPG" ;;
+    nv12) pixel_format="NV12" ;;
+    yuyv|yuy2|yuyv422) pixel_format="YUYV" ;;
+    *)
+      printf 'Nieprawidłowy CAPTURE_PIXEL_FORMAT=%s (dozwolone: mjpeg, nv12, yuyv422).\n' \
+        "$requested_pixel_format" >&2
+      exit 1
+      ;;
+  esac
+
+  if [[ -n "$pixel_format" ]] && ! grep -q "'$pixel_format'" <<< "$formats"; then
+    printf 'Karta %s nie obsługuje formatu %s w V4L2.\n' "$device" "$pixel_format" >&2
+    exit 1
+  elif [[ -z "$pixel_format" ]] && grep -q "'MJPG'" <<< "$formats"; then
     pixel_format="MJPG"
-  elif grep -q "'NV12'" <<< "$formats"; then
+  elif [[ -z "$pixel_format" ]] && grep -q "'NV12'" <<< "$formats"; then
     pixel_format="NV12"
-  elif grep -q "'YUYV'" <<< "$formats"; then
+  elif [[ -z "$pixel_format" ]] && grep -q "'YUYV'" <<< "$formats"; then
     pixel_format="YUYV"
   fi
 
@@ -151,6 +194,9 @@ else
   printf 'Dźwięk: wyłączony.\n'
 fi
 printf 'Zmiana parametrów: CAPTURE_RESOLUTION=3840x2160 CAPTURE_FPS=30 %s\n' "$0"
+printf 'Kolor: %s, %s. Dla wypranego obrazu użyj CAPTURE_COLOR_LEVELS=limited.\n' \
+  "$color_matrix" "$color_levels"
+[[ -n "$capture_crop" ]] && printf 'Kadrowanie: %s (bez rozciągania).\n' "$capture_crop"
 printf 'Terminal pokazuje podczas pracy: wejściowy / dekodowany / ekranowy FPS.\n'
 
 exec mpv \
@@ -166,6 +212,7 @@ exec mpv \
   --osd-font-size=22 \
   --osd-msg1='IN ${container-fps} FPS | DECODE ${estimated-vf-fps} FPS | DISPLAY ${display-fps} Hz | DROP ${decoder-frame-drop-count}/${frame-drop-count}' \
   --term-status-msg='capture input=${container-fps} | decoded=${estimated-vf-fps} | display=${display-fps}' \
+  --vf="$video_filter" \
   "${video_input_args[@]}" \
   "${audio_args[@]}" \
   "av://v4l2:$device"

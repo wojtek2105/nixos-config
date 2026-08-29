@@ -17,8 +17,16 @@ wyłączony i nie koduje obrazu, dopóki użytkownik go nie uruchomi.
 Proces nakładki można sprawdzić poleceniami:
 
 ```bash
-pgrep -a gsr-ui
+pgrep -af '[/]bin/gsr-ui([[:space:]]|$)'
 gsr-ui-cli --help
+```
+
+Jeżeli nakładka nie wystartuje, kontroler zapisuje błąd uruchomienia osobno dla
+każdego użytkownika w jego prywatnym katalogu sesji. Po wystąpieniu komunikatu
+sprawdź ostatnie wpisy bez zgadywania przyczyny:
+
+```bash
+tail -n 80 "$XDG_RUNTIME_DIR/gsr-ui.log"
 ```
 
 ## Profil laptopa
@@ -57,8 +65,17 @@ Plik `~/.config/gpu-screen-recorder/config_ui` jest generowany przez Home Manage
 Oficjalne globalne skróty UI są wyłączone, aby nakładka nie przechwytywała całej
 klawiatury i nie kolidowała ze zrzutami ekranu Hyprlanda. Te same akcje wywołuje
 Hyprland przez `gsr-control`, który po uruchomieniu UI deleguje je do
-`gsr-ui-cli`. Blokada w katalogu runtime zapobiega uruchomieniu dwóch nakładek,
-gdy kilka skrótów zostanie użytych podczas zimnego startu.
+`gsr-ui-cli`. Nieblokująca blokada w katalogu runtime chroni wyłącznie zimny
+start przed uruchomieniem dwóch nakładek; kolejne skróty nie tworzą kolejki.
+Proces UI dostaje jawnie zamknięty deskryptor blokady, więc nie może utrzymywać
+jej przez cały czas działania. Opakowanie Nix zmienia nazwę procesu widoczną dla
+`pgrep`, dlatego kontroler rozpoznaje UI po pełnej linii polecenia. Następnie
+przez maksymalnie 15 sekund ponawia akcję z krótkim limitem czasu, aż rzeczywisty
+interfejs `gsr-ui-cli` zacznie odpowiadać. Dzięki temu nie myli samego pojawienia
+się procesu z zakończeniem inicjalizacji grafiki i PipeWire ani nie zawiesza
+skrótu na nieaktualnym gnieździe. W razie faktycznej awarii zapisuje stderr jako
+`$XDG_RUNTIME_DIR/gsr-ui.log`; plik należy do bieżącego użytkownika i znika po
+zakończeniu jego sesji.
 
 Sama nakładka działa przez XWayland i upstream ostrzega, że nie wszystkie jej
 elementy są idealnie obsługiwane na Waylandzie. Nie oznacza to braku obsługi
