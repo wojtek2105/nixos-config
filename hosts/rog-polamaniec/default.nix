@@ -10,6 +10,9 @@
   # Opcjonalna, przyjazna nazwa wyświetlana przez system.
   userDescription = "Polamaniec";
 
+  # Skala interfejsu Hyprlanda dla tego hosta.
+  uiScale = 2;
+
   # Domyślnie profil Home Managera ma taką samą nazwę jak `username`.
   # Aby użyć istniejącego profilu bez kopiowania, można odkomentować np.:
   # homeProfile = "wojtek";

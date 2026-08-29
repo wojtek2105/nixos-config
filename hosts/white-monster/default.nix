@@ -5,6 +5,9 @@
   userDescription = "White Monster";
   homeProfile = "wojtek";
 
+  # Skala interfejsu Hyprlanda dla tego hosta.
+  uiScale = 1;
+
   # Reuse the portable desktop profile, but omit every laptop-specific
   # integration. The generated hardware module remains unique to this PC.
   features = {

@@ -1,4 +1,4 @@
-{ backlightDevice, desktopFeatures, inputs, lib, pkgs, ... }:
+{ backlightDevice, desktopFeatures, inputs, lib, pkgs, uiScale, ... }:
 
 let
   theme = import ./theme.nix { inherit inputs; };
@@ -186,6 +186,7 @@ in
         "@ACTIVE_BORDER_ALT@"
         "@INACTIVE_BORDER@"
         "@SHADOW@"
+        "@UI_SCALE@"
         "@BIND_PERSONAL_APPS@"
         "@BIND_SCREEN_RECORDING@"
         "@BIND_LAPTOP@"
@@ -196,6 +197,7 @@ in
         c.yellow
         c.muted
         c.background
+        (toString uiScale)
         (lib.concatStrings [
           (lib.optionalString plexampEnabled ''
             bind_exec(mod .. " + M", "plexamp")

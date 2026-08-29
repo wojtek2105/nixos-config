@@ -55,7 +55,6 @@ def upscale_tiled(
     overlap: int,
     pad_multiple: int,
     scale: int,
-    black_skip_max: float,
 ) -> Image.Image:
     width, height = image.size
     result = Image.new("RGB", (width * scale, height * scale))
@@ -83,24 +82,6 @@ def upscale_tiled(
                 f"patch={patch.width}x{patch.height}",
                 flush=True,
             )
-            # DAT produces NaN on nearly uniform OLED-black input. There is no
-            # recoverable detail in these edge tiles, so preserve them directly.
-            patch_max = max(channel[1] for channel in patch.getextrema()) / 255.0
-            if patch_max <= black_skip_max:
-                crop_x0 = (core_x0 - patch_x0) * scale
-                crop_y0 = (core_y0 - patch_y0) * scale
-                crop_x1 = crop_x0 + (core_x1 - core_x0) * scale
-                crop_y1 = crop_y0 + (core_y1 - core_y0) * scale
-                core = patch.resize(
-                    (patch.width * scale, patch.height * scale), Image.Resampling.LANCZOS
-                ).crop((crop_x0, crop_y0, crop_x1, crop_y1))
-                result.paste(core, (core_x0 * scale, core_y0 * scale))
-                print(
-                    f"  SKIP  tile {tile_number}/{tile_count} "
-                    f"near-black max={patch_max:.3f}",
-                    flush=True,
-                )
-                continue
             tensor = image_to_tensor(patch, device, dtype)
 
             pad_right = (-tensor.shape[-1]) % pad_multiple
@@ -120,14 +101,6 @@ def upscale_tiled(
                 : patch.height * scale,
                 : patch.width * scale,
             ]
-            # BF16 ROCm inference can exceptionally emit NaN/Inf.  Never cast
-            # those values to pixels: that silently produces dark corrupt tiles.
-            if not torch.isfinite(enhanced).all().item():
-                raise FloatingPointError(
-                    f"Nieprawidłowe wartości modelu w kaflu {tile_number}/{tile_count} "
-                    f"(core={core_x0},{core_y0}-{core_x1},{core_y1}); "
-                    "ponów obraz z NOMOS_DTYPE=float32"
-                )
 
             crop_x0 = (core_x0 - patch_x0) * scale
             crop_y0 = (core_y0 - patch_y0) * scale
@@ -166,7 +139,6 @@ def enhance_one(
     source_scale: float,
     blend: float,
     sharpen: int,
-    black_skip_max: float,
 ) -> None:
     with Image.open(input_path) as source_image:
         source = source_image.convert("RGB")
@@ -198,7 +170,6 @@ def enhance_one(
         overlap,
         pad_multiple,
         scale,
-        black_skip_max,
     )
     enhanced = four_x.resize(source.size, Image.Resampling.LANCZOS)
     del four_x
@@ -236,15 +207,14 @@ def main() -> int:
     sharpen = env_int("NOMOS_SHARPEN", 15)
     source_scale = env_float("NOMOS_SOURCE_SCALE", 1.0)
     min_vram_gib = env_float("NOMOS_MIN_VRAM_GIB", 0.0)
-    black_skip_max = env_float("NOMOS_BLACK_SKIP_MAX", 0.05)
     requested_dtype = os.environ.get("NOMOS_DTYPE", "bfloat16").lower()
     overwrite = os.environ.get("NOMOS_OVERWRITE", "0") == "1"
     auto_tile = os.environ.get("NOMOS_AUTO_TILE", "1") not in {"0", "no", "false", "off"}
 
     if tile < 64 or overlap < 0 or overlap * 2 >= tile:
         raise ValueError("NOMOS_TILE >= 64 oraz 0 <= NOMOS_OVERLAP < NOMOS_TILE/2")
-    if pad_multiple < 1 or not 0.0 <= blend <= 1.0 or not 0.0 <= black_skip_max <= 1.0:
-        raise ValueError("Nieprawidłowy NOMOS_PAD_MULTIPLE, NOMOS_BLEND lub NOMOS_BLACK_SKIP_MAX")
+    if pad_multiple < 1 or not 0.0 <= blend <= 1.0:
+        raise ValueError("Nieprawidłowy NOMOS_PAD_MULTIPLE lub NOMOS_BLEND")
     if not 0.25 <= source_scale <= 1.0:
         raise ValueError("NOMOS_SOURCE_SCALE musi mieścić się w zakresie 0.25–1.0")
     if not torch.cuda.is_available() or torch.version.hip is None:
@@ -345,7 +315,6 @@ def main() -> int:
                         source_scale,
                         blend,
                         sharpen,
-                        black_skip_max,
                     )
                     if candidate_tile != tile:
                         print(f"  ukończono z fallback tile={candidate_tile}", flush=True)

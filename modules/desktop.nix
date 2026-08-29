@@ -124,6 +124,28 @@ in
   security.polkit.enable = true;
   security.rtkit.enable = true;
 
+  # PipeWire transports frames, while this portal authorizes and supplies them
+  # to Wayland clients. Hyprland handles screen capture; GTK remains a
+  # fallback for file pickers and portal requests it does not implement.
+  xdg.portal = {
+    enable = true;
+    xdgOpenUsePortal = true;
+    extraPortals = [
+      pkgs.xdg-desktop-portal-hyprland
+      pkgs.xdg-desktop-portal-gtk
+    ];
+    config = {
+      common.default = [
+        "hyprland"
+        "gtk"
+      ];
+      hyprland.default = [
+        "hyprland"
+        "gtk"
+      ];
+    };
+  };
+
   hardware.bluetooth = {
     enable = true;
     powerOnBoot = true;

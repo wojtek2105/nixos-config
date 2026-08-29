@@ -994,6 +994,27 @@ in
         src = pkgs.fishPlugins.tide.src;
       }
     ];
+    functions._tide_item_cmd_duration_safe = ''
+      # Tide renders prompt items in a child Fish, where CMD_DURATION can be empty.
+      string match --quiet --regex '^[0-9]+$' -- "$CMD_DURATION"; or return
+      set -l threshold 1000
+      string match --quiet --regex '^[0-9]+$' -- "$tide_cmd_duration_threshold" \
+        && set threshold "$tide_cmd_duration_threshold"
+      set -l decimals 0
+      string match --quiet --regex '^[0-9]+$' -- "$tide_cmd_duration_decimals" \
+        && set decimals "$tide_cmd_duration_decimals"
+
+      test "$CMD_DURATION" -gt "$threshold" && t=(
+          math -s0 "$CMD_DURATION/3600000"
+          math -s0 "$CMD_DURATION/60000"%60
+          math -s$decimals "$CMD_DURATION/1000"%60) if test "$t[1]" != 0
+        _tide_print_item cmd_duration $tide_cmd_duration_icon' ' "$t[1]h $t[2]m $t[3]s"
+      else if test "$t[2]" != 0
+        _tide_print_item cmd_duration $tide_cmd_duration_icon' ' "$t[2]m $t[3]s"
+      else
+        _tide_print_item cmd_duration $tide_cmd_duration_icon' ' "$t[3]s"
+      end
+    '';
     interactiveShellInit = ''
       set -g fish_greeting
 
@@ -1005,7 +1026,7 @@ in
       source ${tideDefaults}
 
       set -g tide_left_prompt_items pwd git newline character
-      set -g tide_right_prompt_items status cmd_duration jobs nix_shell time
+      set -g tide_right_prompt_items status cmd_duration_safe jobs nix_shell time
       set -g tide_cmd_duration_threshold 1000
       set -g tide_cmd_duration_icon '󱎫'
       set -g tide_git_icon ''

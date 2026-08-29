@@ -95,6 +95,7 @@
           features ? { },
           homeProfile ? username,
           replayConfig ? { },
+          uiScale ? 2,
           userDescription ? username,
           username,
         }:
@@ -168,7 +169,7 @@
                     useUserPackages = true;
                     backupFileExtension = "hm-backup";
                     extraSpecialArgs = {
-                      inherit backlightDevice desktopFeatures inputs username;
+                      inherit backlightDevice desktopFeatures inputs uiScale username;
                       replayConfig = defaultReplayConfig // replayConfig;
                     };
                     users.${username} = import homeModule;
