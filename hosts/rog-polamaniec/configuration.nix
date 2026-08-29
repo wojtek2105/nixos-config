@@ -5,6 +5,7 @@
     ./hardware-configuration.nix
     ../../modules/common.nix
     ../../modules/desktop.nix
+    ../../modules/deskflow.nix
     ../../modules/development-core.nix
     ../../modules/hardware-amd-gpu.nix
     ../../modules/hardware-asus-laptop.nix
@@ -18,6 +19,15 @@
 
   networking.hostName = hostName;
   networking.networkmanager.enable = true;
+
+  # Rog Polamaniec owns the physical keyboard and mouse and shares them with
+  # White Monster without streaming video. The paired host name must match the
+  # client host's networking.hostName value.
+  services.deskflow = {
+    enable = true;
+    role = "server";
+    peerName = "white-monster";
+  };
 
   services.logind.settings.Login = {
     HandleLidSwitch = "ignore";

@@ -5,6 +5,7 @@
     ./hardware-configuration.nix
     ../../modules/common.nix
     ../../modules/desktop.nix
+    ../../modules/deskflow.nix
     ../../modules/development-core.nix
     ../../modules/hardware-amd-gpu.nix
   ];
@@ -18,6 +19,14 @@
 
   networking.hostName = hostName;
   networking.networkmanager.enable = true;
+
+  # Receive keyboard and mouse events from Rog Polamaniec. Replace the name
+  # with a fixed LAN address if the local network does not resolve host names.
+  services.deskflow = {
+    enable = true;
+    role = "client";
+    serverAddress = "rog-polamaniec";
+  };
 
   i18n.extraLocaleSettings = {
     LC_ADDRESS = "pl_PL.UTF-8";

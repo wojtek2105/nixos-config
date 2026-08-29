@@ -5,6 +5,37 @@ przeznaczona dla Meta Quest 2 podłączonego kablem USB-C i nie uruchamia żadne
 stałej usługi. Porty ALVR 9943/9944 pozostają zamknięte, ponieważ przewodowy
 transport korzysta z połączenia ADB.
 
+Moduł instaluje również WayVR. Jest to ręcznie uruchamiana nakładka SteamVR,
+która pokazuje ekrany pulpitu w goglach. Zastępuje wbudowany `Desktop View`,
+który na Waylandzie może wyświetlać czarny obraz albo sam kursor.
+
+## Pulpit w goglach przez ALVR i WayVR
+
+Po aktywacji konfiguracji uruchom ALVR i połącz Quest, a następnie uruchom
+SteamVR z dashboardu ALVR. Na komputerze, w zwykłym terminalu użytkownika,
+uruchom:
+
+```bash
+wayvr --wait
+```
+
+WayVR musi być uruchomiony ręcznie po połączeniu ALVR; nie jest usługą systemową
+i nie startuje automatycznie ze SteamVR. Przy pierwszym uruchomieniu pojawi się
+prośba o udostępnienie ekranów — wybierz ekran pulpitu zgodnie z kolejnością
+podaną w powiadomieniu lub terminalu. W goglach otwórz panel WayVR przez
+dwukrotne naciśnięcie `B` albo `Y` na lewym kontrolerze.
+
+Podstawowe sterowanie:
+
+- niebieski laser — lewy klik;
+- pomarańczowy laser — prawy klik;
+- uchwyt i joystick — przesuwanie ekranu;
+- uchwyt, klik i joystick — zmiana rozmiaru ekranu.
+
+Jeśli obraz lub kursor działa nieprawidłowo, w WayVR wybierz `Settings`,
+następnie `Clear PipeWire tokens` i `Restart software`, po czym ponownie uruchom
+`wayvr --wait`. Log nakładki znajduje się w `/tmp/wayvr.log`.
+
 ## Co naprawdę działa na Linuksie
 
 Meta Horizon Link, wcześniej Oculus/Quest Link, jest oficjalnie obsługiwany

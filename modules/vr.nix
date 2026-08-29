@@ -14,7 +14,11 @@
   # Steam here keeps the VR capability usable on hosts without gaming.nix.
   programs.steam.enable = true;
 
-  # systemd 258 supplies Android uaccess rules. Only the ADB client is needed
-  # for authorization, diagnostics and manual APK installation.
-  environment.systemPackages = [ pkgs.android-tools ];
+  # WayVR replaces SteamVR's unreliable desktop capture on Wayland. It is an
+  # on-demand overlay: the package is installed, but no process or service is
+  # started automatically. Launch it manually after ALVR has connected to VR.
+  environment.systemPackages = with pkgs; [
+    android-tools
+    wayvr
+  ];
 }
