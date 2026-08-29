@@ -63,7 +63,11 @@ in
       unitConfig.ConditionEnvironment = "WAYLAND_DISPLAY";
       serviceConfig = {
         ExecStartPre = initializeConfig;
-        ExecStart = "${pkgs.lan-mouse}/bin/lan-mouse daemon";
+        # xdg-desktop-portal 1.22.1 aborts in InputCapture.ConnectToEIS on
+        # this Hyprland setup, leaving Wayland clients unable to flush. The
+        # layer-shell backend uses edge surfaces instead, so it keeps Lan Mouse
+        # independent from that unstable portal path on both hosts.
+        ExecStart = "${pkgs.lan-mouse}/bin/lan-mouse --capture-backend layer-shell daemon";
         Restart = "on-failure";
         RestartSec = 2;
       };

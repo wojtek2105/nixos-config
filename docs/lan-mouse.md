@@ -16,3 +16,13 @@ w `~/.config/lan-mouse/config.toml`; nie jest częścią konfiguracji Nix ani Gi
 
 Lan Mouse działa natywnie z wlroots/Hyprland i nie wymaga nieobecnego w
 Hyprlandzie portalu `RemoteDesktop`. Nie synchronizuje schowka między hostami.
+
+## Przechwytywanie wejścia
+
+Usługa wymusza backend `layer-shell` zamiast automatycznie wybranego portalu
+`InputCapture`. Na tej konfiguracji `xdg-desktop-portal 1.22.1` potrafił
+przerwać sesję podczas `InputCapture.ConnectToEIS`, pozostawiając Hyprlanda bez
+działających klientów Waylanda. `layer-shell` przechwytuje kursor przez małe
+powierzchnie przy krawędziach ekranów i omija tę ścieżkę portalu. Nie zmieniaj
+tej opcji bez sprawdzenia logów z `journalctl --user -u lan-mouse.service` po
+realnym przejściu między hostami.
