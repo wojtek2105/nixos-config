@@ -75,20 +75,25 @@ def upscale_tiled(
     pad_multiple: int,
     scale: int,
     warmup_passes: int,
+    guard_first_tile: bool,
 ) -> Image.Image:
     original_width, original_height = image.size
-    padded_width = math.ceil(original_width / tile) * tile
-    padded_height = math.ceil(original_height / tile) * tile
-    if (padded_width, padded_height) != image.size:
-        # Nomos can become numerically unstable on a narrow final core tile.
-        # Reflect-pad only the working canvas to full cores, then crop the SR
-        # result back to the exact source dimensions below.
+    guard = tile if guard_first_tile else 0
+    padded_width = math.ceil((original_width + guard) / tile) * tile
+    padded_height = math.ceil((original_height + guard) / tile) * tile
+    right_pad = padded_width - original_width - guard
+    bottom_pad = padded_height - original_height - guard
+    if guard or right_pad or bottom_pad:
+        # ROCm can emit a finite but visibly corrupted top-left tile.  Put a
+        # full reflected tile before the actual image, so that bad core is
+        # sacrificial and is cropped away below.  Right/bottom padding also
+        # avoids a narrow final core tile.
         source_array = np.asarray(image, dtype=np.uint8)
         padded_array = np.pad(
             source_array,
             (
-                (0, padded_height - original_height),
-                (0, padded_width - original_width),
+                (guard, bottom_pad),
+                (guard, right_pad),
                 (0, 0),
             ),
             mode="reflect",
@@ -226,7 +231,14 @@ def upscale_tiled(
                 flush=True,
             )
 
-    return result.crop((0, 0, original_width * scale, original_height * scale))
+    return result.crop(
+        (
+            guard * scale,
+            guard * scale,
+            (guard + original_width) * scale,
+            (guard + original_height) * scale,
+        )
+    )
 
 
 def enhance_one(
@@ -244,6 +256,7 @@ def enhance_one(
     sharpen: int,
     black_preserve_threshold: int,
     warmup_passes: int,
+    guard_first_tile: bool,
     target_width: int | None,
     target_height: int | None,
 ) -> None:
@@ -285,6 +298,7 @@ def enhance_one(
         pad_multiple,
         scale,
         warmup_passes,
+        guard_first_tile,
     )
     if target_width is None:
         enhanced = four_x.resize(output_source.size, Image.Resampling.LANCZOS)
@@ -356,6 +370,7 @@ def main() -> int:
     auto_tile = os.environ.get("NOMOS_AUTO_TILE", "1") not in {"0", "no", "false", "off"}
     warmup_enabled = os.environ.get("NOMOS_WARMUP", "1") not in {"0", "no", "false", "off"}
     warmup_passes = env_int("NOMOS_WARMUP_PASSES", 2) if warmup_enabled else 0
+    guard_first_tile = os.environ.get("NOMOS_GUARD_FIRST_TILE", "1") not in {"0", "no", "false", "off"}
 
     if tile < 64 or overlap < 0 or overlap * 2 >= tile:
         raise ValueError("NOMOS_TILE >= 64 oraz 0 <= NOMOS_OVERLAP < NOMOS_TILE/2")
@@ -423,7 +438,8 @@ def main() -> int:
         f"HIP={torch.version.hip} "
         f"dtype={requested_dtype} tile={tile} overlap={overlap} "
         f"source_scale={source_scale:.2f} blend={blend:.2f} sharpen={sharpen} "
-        f"black_preserve_threshold={black_preserve_threshold} warmup_passes={warmup_passes}",
+        f"black_preserve_threshold={black_preserve_threshold} warmup_passes={warmup_passes} "
+        f"guard_first_tile={guard_first_tile}",
         flush=True,
     )
 
@@ -449,6 +465,7 @@ def main() -> int:
             sharpen,
             black_preserve_threshold,
             warmup_passes,
+            guard_first_tile,
             args.target_width,
             args.target_height,
         )
@@ -515,6 +532,7 @@ def main() -> int:
                         sharpen,
                         black_preserve_threshold,
                         warmup_passes,
+                        guard_first_tile,
                         None,
                         None,
                     )
