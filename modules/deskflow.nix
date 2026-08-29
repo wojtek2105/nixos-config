@@ -28,10 +28,31 @@ let
     end
   '';
 
+  # Deskflow 1.26 combines the former deskflow-client and deskflow-server
+  # executables into deskflow-core. It reads the role-specific connection
+  # settings from this INI file rather than command-line role options.
+  settings = pkgs.writeText "deskflow-${cfg.role}.conf" ''
+    [core]
+    computerName=${hostName}
+    port=24800
+    wlClipboard=true
+
+    ${lib.optionalString (cfg.role == "server") ''
+      [server]
+      externalConfig=true
+      externalConfigFile=${serverConfig}
+    ''}
+
+    ${lib.optionalString (cfg.role == "client") ''
+      [client]
+      remoteHost=${cfg.serverAddress}
+    ''}
+  '';
+
   command = if cfg.role == "server" then
-    "${pkgs.deskflow}/bin/deskflow-server --no-daemon --config ${serverConfig}"
+    "${pkgs.deskflow}/bin/deskflow-core server --settings ${settings}"
   else
-    "${pkgs.deskflow}/bin/deskflow-client --no-daemon --name ${hostName} ${cfg.serverAddress}";
+    "${pkgs.deskflow}/bin/deskflow-core client --settings ${settings}";
 in
 {
   options.services.deskflow = {
