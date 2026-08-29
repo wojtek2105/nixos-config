@@ -111,6 +111,7 @@ in
       unitConfig.ConditionEnvironment = "WAYLAND_DISPLAY";
       serviceConfig = {
         ExecStart = command;
+        WorkingDirectory = settingsDirectory;
         Restart = "on-failure";
         RestartSec = 2;
       };
