@@ -48,6 +48,27 @@ if ! jq -e '.wallpapers | length == 48' "$manifest" >/dev/null; then
   exit 1
 fi
 
+# A whitespace-separated allow-list makes a short quality comparison possible
+# without ever touching unrelated staged or active wallpapers.  Slugs in this
+# collection are shell-safe identifiers; reject anything else before it reaches
+# a path or a child process.
+declare -A requested_slugs=()
+if [[ -n "${UPSCALE_SLUGS:-}" ]]; then
+  read -r -a selected_slug_list <<< "$UPSCALE_SLUGS"
+  for selected_slug in "${selected_slug_list[@]}"; do
+    if [[ ! "$selected_slug" =~ ^[a-zA-Z0-9._-]+$ ]]; then
+      printf 'UPSCALE_SLUGS zawiera nieprawidłowy slug: %s\n' "$selected_slug" >&2
+      exit 64
+    fi
+    if ! jq -e --arg slug "$selected_slug" \
+      '.wallpapers[] | select(.slug == $slug)' "$manifest" >/dev/null; then
+      printf 'Brak sluga w collection.json: %s\n' "$selected_slug" >&2
+      exit 64
+    fi
+    requested_slugs["$selected_slug"]=1
+  done
+fi
+
 if [[ -n "${MAGICK_BIN:-}" ]]; then
   magick_bin="$MAGICK_BIN"
 elif command -v magick >/dev/null 2>&1; then
@@ -131,6 +152,9 @@ while IFS= read -r item; do
     continue
   fi
   slug="$(jq -r '.slug' <<< "$item")"
+  if (( ${#requested_slugs[@]} > 0 )) && [[ -z "${requested_slugs[$slug]:-}" ]]; then
+    continue
+  fi
   input="$wallpaper_root/32x9/$slug.png"
   staged="$stage_root/$slug.png"
 

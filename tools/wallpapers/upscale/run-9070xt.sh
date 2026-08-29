@@ -39,11 +39,29 @@ case "$mode" in
   run)
     exec "$repo_root/tools/wallpapers/upscale/run-night.sh"
     ;;
+  slugs)
+    if [[ $# -lt 2 ]]; then
+      printf 'Tryb slugs wymaga co najmniej jednego sluga z collection.json.\n' >&2
+      exit 64
+    fi
+    shift
+    for selected_slug in "$@"; do
+      if [[ ! "$selected_slug" =~ ^[a-zA-Z0-9._-]+$ ]]; then
+        printf 'Nieprawidłowy slug: %s\n' "$selected_slug" >&2
+        exit 64
+      fi
+    done
+    # One GPU worker is deliberate: parallel shards would only queue on the
+    # global GPU lock and would make the selected-output logs harder to review.
+    export UPSCALE_SLUGS="$*"
+    export UPSCALE_SHARDS=1
+    exec "$repo_root/tools/wallpapers/upscale/run-night.sh"
+    ;;
   status|promote)
     exec "$repo_root/tools/wallpapers/upscale/collection.sh" "$mode"
     ;;
   *)
-    printf 'Użycie: %s [run|status|promote]\n' "$0" >&2
+    printf 'Użycie: %s [run|slugs SLUG...|status|promote]\n' "$0" >&2
     exit 64
     ;;
 esac

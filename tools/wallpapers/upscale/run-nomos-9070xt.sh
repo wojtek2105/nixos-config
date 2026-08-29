@@ -7,9 +7,18 @@ runtime_root="${NOMOS_RUNTIME_ROOT:-$data_root/wallpaper-nomos8kdat}"
 image="${NOMOS_ROCM_IMAGE:-rocm/pytorch:rocm7.2.4_ubuntu24.04_py3.12_pytorch_release_2.10.0}"
 model="$runtime_root/models/4xNomos8kDAT.safetensors"
 python_dir="$runtime_root/python"
-stage_name="${UPSCALE_STAGE_NAME:-upscaled-32x9-nomos8kdat}"
 mode="${1:-test}"
 slug="${2:-01-frieren}"
+
+# Keep the FP32 control image apart from the later BF16 candidate, otherwise a
+# resumable batch would legitimately skip it as an existing staging result.
+default_stage_name="upscaled-32x9-nomos8kdat"
+if [[ "$mode" == test ]]; then
+  default_stage_name="upscaled-32x9-nomos8kdat-fp32-test"
+elif [[ "$mode" == file ]]; then
+  default_stage_name="upscaled-32x9-nomos8kdat-fp32-file"
+fi
+stage_name="${UPSCALE_STAGE_NAME:-$default_stage_name}"
 
 if [[ ! "$stage_name" =~ ^[a-zA-Z0-9._-]+$ ]]; then
   printf 'UPSCALE_STAGE_NAME musi być bezpieczną nazwą katalogu.\n' >&2
@@ -21,14 +30,17 @@ case "$mode" in
   status|promote)
     exec "$repo_root/tools/wallpapers/upscale/collection.sh" "$mode"
     ;;
-  test|run|batch) ;;
+  test|run|batch|slugs|file) ;;
   *)
-    printf 'Użycie: %s [test [SLUG]|batch 1|2|3|run|status|promote]\n' "$0" >&2
+    printf 'Użycie: %s [test [SLUG]|file /pełna/ścieżka.png|slugs SLUG...|batch 1|2|3|run|status|promote]\n' "$0" >&2
     exit 64
     ;;
 esac
-
-for command in docker flock readlink stat; do
+if [[ "$mode" == slugs && $# -lt 2 ]]; then
+  printf 'Tryb slugs wymaga co najmniej jednego sluga z collection.json.\n' >&2
+  exit 64
+fi
+for command in docker flock readlink stat sha256sum; do
   command -v "$command" >/dev/null 2>&1 \
     || { printf 'Brak polecenia: %s\n' "$command" >&2; exit 1; }
 done
@@ -39,6 +51,21 @@ done
 [[ -e /dev/kfd && -d /dev/dri ]] \
   || { printf 'Brak urządzeń ROCm /dev/kfd lub /dev/dri.\n' >&2; exit 1; }
 docker info >/dev/null
+
+if [[ "$mode" == file ]]; then
+  if [[ $# -ne 2 || "$slug" != /* || ! -f "$slug" ]]; then
+    printf 'Tryb file wymaga istniejącej pełnej ścieżki do jednego obrazu.\n' >&2
+    exit 64
+  fi
+  input_path="$(readlink -f -- "$slug")"
+  input_dir="$(dirname -- "$input_path")"
+  input_name="$(basename -- "$input_path")"
+  input_hash="$(sha256sum -- "$input_path")"
+  input_hash="${input_hash%% *}"
+  output_stem="${input_name%.*}"
+  output_stem="${output_stem//[^a-zA-Z0-9._-]/_}"
+  output_name="${output_stem}-${input_hash:0:12}.png"
+fi
 
 # Prefer the AMD DRM device with the largest dedicated VRAM allocation. This
 # distinguishes the 16 GiB RX 9070 XT from a small integrated Radeon without
@@ -88,6 +115,12 @@ stop_container() {
 trap 'stop_container; exit 130' INT TERM
 trap 'stop_container' EXIT
 
+# A single FP32 control run detects numerical instability before a long BF16
+# batch.  Set NOMOS_DTYPE explicitly to compare precisions after it succeeds.
+default_dtype="bfloat16"
+if [[ "$mode" == test || "$mode" == file ]]; then
+  default_dtype="float32"
+fi
 gpu_ordinal="${NOMOS_GPU_ORDINAL:-0}"
 docker_args=(
   run --rm
@@ -108,13 +141,17 @@ docker_args=(
   -e NOMOS_AUTO_TILE="${NOMOS_AUTO_TILE:-1}"
   -e NOMOS_OVERLAP="${NOMOS_OVERLAP:-32}"
   -e NOMOS_PAD_MULTIPLE="${NOMOS_PAD_MULTIPLE:-64}"
-  -e NOMOS_DTYPE="${NOMOS_DTYPE:-bfloat16}"
+  -e NOMOS_DTYPE="${NOMOS_DTYPE:-$default_dtype}"
   -e NOMOS_MIN_VRAM_GIB="${NOMOS_MIN_VRAM_GIB:-12.0}"
   -e NOMOS_SOURCE_SCALE="${NOMOS_SOURCE_SCALE:-1.0}"
   -e NOMOS_BLEND="${NOMOS_BLEND:-0.65}"
   -e NOMOS_SHARPEN="${NOMOS_SHARPEN:-15}"
   -e NOMOS_OVERWRITE="${NOMOS_OVERWRITE:-0}"
 )
+if [[ "$mode" == file ]]; then
+  # The source mount is read-only; arbitrary user files can never be replaced.
+  docker_args+=(-v "$input_dir:/input:ro")
+fi
 
 if [[ -n "${HSA_OVERRIDE_GFX_VERSION:-}" ]]; then
   docker_args+=(-e HSA_OVERRIDE_GFX_VERSION="$HSA_OVERRIDE_GFX_VERSION")
@@ -139,14 +176,29 @@ elif [[ "$mode" == batch ]]; then
     exit 64
   fi
   python_args+=(--batch-index "$((slug - 1))" --batch-count 3)
+elif [[ "$mode" == slugs ]]; then
+  shift
+  for selected_slug in "$@"; do
+    python_args+=(--slug "$selected_slug")
+  done
+elif [[ "$mode" == file ]]; then
+  mkdir -p "$work_root/$stage_name/external"
+  output_path="$work_root/$stage_name/external/$output_name"
+  python_args+=(
+    --input-file "/input/$input_name"
+    --output-file "/repo/home/wojtek/wallpapers/work/import-48/$stage_name/external/$output_name"
+  )
 fi
 
 printf 'Nomos8kDAT RX 9070 XT: mode=%s dtype=%s source_scale=%s tile=%s overlap=%s blend=%s\n' \
-  "$mode" "${NOMOS_DTYPE:-bfloat16}" "${NOMOS_SOURCE_SCALE:-1.0}" \
+  "$mode" "${NOMOS_DTYPE:-$default_dtype}" "${NOMOS_SOURCE_SCALE:-1.0}" \
   "${NOMOS_TILE:-832}" "${NOMOS_OVERLAP:-32}" "${NOMOS_BLEND:-0.65}"
 printf 'GPU PCI=%s render=%s ROCm ordinal=%s; bez HSA override.\n' \
   "$gpu_pci" "$render_node" "$gpu_ordinal"
 printf 'Staging: home/wojtek/wallpapers/work/import-48/%s\n' "$stage_name"
+if [[ "$mode" == file ]]; then
+  printf 'Wejście tylko do odczytu: %s\nWynik: %s\n' "$input_path" "$output_path"
+fi
 printf 'Ctrl+C zatrzyma kontener i proces ROCm tego przebiegu.\n'
 
 docker "${docker_args[@]}" "$image" "${python_args[@]}" &

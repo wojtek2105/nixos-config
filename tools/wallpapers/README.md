@@ -71,7 +71,12 @@ tools/wallpapers/upscale/run-nomos-6800s.sh status
 
 # Ten sam pełny Nomos na RX 9070 XT 16 GiB; wspólny instalator/model
 tools/wallpapers/upscale/install-nomos8kdat-rocm.sh
+# Test kontrolny jest domyślnie FP32 i trafia do oddzielnego stagingu.
 tools/wallpapers/upscale/run-nomos-9070xt.sh test 01-frieren
+# Dowolny obraz, także 16:9, podaj pełną ścieżką; oryginał jest montowany tylko do odczytu.
+tools/wallpapers/upscale/run-nomos-9070xt.sh file /pełna/ścieżka/do/tapety-16x9.png
+# Po czystym teście BF16 dla wybranej listy; każdy wynik zostaje w stagingu.
+tools/wallpapers/upscale/run-nomos-9070xt.sh slugs 01-frieren 02-frieren
 tools/wallpapers/upscale/run-nomos-9070xt.sh batch 1
 tools/wallpapers/upscale/run-nomos-9070xt.sh batch 2
 tools/wallpapers/upscale/run-nomos-9070xt.sh batch 3
@@ -103,7 +108,39 @@ przez `test` ani `run`. Przy OOM profil automatycznie ponawia bieżącą tapetę
 kaflami 512, 448, 384, a następnie 320. Mechanizm można wyłączyć przez
 `NOMOS_AUTO_TILE=0`; siłę efektu reguluje `NOMOS_BLEND` od 0 do 1. DAT nie deklaruje bezpiecznego FP16, dlatego
 profil 6800S używa domyślnie BF16; zgodnościowy, wolniejszy fallback to
-`NOMOS_DTYPE=float32`.
+`NOMOS_DTYPE=float32`. Profil RX 9070 XT uruchamia `test` domyślnie w FP32:
+wykrywa tym niestabilność numeryczną zanim długi przebieg przejdzie na BF16.
+Po udanym teście `slugs SLUG...`, `batch` i `run` używają BF16, chyba że
+`NOMOS_DTYPE` zostanie ustawione jawnie.
+
+Każdy tensor zwrócony przez Nomos jest sprawdzany pod kątem `NaN` i `Inf`
+zanim zostanie przekonwertowany do PNG. Błąd przerywa tylko daną tapetę,
+zapisuje współrzędne kafla w logu i nie tworzy wyniku stagingowego ani nie
+dotyka aktywnej kolekcji. Nie należy maskować błędu przez `nan_to_num`, bo
+ukryłoby to artefakt jako czarne albo białe piksele.
+
+Tryb `file /pełna/ścieżka.png` działa także dla 16:9 i innych proporcji. Zachowuje
+rozdzielczość wejścia, a wynik zapisuje wyłącznie do
+`work/import-48/upscaled-32x9-nomos8kdat-fp32-file/external/`, z hashem źródła
+w nazwie. Nie wymaga wpisu w `collection.json` i montuje katalog wejściowy do
+kontenera tylko do odczytu.
+
+Domyślnie `NOMOS_BLACK_PRESERVE_THRESHOLD=0`: piksele, które w źródle są
+dokładnie `#000000`, są po rekonstrukcji, blendzie i wyostrzeniu ponownie
+zapisywane jako `#000000`. Dzięki temu duże naturalne obszary OLED-off przechodzą
+przez Nomos bez podniesienia czerni. Wartość 1–255 rozszerza ochronę na near-black,
+ale może utworzyć zbyt twardą granicę, więc pozostaw bezpieczne domyślne `0`.
+
+Dla niezależnego porównania z Numosem AnimeSharp działa przez NCNN/Vulkan
+z osobnym stagingiem. Na RX 9070 XT przetworzysz tę samą listę jednym
+workerem:
+
+```bash
+tools/wallpapers/upscale/run-9070xt.sh slugs 01-frieren 02-frieren
+```
+
+`run-9070xt.sh` nie zmienia aktywnej kolekcji; `promote` pozostaje ręcznym
+krokiem dopiero po obejrzeniu odpowiedniego stagingu.
 
 Pełną kolekcję można wykonać przez trzy noce, po 16 pozycji. Gotowe wyniki są
 pomijane, więc przerwany batch można wznowić tym samym poleceniem:

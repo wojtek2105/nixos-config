@@ -34,6 +34,11 @@ def image_to_tensor(image: Image.Image, device: torch.device, dtype: torch.dtype
 
 
 def tensor_to_image(tensor: torch.Tensor) -> Image.Image:
+    # ``clamp`` does not turn NaN into a valid value.  Casting an unchecked NaN
+    # to uint8 can silently produce a black pixel, so never serialize a
+    # numerically invalid model result.
+    if not torch.isfinite(tensor).all().item():
+        raise FloatingPointError("Próba zapisu tensora z NaN lub Inf")
     array = (
         tensor.squeeze(0)
         .detach()
@@ -95,6 +100,16 @@ def upscale_tiled(
 
             with torch.inference_mode():
                 enhanced = model(tensor)
+            finite = torch.isfinite(enhanced)
+            if not finite.all().item():
+                invalid_values = enhanced.numel() - int(finite.sum().item())
+                raise FloatingPointError(
+                    "Model zwrócił NaN/Inf "
+                    f"dla kafla core={core_x0},{core_y0}-{core_x1},{core_y1} "
+                    f"(patch={patch.width}x{patch.height}, dtype={enhanced.dtype}, "
+                    f"nieprawidłowe wartości={invalid_values})"
+                )
+            del finite
             enhanced = enhanced[
                 :,
                 :,
@@ -139,11 +154,14 @@ def enhance_one(
     source_scale: float,
     blend: float,
     sharpen: int,
+    black_preserve_threshold: int,
 ) -> None:
     with Image.open(input_path) as source_image:
         source = source_image.convert("RGB")
-    if source.size != (5120, 1440):
-        raise ValueError(f"{input_path}: oczekiwano 5120x1440, jest {source.size[0]}x{source.size[1]}")
+    source_black = np.all(
+        np.asarray(source, dtype=np.uint8) <= black_preserve_threshold,
+        axis=2,
+    )
 
     if source_scale == 1.0:
         model_source = source
@@ -179,6 +197,12 @@ def enhance_one(
     final = Image.blend(source, enhanced, blend)
     if sharpen > 0:
         final = final.filter(ImageFilter.UnsharpMask(radius=0.6, percent=sharpen, threshold=3))
+    if source_black.any():
+        # Restore OLED-off source pixels after blend and sharpen.  The default
+        # threshold is exactly #000000, so near-black shading still receives SR.
+        final_array = np.asarray(final, dtype=np.uint8).copy()
+        final_array[source_black] = 0
+        final = Image.fromarray(final_array, "RGB")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     temporary = output_path.with_suffix(output_path.suffix + ".part")
@@ -192,7 +216,22 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--input-dir", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
-    parser.add_argument("--slug", help="Process only one manifest slug")
+    parser.add_argument(
+        "--input-file",
+        type=Path,
+        help="Process one arbitrary image path instead of a collection slug",
+    )
+    parser.add_argument(
+        "--output-file",
+        type=Path,
+        help="Required together with --input-file; destination stays under staging",
+    )
+    parser.add_argument(
+        "--slug",
+        action="append",
+        dest="slugs",
+        help="Process one manifest slug; repeat the option for a selected list",
+    )
     parser.add_argument("--batch-index", type=int, help="Zero-based batch index")
     parser.add_argument("--batch-count", type=int, help="Number of equal batches")
     return parser.parse_args()
@@ -205,6 +244,7 @@ def main() -> int:
     pad_multiple = env_int("NOMOS_PAD_MULTIPLE", 64)
     blend = env_float("NOMOS_BLEND", 0.65)
     sharpen = env_int("NOMOS_SHARPEN", 15)
+    black_preserve_threshold = env_int("NOMOS_BLACK_PRESERVE_THRESHOLD", 0)
     source_scale = env_float("NOMOS_SOURCE_SCALE", 1.0)
     min_vram_gib = env_float("NOMOS_MIN_VRAM_GIB", 0.0)
     requested_dtype = os.environ.get("NOMOS_DTYPE", "bfloat16").lower()
@@ -217,6 +257,10 @@ def main() -> int:
         raise ValueError("Nieprawidłowy NOMOS_PAD_MULTIPLE lub NOMOS_BLEND")
     if not 0.25 <= source_scale <= 1.0:
         raise ValueError("NOMOS_SOURCE_SCALE musi mieścić się w zakresie 0.25–1.0")
+    if not 0 <= black_preserve_threshold <= 255:
+        raise ValueError("NOMOS_BLACK_PRESERVE_THRESHOLD musi mieścić się w zakresie 0–255")
+    if (args.input_file is None) != (args.output_file is None):
+        raise ValueError("--input-file i --output-file muszą wystąpić razem")
     if not torch.cuda.is_available() or torch.version.hip is None:
         raise RuntimeError("ROCm GPU jest niedostępne")
     detected_vram_gib = torch.cuda.get_device_properties(0).total_memory / (1024**3)
@@ -254,9 +298,34 @@ def main() -> int:
         f"GPU={torch.cuda.get_device_name(0)} VRAM={detected_vram_gib:.2f}GiB "
         f"HIP={torch.version.hip} "
         f"dtype={requested_dtype} tile={tile} overlap={overlap} "
-        f"source_scale={source_scale:.2f} blend={blend:.2f} sharpen={sharpen}",
+        f"source_scale={source_scale:.2f} blend={blend:.2f} sharpen={sharpen} "
+        f"black_preserve_threshold={black_preserve_threshold}",
         flush=True,
     )
+
+    if args.input_file is not None:
+        if not args.input_file.is_file():
+            raise FileNotFoundError(f"Brak pliku wejściowego: {args.input_file}")
+        if args.output_file.is_file() and not overwrite:
+            print(f"skip {args.input_file}: wynik już istnieje: {args.output_file}", flush=True)
+            return 0
+        print(f"[file] enhance {args.input_file} -> {args.output_file}", flush=True)
+        enhance_one(
+            args.input_file,
+            args.output_file,
+            model,
+            device,
+            dtype,
+            tile,
+            overlap,
+            pad_multiple,
+            scale,
+            source_scale,
+            blend,
+            sharpen,
+            black_preserve_threshold,
+        )
+        return 0
 
     with args.manifest.open("r", encoding="utf-8") as handle:
         manifest = json.load(handle)
@@ -264,10 +333,12 @@ def main() -> int:
     if len(items) != 48:
         raise ValueError("Manifest musi zawierać dokładnie 48 tapet")
     slugs = [item["slug"] for item in items]
-    if args.slug:
-        if args.slug not in slugs:
-            raise ValueError(f"Brak sluga w manifeście: {args.slug}")
-        slugs = [args.slug]
+    if args.slugs:
+        unknown_slugs = [slug for slug in args.slugs if slug not in slugs]
+        if unknown_slugs:
+            raise ValueError(f"Brak slugów w manifeście: {', '.join(unknown_slugs)}")
+        # Preserve the caller's order, but do not infer the same wallpaper twice.
+        slugs = list(dict.fromkeys(args.slugs))
     elif args.batch_index is not None or args.batch_count is not None:
         if args.batch_index is None or args.batch_count is None:
             raise ValueError("--batch-index i --batch-count muszą wystąpić razem")
@@ -315,6 +386,7 @@ def main() -> int:
                         source_scale,
                         blend,
                         sharpen,
+                        black_preserve_threshold,
                     )
                     if candidate_tile != tile:
                         print(f"  ukończono z fallback tile={candidate_tile}", flush=True)
