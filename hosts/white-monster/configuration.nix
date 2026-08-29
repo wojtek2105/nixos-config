@@ -5,7 +5,7 @@
     ./hardware-configuration.nix
     ../../modules/common.nix
     ../../modules/desktop.nix
-    ../../modules/deskflow.nix
+    ../../modules/lan-mouse.nix
     ../../modules/development-core.nix
     ../../modules/hardware-amd-gpu.nix
   ];
@@ -20,12 +20,10 @@
   networking.hostName = hostName;
   networking.networkmanager.enable = true;
 
-  # Receive keyboard and mouse events from Rog Polamaniec. Replace the name
-  # with a fixed LAN address if the local network does not resolve host names.
-  services.deskflow = {
+  # White Monster receives keyboard and mouse events from Rog Polamaniec.
+  # Approve Rog's fingerprint once in Lan Mouse after both hosts are active.
+  services.lanMouse = {
     enable = true;
-    role = "client";
-    serverAddress = "rog-polamaniec";
   };
 
   i18n.extraLocaleSettings = {

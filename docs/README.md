@@ -15,7 +15,7 @@ Ten katalog opisuje stan konfiguracji, sposób jej obsługi oraz plan rozbudowy.
 - [Wyniki benchmarków](benchmark-results/README.md) — katalog raportów Markdown,
   CSV, metadanych i pełnych logów z kolejnych sesji.
 - [Skróty klawiszowe](keybindings.md) — kompletna mapa skrótów.
-- [Deskflow](deskflow.md) — współdzielenie klawiatury i myszy z White Monster
+- [Lan Mouse](lan-mouse.md) — współdzielenie klawiatury i myszy z White Monster
   bez przesyłania obrazu.
 - [Replay](replay.md) — konfiguracja bufora GPU Screen Recorder.
 - [Host](hosts.md) — konfiguracja laptopa ROG.

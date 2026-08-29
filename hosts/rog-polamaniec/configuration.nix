@@ -5,7 +5,7 @@
     ./hardware-configuration.nix
     ../../modules/common.nix
     ../../modules/desktop.nix
-    ../../modules/deskflow.nix
+    ../../modules/lan-mouse.nix
     ../../modules/development-core.nix
     ../../modules/hardware-amd-gpu.nix
     ../../modules/hardware-asus-laptop.nix
@@ -21,12 +21,11 @@
   networking.networkmanager.enable = true;
 
   # Rog Polamaniec owns the physical keyboard and mouse and shares them with
-  # White Monster without streaming video. The paired host name must match the
-  # client host's networking.hostName value.
-  services.deskflow = {
+  # White Monster without streaming video. Lan Mouse uses the right screen
+  # edge; its host name must match White Monster's networking.hostName value.
+  services.lanMouse = {
     enable = true;
-    role = "server";
-    peerName = "white-monster";
+    peerHost = "white-monster";
   };
 
   services.logind.settings.Login = {
