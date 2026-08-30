@@ -49,6 +49,7 @@ in
 {
   home.packages =
     [
+      pkgs.swayimg
       yazi-file-manager
       usb-capture-viewer
     ]
@@ -133,12 +134,28 @@ in
     ];
 
     settings = {
-      opener.edit = [
+      opener = {
+        edit = [
+          {
+            run = "${config.programs.neovim.finalPackage}/bin/nvim %s";
+            block = true;
+            for = "unix";
+            desc = "Edytuj w Neovim";
+          }
+        ];
+        image = [
+          {
+            run = "${pkgs.swayimg}/bin/swayimg %s";
+            orphan = true;
+            for = "unix";
+            desc = "Pokaż w Swayimg";
+          }
+        ];
+      };
+      open.prepend_rules = [
         {
-          run = "${config.programs.neovim.finalPackage}/bin/nvim %s";
-          block = true;
-          for = "unix";
-          desc = "Edytuj w Neovim";
+          mime = "image/*";
+          use = "image";
         }
       ];
       mgr = {
@@ -606,13 +623,18 @@ in
   xdg.mimeApps = {
     enable = true;
     defaultApplications = {
-      "image/avif" = [ "mpv.desktop" ];
-      "image/bmp" = [ "mpv.desktop" ];
-      "image/gif" = [ "mpv.desktop" ];
-      "image/jpeg" = [ "mpv.desktop" ];
-      "image/png" = [ "mpv.desktop" ];
-      "image/tiff" = [ "mpv.desktop" ];
-      "image/webp" = [ "mpv.desktop" ];
+      "image/avif" = [ "swayimg.desktop" ];
+      "image/bmp" = [ "swayimg.desktop" ];
+      "image/gif" = [ "swayimg.desktop" ];
+      "image/heic" = [ "swayimg.desktop" ];
+      "image/heif" = [ "swayimg.desktop" ];
+      "image/jpeg" = [ "swayimg.desktop" ];
+      "image/jxl" = [ "swayimg.desktop" ];
+      "image/png" = [ "swayimg.desktop" ];
+      "image/svg+xml" = [ "swayimg.desktop" ];
+      "image/tiff" = [ "swayimg.desktop" ];
+      "image/webp" = [ "swayimg.desktop" ];
+      "image/x-exr" = [ "swayimg.desktop" ];
       "inode/directory" = [ "org.polamaniec.Yazi.desktop" ];
       "video/mp4" = [ "mpv.desktop" ];
       "video/mpeg" = [ "mpv.desktop" ];

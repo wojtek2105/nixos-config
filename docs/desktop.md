@@ -140,10 +140,15 @@ SwayNC, Zen, Hyprland, Hyprlock, Wleave i wygaszacz korzystają z tej samej pale
 generowanej przez Home Managera.
 
 Awww korzysta z zaakceptowanych kolekcji Biscuit OLED w katalogach `16x9/`,
-`21x9/` i `32x9/`. Ostatnie 18 nowych scen dzieli się po równo na Frieren,
-Chainsaw Man, Solo Leveling, Valheim, V Rising i Palworld, zachowując oryginalny
-język wizualny każdego świata bez crossoverów i technicznych metafor. Cała
-akcja, postacie i najmocniejsze światła znajdują się po prawej. Dodatkowa
+`21x9/` i `32x9/`. Przy ewaluacji konfiguracja automatycznie włącza każdy
+zwykły plik `.png` umieszczony bezpośrednio w tych katalogach i porządkuje
+listy alfabetycznie. Wszystkie trzy rodziny muszą mieć tę samą liczbę plików,
+a ich kolejność nazw musi opisywać te same sceny, aby wspólny indeks rotatora
+pozostał poprawny na monitorach o różnych proporcjach. Ostatnie 18 nowych scen
+dzieli się po równo na Frieren, Chainsaw Man, Solo Leveling, Valheim, V Rising
+i Palworld, zachowując oryginalny język wizualny każdego świata bez crossoverów
+i technicznych metafor. Cała akcja, postacie i najmocniejsze światła znajdują
+się po prawej. Dodatkowa
 szerokość monitorów ultrawide odsłania foreground, midground i background tej
 samej lokacji, które stopniowo wygasają w kierunku lewego brzegu.
 Perspektywa, materiały, global illumination, AO, cienie kontaktowe i słabsze
