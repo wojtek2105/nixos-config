@@ -67,6 +67,26 @@ if [[ "$mode" == file || "$mode" == file-fp32 ]]; then
   output_stem="${input_name%.*}"
   output_stem="${output_stem//[^a-zA-Z0-9._-]/_}"
   output_name="${output_stem}-${input_hash:0:12}.png"
+  file_target_width="${NOMOS_FILE_TARGET_WIDTH:-2560}"
+  file_target_height="${NOMOS_FILE_TARGET_HEIGHT:-1440}"
+  [[ "$file_target_width" =~ ^[1-9][0-9]*$ && "$file_target_height" =~ ^[1-9][0-9]*$ ]] || {
+    printf 'NOMOS_FILE_TARGET_WIDTH i NOMOS_FILE_TARGET_HEIGHT muszą być dodatnimi liczbami.\n' >&2
+    exit 64
+  }
+  if command -v magick >/dev/null 2>&1; then
+    magick_bin="$(command -v magick)"
+  else
+    magick_candidates=(/nix/store/*-imagemagick-*/bin/magick)
+    magick_bin="${magick_candidates[0]:-}"
+  fi
+  [[ -x "$magick_bin" ]] || { printf 'Nie znaleziono ImageMagick do weryfikacji wejścia.\n' >&2; exit 1; }
+  input_dimensions="$("$magick_bin" identify -format '%w %h' "$input_path")"
+  read -r input_width input_height <<< "$input_dimensions"
+  if (( input_width >= file_target_width && input_height >= file_target_height )); then
+    printf 'Wejście %sx%s jest już większe niż cel %sx%s. Nomos 4x byłby zbędny; użyj bezstratnego downscale do PNG.\n' \
+      "$input_width" "$input_height" "$file_target_width" "$file_target_height" >&2
+    exit 64
+  fi
 fi
 
 # Prefer the AMD DRM device with the largest dedicated VRAM allocation. This
@@ -203,8 +223,8 @@ elif [[ "$mode" == file || "$mode" == file-fp32 ]]; then
   python_args+=(
     --input-file "/input/$input_name"
     --output-file "/repo/home/wojtek/wallpapers/work/import-48/$stage_name/external/$output_name"
-    --target-width "${NOMOS_FILE_TARGET_WIDTH:-2560}"
-    --target-height "${NOMOS_FILE_TARGET_HEIGHT:-1440}"
+    --target-width "$file_target_width"
+    --target-height "$file_target_height"
   )
 fi
 
