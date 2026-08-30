@@ -1,0 +1,22 @@
+Create one continuous 5120x1440 OLED anime wallpaper in the world of Frieren:
+Beyond Journey's End. Preserve the character group on the right exactly: do not
+change faces, eyes, hair, ears, clothing, anatomy, hands, poses, weapons,
+campfire or cooking pot. The surrounding forest, including all non-character
+areas, may be freely edited and recomposed to produce a beautiful unified wide
+scene.
+
+Freely extend and blend the existing forest across the entire left side and
+around the protected character group: connected ancient roots, mossy ground,
+ferns, wet stones, dense undergrowth, layered trunks, overlapping branches and
+cool nocturnal mist. Make every transition feel naturally painted into one
+camera view; no framed core, seam, crop, vertical boundary or pasted backdrop.
+
+Design a dramatic but natural OLED falloff. Near the characters, retain rich
+blue-green forest depth and restrained warm firelight. Moving toward the far
+left, progressively reduce illumination and visual activity through genuine
+occlusion, deep cavities, foliage gaps, trunks and receding mist until real
+emitted-off #000000 becomes dominant at the extreme left edge. Keep the dark
+area richly structured with smooth band-free gradients, local contrast and
+visible silhouette depth: never use a flat black panel, veil or gradient mask.
+No new people, animals, buildings, text, logo, UI, watermark or competing
+focal event.

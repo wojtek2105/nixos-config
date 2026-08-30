@@ -1,0 +1,18 @@
+Use the supplied illustration as the complete right-hand composition of one
+native 5120x1440 OLED wallpaper. Preserve the existing people, faces, eyes,
+hair, clothing, poses, campfire, equipment, tree, forest edge, camera angle,
+palette and lighting on the right. Do not crop, zoom, move, resize or redraw
+the supplied scene.
+
+Extend only the missing canvas naturally to the left as one continuous night
+forest: connected roots, mossy ground, ferns, wet stones, layered trunks,
+undergrowth and cool mist at the same perspective, scale and painterly detail.
+The added landscape must blend invisibly into the existing forest, with no
+seam, frame, separate backdrop, repetition or abrupt boundary.
+
+For OLED, the forest gradually becomes quieter and darker toward the far-left
+edge through genuine foliage occlusion, deep trunk cavities, root shadows and
+receding mist. Form organic true #000000 only within those real dark spaces and
+at the extreme left, while retaining visible depth, rich color separation,
+smooth band-free gradients and local contrast. No empty black panel, veil,
+gradient mask, blur, text, logo, UI or watermark.

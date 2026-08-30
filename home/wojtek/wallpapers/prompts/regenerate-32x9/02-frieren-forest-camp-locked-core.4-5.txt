@@ -1,0 +1,23 @@
+Create a premium 5120x1440 OLED anime wallpaper in the world of Frieren:
+Beyond Journey's End. The supplied canvas contains the finished right-hand
+scene: Frieren, Fern and Stark resting around a small campfire beneath an
+ancient forest tree. This right-hand scene is an immutable reference. Do not
+alter, redraw, retouch, enlarge, move, crop or reinterpret any character,
+face, eye, hair, ear, clothing, hand, pose, weapon, campfire, pot, tree or
+existing background element. Preserve every facial feature exactly, especially
+natural aligned eyes with matching irises, pupils, eyelids and highlights.
+
+Generate only the missing leftward continuation of the same quiet night forest.
+Extend connected roots, enormous trunks, damp moss, ferns, leaf litter,
+undergrowth, distant cool mist and receding tree layers. Match the supplied
+scene's camera height, perspective, blue-green night palette, painterly anime
+background detail and soft firelight falloff. Keep all narrative action and the
+only warm focal light on the right.
+
+Design the new left extension for OLED: it becomes quieter and darker toward
+the far-left edge through real foliage occlusion, trunk interiors, root shadows
+and deep forest depth, ending in subtle organic pockets of true #000000. Keep
+the forest richly detailed and spatially readable; no broad empty black area,
+black veil, hard vertical boundary, diptych seam, blur, tiling, repeated trees,
+new people, animals, buildings, text, logo, UI or watermark. Output one
+continuous native 5120x1440 wallpaper.

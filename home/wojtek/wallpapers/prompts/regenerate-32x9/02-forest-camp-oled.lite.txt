@@ -1,0 +1,31 @@
+OUTPAINT ONLY TO THE LEFT. The supplied sharp 16:9 image is the complete
+right-hand core of a native 5120x1440 OLED desktop wallpaper. Preserve exactly
+the four illustrated travelers, their faces and eyes, hair, pointed ears,
+clothing, poses, axe, staff, campfire, cooking pot, tree trunk, framing, color
+palette, lighting, fine linework and every important detail of the reference
+core. Do not redraw, move, crop, resize, soften or reinterpret the core.
+
+Continue the same ancient night forest naturally and continuously into the new
+left canvas: extend the connected massive tree trunks, roots, ferns, mossy
+rocks, dense undergrowth, distant tree layers and mist in the exact receding
+perspective, material scale, camera angle and painterly illustration language.
+The result must read as one uninterrupted, ultra-sharp wide camera scene,
+never as a pasted extension. Retain precise bark, root, leaf, fern, rock and
+ground textures with clean high-frequency edge detail without plastic
+smoothing, oversharpening, blur or noise.
+
+Keep the warm campfire as the sole right-side focal light. Its subtle bounced
+amber light must fade naturally into the cool blue-green forest shade. Toward
+the far left, let the environment progressively and organically lose detail and
+illumination through denser trunks, real foliage occlusion, deeper root
+shadows, quieter undergrowth and thicker distance haze. End at the far-left
+edge with natural true #000000 pockets and smooth, band-free tonal transitions,
+while retaining believable depth, ambient occlusion, contact shadows and
+restrained bounced light. No flat black panel, black veil, gradient mask,
+abrupt vertical boundary or seam.
+
+Keep all people, action and the campfire entirely on the right. Add no people,
+animals, creatures, tents, buildings, extra props, extra lights, text, letters,
+logos, UI, watermark, crossover or new focal event. No diptych, tiling,
+repetition, padding, distortion, crop, resize, blur or oversized foreground
+blocker. Output one unified native 5120x1440 OLED wallpaper.

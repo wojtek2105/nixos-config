@@ -15,6 +15,14 @@ reference_file="${SEEDREAM_REFERENCE_FILE:-}"
 image_size="${SEEDREAM_WALLPAPER_SIZE:-5120x1440}"
 model="${SEEDREAM_MODEL:-seedream-5-0-lite-260128}"
 endpoint="${ARK_IMAGE_ENDPOINT:-https://ark.ap-southeast.bytepluses.com/api/v3/images/generations}"
+# Set both flags for true left-only outpainting: Seedream sees a black-padded
+# 32:9 canvas, then the original right core is composited back pixel-for-pixel.
+prepare_right_core="${SEEDREAM_PREPARE_RIGHT_CORE:-0}"
+restore_right_core="${SEEDREAM_RESTORE_RIGHT_CORE:-0}"
+restore_right_core_mode="${SEEDREAM_RESTORE_RIGHT_CORE_MODE:-full}"
+# A 96–160 px feather removes a visible join in scenery while leaving the
+# protected characters, which sit farther right, pixel-identical to the core.
+restore_right_core_feather="${SEEDREAM_RESTORE_RIGHT_CORE_FEATHER:-0}"
 
 if [[ ! -s "$key_file" ]]; then
   printf 'Brak klucza BytePlus ModelArk w %s. Ustaw ARK_API_KEY_FILE.\n' "$key_file" >&2
@@ -60,12 +68,20 @@ if [[ -z "$magick_bin" || ! -x "$magick_bin" ]]; then
   exit 1
 fi
 
-# Model zawsze otrzymuje prawdziwy PNG 2560x1440. Prawostronny crop zachowuje
-# akcję przygotowaną pod pulpit, a proporcjonalne skalowanie nie rozciąga JPG.
-normalized_source="$tmp_dir/source.png"
+# The right core keeps the focal action at native 16:9. For masked-like
+# outpainting, it is placed unchanged on the right of a black DQHD canvas.
+right_core="$tmp_dir/right-core.png"
 "$magick_bin" "$source_file" \
   -auto-orient -resize '2560x1440^' -gravity east -extent 2560x1440 \
-  -strip -define png:color-type=2 "$normalized_source"
+  -strip -define png:color-type=2 "$right_core"
+normalized_source="$tmp_dir/source.png"
+if [[ "$prepare_right_core" == 1 ]]; then
+  "$magick_bin" -size "$image_size" xc:'#000000' "$right_core" \
+    -gravity east -compose over -composite \
+    -strip -define png:color-type=2 "$normalized_source"
+else
+  cp -- "$right_core" "$normalized_source"
+fi
 
 encoded_image_file="$tmp_dir/source.b64"
 encoded_reference_file="$tmp_dir/reference.b64"
@@ -136,9 +152,36 @@ fi
 image_url="$(jq -er '.data[0].url' "$response_file")"
 curl --fail --silent --show-error --max-time 180 \
   "$image_url" --output "$download_file"
-"$magick_bin" "$download_file" \
-  -strip -define png:color-type=2 -define png:compression-level=9 \
-  "$output_file"
+if [[ "$restore_right_core" == 1 ]]; then
+  core_for_composite="$right_core"
+  if [[ "$restore_right_core_mode" == characters ]]; then
+    # Preserve the right-side character group while letting the model blend the
+    # surrounding forest freely; the soft mask avoids a rectangular cutout.
+    core_mask="$tmp_dir/right-core-mask.png"
+    "$magick_bin" -size 2560x1440 xc:black -fill white \
+      -draw 'rectangle 1120,420 2559,1439' -blur '0x80' "$core_mask"
+    core_for_composite="$tmp_dir/right-core-characters.png"
+    "$magick_bin" "$right_core" "$core_mask" -alpha off \
+      -compose CopyOpacity -composite "$core_for_composite"
+  elif [[ "$restore_right_core_feather" =~ ^[1-9][0-9]*$ ]]; then
+    core_mask="$tmp_dir/right-core-mask.png"
+    feather_radius=$((restore_right_core_feather / 2))
+    "$magick_bin" -size 2560x1440 xc:white -fill black \
+      -draw "rectangle 0,0,$((restore_right_core_feather - 1)),1439" \
+      -blur "0x$feather_radius" "$core_mask"
+    core_for_composite="$tmp_dir/right-core-feathered.png"
+    "$magick_bin" "$right_core" "$core_mask" -alpha off \
+      -compose CopyOpacity -composite "$core_for_composite"
+  fi
+  "$magick_bin" "$download_file" "$core_for_composite" \
+    -gravity east -compose over -composite \
+    -strip -define png:color-type=2 -define png:compression-level=9 \
+    "$output_file"
+else
+  "$magick_bin" "$download_file" \
+    -strip -define png:color-type=2 -define png:compression-level=9 \
+    "$output_file"
+fi
 cp -- "$prompt_file" "${output_file%.png}.prompt.txt"
 
 unset ark_key image_url

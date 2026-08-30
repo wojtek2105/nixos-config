@@ -1,0 +1,31 @@
+OUTPAINT ONLY TO THE LEFT. The supplied sharp 16:9 image is the complete
+right-hand core of a native 5120x1440 OLED desktop wallpaper. Preserve exactly
+the two illustrated young women, their faces and eyes, pale hair and pointed
+ears, long dark-violet hair, clothing, pose, open glowing book, stone ledge,
+framing, color palette, lighting, fine linework and every important detail of
+the reference core. Do not redraw, move, crop, resize, soften or reinterpret
+the core.
+
+Continue the same flooded ancient library naturally and continuously into the
+new left canvas: extend correctly aligned stone arches, deep library shelves,
+hanging roots, mossy masonry, shallow water and their reflections in the same
+receding perspective, material scale, camera angle and painterly illustration
+language. It must read as one uninterrupted, ultra-sharp wide camera scene,
+never as a pasted extension. Retain precise stone, book, root and water
+textures and clean high-frequency edge detail without plastic smoothing, blur
+or noise.
+
+For OLED, let the environment progressively and organically lose detail and
+illumination toward the far left through deeper arch cavities, denser root
+shadows, quieter shelves, real material occlusion and dimmer water reflections.
+End at the far-left edge with natural true #000000 pockets and smooth,
+band-free tonal transitions, while retaining believable volumetric depth,
+ambient occlusion, contact shadows and restrained bounced light. There must be
+no flat black panel, black veil, gradient mask, abrupt vertical boundary or
+seam.
+
+Keep all narrative action and the only focal light on the right. Add no people,
+creatures, props, lights, text, letters, logos, UI, watermark, crossover or new
+focal event. No diptych, tiling, repetition, padding, distortion, crop, resize,
+blur or oversized foreground blocker. Output one unified native 5120x1440 OLED
+wallpaper.

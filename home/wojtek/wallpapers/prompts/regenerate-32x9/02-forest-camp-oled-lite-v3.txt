@@ -1,0 +1,24 @@
+Use the supplied 16:9 illustration as the unchanged right-hand half of a
+single native 5120x1440 OLED wallpaper. Preserve the complete original frame
+at its native scale: all four travelers, their faces, hair, clothing, poses,
+campfire, cooking pot, axe, staff, huge tree, forest edge and empty space must
+remain fully visible, sharp and in their original positions. Do not crop, zoom,
+move, resize or recompose the supplied image.
+
+CHARACTERS ARE LOCKED: do not alter, repaint, stylize, improve, replace or
+reinterpret any traveler. Keep every face, eye, iris, pupil, eyelid,
+expression, hairline, hairstyle, ears, clothing, hands, body proportions and
+pose exactly as in the supplied image. Change only the previously missing left
+canvas.
+
+Generate only the new left half as a seamless continuation of the same night
+forest: connected massive trunks and roots, ferns, mossy stones, dark
+undergrowth and distant mist. Match camera height, perspective, blue-green
+night palette, soft painterly detail and forest depth where it meets the source.
+Keep the campfire and all characters on the right; add no person, animal, tent,
+building, sign, text, logo or new focal event.
+
+Make the new left extension OLED-friendly but still visibly detailed. Let the
+forest subtly darken toward the far-left edge through real trunk and foliage
+occlusion, with small natural pockets of true #000000 only in the deepest
+shadows. No flat black panel, mask, vertical seam, blur or repeated pattern.

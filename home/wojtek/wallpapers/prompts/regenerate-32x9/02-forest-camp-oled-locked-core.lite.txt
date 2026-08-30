@@ -1,0 +1,16 @@
+The supplied 5120x1440 canvas contains a finished illustrated night camp scene
+on its right side and an empty black area on its left. Generate only a seamless
+leftward continuation of the existing forest: shadowed connected trunks and
+roots, ferns, damp rocks, dense undergrowth, distant cool mist and receding
+tree layers. Match the camera height, perspective, quiet blue-green palette,
+painterly linework, material texture and light falloff at the join.
+
+The camp, travelers, fire, large tree and every existing object on the right
+are protected reference content. Do not add any new people, animals, tents,
+buildings, signs, letters, logos, UI, watermark or focal object. Keep the left
+extension calm and naturally darker toward the far-left edge using real deep
+foliage, trunk interiors and root occlusion. Retain visible depth and detail;
+use small organic true #000000 pockets only at the far-left edge and in the
+deepest shadows. No flat black panel, abrupt wall, vertical seam, blur, tiling
+or repeated tree pattern. Output one continuous native 5120x1440 OLED
+wallpaper.

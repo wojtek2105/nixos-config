@@ -1,0 +1,25 @@
+Create a unified native 5120x1440 OLED anime wallpaper in the world of
+Frieren: Beyond Journey's End. The supplied right-hand camp scene is immutable:
+do not alter, redraw, crop, move, resize or reinterpret Frieren, Fern, Stark,
+their faces, aligned eyes, hair, clothing, poses, weapons, campfire, pot, tree
+or any original scenery.
+
+Generate a single continuous night forest which begins immediately at the left
+edge of the supplied camp scene. The new forest must visibly connect into its
+existing roots, mossy ground, ferns, nearby trunks, distant tree layers and
+cool mist with identical camera height, perspective, linework, material scale,
+blue-green palette and soft firelight falloff. The join must be invisible:
+there is no new independent forest, framed scene, isolated dark wall, gap or
+vertical transition. Fill the added area with coherent foreground, midground
+and background depth rather than leaving any input padding visible.
+
+The far-left forest naturally becomes quieter through denser foliage, deeper
+trunk interiors, receding mist, weaker ambient light, dark waterless ground and
+real occlusion. Make it OLED-friendly with organically distributed true
+#000000 in deep cavities, foliage gaps and root shadows, concentrated at the
+far-left edge while retaining rich visible forest structure, smooth band-free
+dark gradients, contact shadows and local color separation. Avoid broad empty
+black regions, a black veil, artificial gradient mask, flat silhouette,
+repeated trees, blur, text, logo, UI, watermark, new people, animals,
+buildings or a new focal event. The campfire remains the only warm focal light
+on the right.

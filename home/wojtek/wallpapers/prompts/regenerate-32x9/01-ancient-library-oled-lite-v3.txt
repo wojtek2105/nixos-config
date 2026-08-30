@@ -1,0 +1,24 @@
+Use the supplied 16:9 illustration as the unchanged right-hand half of a
+single native 5120x1440 OLED wallpaper. Keep both women, their complete faces,
+hair, clothing, pose, glowing open book, stone ledge, all existing scenery and
+the entire original framing sharp and undistorted. The dark-violet-haired woman
+has two normal matching eyes with visible irises, pupils and natural highlights;
+no blackened or malformed eye. Do not crop, zoom, move, resize or recompose the
+source scene.
+
+CHARACTERS ARE LOCKED: do not alter, repaint, stylize, improve, replace or
+reinterpret either person. Keep their face shape, eye size and position,
+iris color, pupils, eyelids, expression, ears, hairline, hairstyle, clothing,
+hands, body proportions and pose exactly as in the supplied image. The only
+permitted character correction is restoring the dark-violet-haired woman's
+damaged eye to match her other natural eye.
+
+Extend only to the left with a seamless continuation of the ancient flooded
+library: connected arches, quiet shelves, hanging roots, mossy stone, shallow
+water and subtle reflections. Match perspective, scale, lighting and precise
+painterly detail. Keep the characters and the warm booklight on the right.
+
+Make the added left side OLED-friendly but detailed: gradually deepen shadows
+through real cavities, shelf gaps, root occlusion and dark water, ending in
+subtle organic true #000000 pockets at the far-left edge. No large empty black
+area, mask, seam, blur, text, logo, extra characters or new focal object.

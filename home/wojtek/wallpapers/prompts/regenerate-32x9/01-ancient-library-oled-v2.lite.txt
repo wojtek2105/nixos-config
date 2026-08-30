@@ -1,0 +1,34 @@
+OUTPAINT ONLY TO THE LEFT. The supplied sharp 16:9 image is the complete
+right-hand core of a native 5120x1440 OLED desktop wallpaper. Preserve the two
+female mages exactly as shown: faces, facial proportions, hair, ears, clothing,
+pose, open glowing spellbook, stone ledge, framing, color palette, lighting,
+fine linework and every important detail. The woman with dark-violet hair must
+have two natural, matching, clearly visible eyes: normal irises and pupils,
+accurate highlights, no blackened eye, no empty eye socket, no mismatched eye
+color and no eye distortion. Do not otherwise redraw, move, crop, resize,
+soften or reinterpret the right-hand core.
+
+Continue the same flooded ancient grimoire vault naturally and continuously
+only into the new left canvas: extend correctly aligned stone arches, deep
+library shelves, hanging roots, mossy masonry, shallow water and reflections in
+the same receding perspective, material scale, camera angle and painterly
+illustration language. It must read as one uninterrupted, ultra-sharp wide
+camera scene, never as a pasted extension. Retain precise stone, book, root and
+water textures and clean high-frequency edge detail without oversharpening,
+plastic smoothing, blur or noise.
+
+This is a dark OLED wallpaper, but retain a readable, detailed environment.
+Let illumination and detail gently diminish toward the far-left edge through
+deeper arch interiors, shelf voids, root-shadowed alcoves and darker water.
+Use true #000000 only as subtle, natural pockets concentrated at the far-left
+edge and in deep occlusion, around 25–35% of that added left canvas rather than
+a broad black area. Preserve visible ruin geometry, depth, local contrast,
+ambient occlusion, contact shadows and smooth band-free tonal transitions.
+There must be no flat black panel, black veil, gradient mask, abrupt vertical
+boundary or seam.
+
+Keep all narrative action and the only focal light on the right. Add no people,
+creatures, props, lights, text, letters, logos, UI, watermark, crossover or new
+focal event. No diptych, tiling, repetition, padding, distortion, crop, resize,
+blur or oversized foreground blocker. Output one unified native 5120x1440 OLED
+wallpaper.

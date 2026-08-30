@@ -1,0 +1,35 @@
+TASK: exact left-only canvas extension, not a crop, zoom, reframe or new
+composition. Create one 5120x1440 OLED wallpaper from the supplied 2560x1440
+reference image.
+
+PIXEL LAYOUT IS MANDATORY: place the supplied reference unchanged at native
+scale in the right half of the output, occupying exactly x=2560 through x=5120
+and y=0 through y=1440. The full reference, including its complete top and
+bottom edges, every person, the large tree, the campfire, pot, axe, staff,
+forest edge and all existing empty space must remain visible at the same size
+and coordinates relative to that right-hand 2560x1440 rectangle. Do not crop
+any edge. Do not zoom. Do not resize. Do not move or redraw any feature in that
+right half. Treat it as a locked, full-resolution photograph pasted exactly on
+the right side of a wider canvas.
+
+Generate new imagery only in the previously missing left rectangle x=0 through
+x=2560. Continue the night forest seamlessly from the reference's left edge:
+connected tree trunks and roots, ferns, mossy rocks, leaf litter, undergrowth,
+distant tree layers and cool mist. Match the exact horizon, camera height,
+perspective, depth, material scale, blue-green nocturnal palette, linework and
+painterly finish where the two rectangles meet. The added forest is a quiet
+continuation with no new characters, tents, animals, buildings, weapons, fire,
+lights, signs, text, logos, UI, watermark or focal event.
+
+OLED treatment applies only to the newly created left extension. Keep it dark
+but detailed: use true #000000 in natural pockets at the far-left edge, beneath
+roots, between trunks and in deep foliage occlusion. Retain visible layered
+forest structure, subtle cool reflected light, realistic contact shadows and
+smooth band-free tonal transitions; never use a flat black panel, black veil,
+gradient mask, vertical cutoff or seam. The warm campfire on the locked right
+half remains the only focal light and must not be altered.
+
+Output exactly one cohesive 5120x1440 image. The test of success: splitting
+the final image at x=2560 must reveal the original supplied image unchanged in
+the complete right half, while the left half is newly generated continuous
+forest.
