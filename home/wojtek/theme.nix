@@ -1,6 +1,7 @@
 { inputs }:
 
 let
+  lib = inputs.nixpkgs.lib;
   colors = {
     background = "1A1515";
     surface = "2D2424";
