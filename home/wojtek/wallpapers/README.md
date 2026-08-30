@@ -1,7 +1,12 @@
 # Tapety Biscuit OLED
 
-Zaakceptowane obrazy znajdują się wyłącznie w katalogach `16x9/`, `21x9/`
-i `32x9/`. Ich zawartość jest archiwum wynikowym: porządki w zapleczu nie
+Zaakceptowane obrazy znajdują się wyłącznie pod katalogami `16x9/`, `21x9/`
+i `32x9/`. Skanowanie jest rekurencyjne, a kolejność rotacji wynika z nazw
+plików z pominięciem nazw podkatalogów. Dzięki temu warianty można grupować
+według uniwersum bez rozjechania wspólnego indeksu scen między proporcjami.
+Kolekcja `16x9/` używa podkatalogów `frieren/`, `chainsaw-man/`,
+`solo-leveling/`, `valheim/`, `vrising/`, `palworld/` i `demon-slayer/`.
+Zawartość katalogów proporcji jest archiwum wynikowym: porządki w zapleczu nie
 mogą usuwać, zmieniać nazw ani nadpisywać tych plików. Czarne obrazy w
 `fallback/` zapewniają bezpieczny stan konfiguracji.
 

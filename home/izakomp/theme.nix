@@ -59,20 +59,41 @@ in
     critical = colors.red;
   };
 
-  # Every regular PNG placed directly in an aspect directory joins the rotation
-  # after the next activation. Alphabetical order must describe the same scenes
-  # in every family so mixed-aspect monitors keep a shared scene index.
+  # Every regular PNG below an aspect directory joins the rotation after the
+  # next activation. Sort by filename rather than subdirectory so grouping by
+  # universe cannot desynchronize the shared scene index across aspect families.
   wallpapers = let
     wallpapersIn = directory:
       let
-        entries = builtins.readDir directory;
-        pngNames = builtins.filter
-          (name:
-            entries.${name} == "regular"
-            && builtins.match ".*[.]png" name != null)
-          (builtins.attrNames entries);
+        collectPngs = current:
+          let
+            entries = builtins.readDir current;
+          in
+          lib.concatMap
+            (name:
+              let
+                entryType = entries.${name};
+                path = current + "/${name}";
+              in
+              if entryType == "directory" then
+                collectPngs path
+              else
+                lib.optional
+                  (entryType == "regular" && builtins.match ".*[.]png" name != null)
+                  path)
+            (builtins.attrNames entries);
+
+        byFilename = left: right:
+          let
+            leftName = builtins.baseNameOf (toString left);
+            rightName = builtins.baseNameOf (toString right);
+          in
+          if leftName == rightName then
+            toString left < toString right
+          else
+            leftName < rightName;
       in
-      map (name: directory + "/${name}") pngNames;
+      builtins.sort byFilename (collectPngs directory);
 
   in {
     aspect16x9 = wallpapersIn ./wallpapers/16x9;

@@ -141,10 +141,12 @@ generowanej przez Home Managera.
 
 Awww korzysta z zaakceptowanych kolekcji Biscuit OLED w katalogach `16x9/`,
 `21x9/` i `32x9/`. Przy ewaluacji konfiguracja automatycznie włącza każdy
-zwykły plik `.png` umieszczony bezpośrednio w tych katalogach i porządkuje
-listy alfabetycznie. Wszystkie trzy rodziny muszą mieć tę samą liczbę plików,
-a ich kolejność nazw musi opisywać te same sceny, aby wspólny indeks rotatora
-pozostał poprawny na monitorach o różnych proporcjach. Ostatnie 18 nowych scen
+zwykły plik `.png` umieszczony w dowolnym podkatalogu i porządkuje listy
+alfabetycznie według nazwy pliku, niezależnie od ścieżki. Wszystkie trzy rodziny
+muszą mieć tę samą liczbę plików, a ich kolejność nazw musi opisywać te same
+sceny, aby wspólny indeks rotatora pozostał poprawny na monitorach o różnych
+proporcjach. Kolekcja 16:9 jest pogrupowana w katalogi uniwersów; ten podział nie
+zmienia kolejności rotacji. Ostatnie 18 nowych scen
 dzieli się po równo na Frieren, Chainsaw Man, Solo Leveling, Valheim, V Rising
 i Palworld, zachowując oryginalny język wizualny każdego świata bez crossoverów
 i technicznych metafor. Cała akcja, postacie i najmocniejsze światła znajdują
