@@ -4,6 +4,7 @@
   imports = [
     ./hardware-configuration.nix
     ../../modules/common.nix
+    ../../modules/boot-splash.nix
     ../../modules/desktop.nix
     ../../modules/lan-mouse.nix
     ../../modules/development-core.nix
@@ -57,6 +58,10 @@
     isNormalUser = true;
     description = userDescription;
     extraGroups = [
+      # Voxtype's built-in Caps Lock hotkey reads evdev directly. Membership
+      # exposes raw input events, so keep it limited to this trusted desktop
+      # account and do not add it to shared profiles.
+      "input"
       "networkmanager"
       "wheel"
     ];

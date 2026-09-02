@@ -4,6 +4,7 @@
   imports = [
     ./hardware-configuration.nix
     ../../modules/common.nix
+    ../../modules/boot-splash.nix
     ../../modules/desktop.nix
     ../../modules/lan-mouse.nix
     ../../modules/development-core.nix

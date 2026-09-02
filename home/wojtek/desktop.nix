@@ -100,7 +100,8 @@ in
       volume-max = 100;
     };
     scriptOpts.uosc = {
-      autoload = true;
+      # Keep a launch scoped to its selected file rather than queuing siblings.
+      autoload = false;
       animation_duration = 100;
       border_radius = 10;
       color = builtins.concatStringsSep "," [
@@ -729,6 +730,20 @@ in
   # Register the graphical Yazi launcher. Foot ships three desktop entries in
   # one package, so keep only the regular terminal visible in application menus.
   xdg.desktopEntries = {
+    "org.polamaniec.VoxtypeConfigure" = {
+      name = "Voxtype Configure";
+      genericName = "Konfiguracja dyktowania głosowego";
+      comment = "Skonfiguruj lokalne polskie dyktowanie Voxtype";
+      exec = "foot --app-id=org.polamaniec.voxtype-configure -e voxtype configure";
+      icon = "audio-input-microphone";
+      terminal = false;
+      startupNotify = false;
+      categories = [
+        "Settings"
+        "Utility"
+      ];
+      settings.Keywords = "voxtype;voice;dictation;speech;microphone;whisper;dyktowanie;głos;mikrofon;";
+    };
     "org.polamaniec.Yazi" = {
       name = "Yazi";
       genericName = "Menedżer plików";

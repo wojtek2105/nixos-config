@@ -6,6 +6,7 @@ let
   scripts = import ./scripts.nix { inherit pkgs; };
   amdGpuEnabled = desktopFeatures.amdGpu or false;
   dockerEnabled = desktopFeatures.docker or false;
+  laptopEnabled = desktopFeatures.laptop or false;
   screenRecordingEnabled = desktopFeatures.screenRecording or false;
   personalApps = desktopFeatures.personalApps or { };
   discordEnabled = personalApps.discord or false;
@@ -36,6 +37,7 @@ let
     (shortcut "Super+L" "Zablokuj sesję przez Hyprlock")
     (shortcut "Super+Escape" "Otwórz menu zasilania Wleave")
     (shortcut "Super+Shift+V" "Wybierz wpis historii schowka i wklej go")
+    (shortcut "Super+V" "Włącz lub zakończ polskie dyktowanie Voxtype")
     (shortcut "Super+F1" "Otwórz to centrum skrótów")
   ]
   ++ lib.optionals plexampEnabled [
@@ -86,8 +88,9 @@ let
     (shortcut "Play/Pause" "Wstrzymaj lub wznów odtwarzanie przez Playerctl")
     (shortcut "Następny / poprzedni" "Zmień utwór przez Playerctl")
   ]
-  ++ lib.optionals (desktopFeatures.laptop or false) [
+  ++ lib.optionals laptopEnabled [
     (shortcut "Jaśniej / ciemniej" "Zmień jasność ekranu o 5% i pokaż OSD")
+    (shortcut "Fn+F10" "Włącz lub wyłącz touchpad i pokaż OSD")
   ];
 
   yaziShortcuts = [
@@ -479,6 +482,7 @@ let
       foot
       fuzzel
       thunar
+      voxtype-vulkan
     ] ++ [
       power-menu
       screenshot-menu
@@ -486,46 +490,182 @@ let
       shortcut-menu
     ] ++ lib.optionals screenRecordingEnabled [ gsr-control ];
     text = ''
-      choice="$(
-        {
-          printf '%s\n' \
-            '󰀻  Aplikacje' \
-            '󰆍  Terminal' \
-            '󰖟  Przeglądarka Zen' \
-            '󰉋  Pliki w Yazi' \
-            '󰄀  Zrzut ekranu' \
-            '󰃀  Historia schowka' \
-            '󰈙  Pomoc skrótów' \
-            '󰐥  Zasilanie'
-          ${lib.optionalString screenRecordingEnabled "printf '%s\\n' '󰑋  Nagrywanie ekranu' '󰆉  Zapisz replay' '󰚀  Przełącz bufor replay'"}
-        } | fuzzel \
+      choose() {
+        local prompt="$1"
+        local lines="$2"
+        local previous_selection="''${3:-}"
+        local selection
+        local status=0
+        local -a select_argument=()
+
+        # Fuzzel can preselect an entry. Keep navigation state only for this
+        # menu process: reopening Super+D intentionally starts at the top.
+        [[ -n "$previous_selection" ]] && select_argument=(--select "$previous_selection")
+
+        selection="$(fuzzel \
+          --config=${config.xdg.configHome}/fuzzel/global-menu.ini \
           --dmenu \
           --only-match \
           --minimal-lines \
-          --prompt 'Pulpit  ›  ' \
-          --width 48 \
-          --lines ${if screenRecordingEnabled then "11" else "8"}
-      )" || exit 0
+          --prompt "$prompt  ›  " \
+          --width 50 \
+          --lines "$lines" \
+          "''${select_argument[@]}")" || status=$?
 
-      # Every label maps to a fixed command. The selection is never evaluated
-      # as shell input, so menu text cannot become an executable command.
-      case "$choice" in
-        *"Aplikacje") exec fuzzel ;;
-        *"Terminal") exec foot ;;
-        *"Przeglądarka Zen") exec zen-run-or-raise ;;
-        *"Pliki w Yazi") exec yazi-file-manager ;;
-        *"Zrzut ekranu") exec screenshot-menu ;;
-        *"Nagrywanie ekranu") exec gsr-control toggle-show ;;
-        *"Zapisz replay") exec gsr-control replay-save ;;
-        *"Przełącz bufor replay") exec gsr-control toggle-replay ;;
-        *"Historia schowka") exec clipboard-history ;;
-        *"Pomoc skrótów") exec shortcut-menu ;;
-        *"Zasilanie") exec power-menu ;;
-        *) exit 0 ;;
-      esac
+        case "$status" in
+          0) printf 'select\t%s\n' "$selection" ;;
+          10) printf 'right\t%s\n' "$selection" ;;
+          11) printf 'left\t%s\n' "$selection" ;;
+          *) return 1 ;;
+        esac
+      }
+
+      # Keep the root compact and expose related actions one level deeper.
+      # Every leaf maps to a fixed command; labels are never evaluated as shell.
+      root_selection=""
+      apps_selection=""
+      capture_selection=""
+      tools_selection=""
+      system_selection=""
+      help_selection=""
+      while true; do
+        menu_result="$({
+          printf '%s\n' \
+            '󰀻  Aplikacje' \
+            '󰄀  Przechwytywanie' \
+            '󰋭  Narzędzia' \
+            '󱓞  System i pulpit' \
+            '󰈙  Pomoc skrótów' \
+            '󰐥  Zasilanie'
+        } | choose 'Pulpit' 6 "$root_selection")" || exit 0
+        IFS=$'\t' read -r navigation choice <<< "$menu_result"
+        [[ "$navigation" == left ]] && exit 0
+
+        case "$choice" in
+          *"Aplikacje")
+            root_selection="$choice"
+            menu_result="$({
+              printf '%s\n' \
+                '󰀻  Launcher aplikacji' \
+                '󰆍  Terminal Foot' \
+                '󰖟  Przeglądarka Zen' \
+                '󰉋  Pliki w Yazi' \
+                '󰉖  Pliki w Thunarze' \
+                '  Wróć'
+            } | choose 'Pulpit  ›  Aplikacje' 6 "$apps_selection")" || exit 0
+            IFS=$'\t' read -r navigation action <<< "$menu_result"
+            apps_selection="$action"
+            [[ "$navigation" == left ]] && continue
+            case "$action" in
+              *"Launcher aplikacji") exec fuzzel ;;
+              *"Terminal Foot") exec foot ;;
+              *"Przeglądarka Zen") exec zen-run-or-raise ;;
+              *"Pliki w Yazi") exec yazi-file-manager ;;
+              *"Pliki w Thunarze") exec thunar ;;
+              *"Wróć") continue ;;
+            esac
+            ;;
+          *"Przechwytywanie")
+            root_selection="$choice"
+            menu_result="$({
+              printf '%s\n' \
+                '󰄀  Zrzut ekranu' \
+                '󰍹  Podgląd karty przechwytującej'
+              ${lib.optionalString screenRecordingEnabled "printf '%s\\n' '󰑋  Nakładka GPU Screen Recorder' '󰆉  Zapisz replay' '󰚀  Przełącz bufor replay'"}
+              printf '%s\n' '  Wróć'
+            } | choose 'Pulpit  ›  Przechwytywanie' ${if screenRecordingEnabled then "6" else "3"} "$capture_selection")" || exit 0
+            IFS=$'\t' read -r navigation action <<< "$menu_result"
+            capture_selection="$action"
+            [[ "$navigation" == left ]] && continue
+            case "$action" in
+              *"Zrzut ekranu") exec screenshot-menu ;;
+              *"Podgląd karty przechwytującej") exec usb-capture-viewer ;;
+              *"Nakładka GPU Screen Recorder") exec gsr-control toggle-show ;;
+              *"Zapisz replay") exec gsr-control replay-save ;;
+              *"Przełącz bufor replay") exec gsr-control toggle-replay ;;
+              *"Wróć") continue ;;
+            esac
+            ;;
+          *"Narzędzia")
+            root_selection="$choice"
+            menu_result="$({
+              printf '%s\n' \
+                '󰑋  Dyktowanie Voxtype (Super+V)' \
+                '󰍹  Stan Voxtype w terminalu' \
+                '󰍉  Konfiguruj Voxtype' \
+                '󰃀  Historia schowka' \
+                '  Wróć'
+            } | choose 'Pulpit  ›  Narzędzia' 5 "$tools_selection")" || exit 0
+            IFS=$'\t' read -r navigation action <<< "$menu_result"
+            tools_selection="$action"
+            [[ "$navigation" == left ]] && continue
+            case "$action" in
+              *"Dyktowanie Voxtype") exec voxtype record toggle ;;
+              *"Stan Voxtype") exec foot -e voxtype info ;;
+              *"Konfiguruj Voxtype") exec foot --app-id=org.polamaniec.voxtype-configure -e voxtype configure ;;
+              *"Historia schowka") exec clipboard-history ;;
+              *"Wróć") continue ;;
+            esac
+            ;;
+          *"System i pulpit")
+            root_selection="$choice"
+            menu_result="$({
+              printf '%s\n' \
+                '󱍷  Następna tapeta' \
+                '󱄎  Wygaszacz ekranu'
+              ${lib.optionalString laptopEnabled "printf '%s\\n' '󱠿  Przełącz touchpad (Fn+F10)'"}
+              printf '%s\n' '  Wróć'
+            } | choose 'Pulpit  ›  System' ${if laptopEnabled then "4" else "3"} "$system_selection")" || exit 0
+            IFS=$'\t' read -r navigation action <<< "$menu_result"
+            system_selection="$action"
+            [[ "$navigation" == left ]] && continue
+            case "$action" in
+              *"Następna tapeta") exec ${pkgs.systemd}/bin/systemctl --user start rotate-wallpaper.service ;;
+              *"Wygaszacz ekranu") exec screensaver ;;
+              *"Przełącz touchpad") exec touchpad-control toggle ;;
+              *"Wróć") continue ;;
+            esac
+            ;;
+          *"Pomoc skrótów")
+            root_selection="$choice"
+            menu_result="$({
+              printf '%s\n' \
+                '󰣇  System i aplikacje' \
+                '󰖲  Okna i pulpity' \
+                '󰄀  Zrzuty, schowek i nagrywanie' \
+                '󰋋  Multimedia i laptop' \
+                '󰇥  Yazi' \
+                '  tmux' \
+                '  Neovim' \
+                '󰐥  Menu zasilania' \
+                '󰈙  Wszystkie skróty' \
+                '  Wróć'
+            } | choose 'Pulpit  ›  Pomoc' 10 "$help_selection")" || exit 0
+            IFS=$'\t' read -r navigation action <<< "$menu_result"
+            help_selection="$action"
+            [[ "$navigation" == left ]] && continue
+            case "$action" in
+              *"System i aplikacje") shortcut-menu system || true ;;
+              *"Okna i pulpity") shortcut-menu windows || true ;;
+              *"Zrzuty, schowek i nagrywanie") shortcut-menu capture || true ;;
+              *"Multimedia i laptop") shortcut-menu media || true ;;
+              *"Yazi") shortcut-menu yazi || true ;;
+              *"tmux") shortcut-menu tmux || true ;;
+              *"Neovim") shortcut-menu nvim || true ;;
+              *"Menu zasilania") shortcut-menu power || true ;;
+              *"Wszystkie skróty") shortcut-menu all || true ;;
+              *"Wróć") continue ;;
+            esac
+            # The child section returns after Esc or ←; reopen the root menu
+            # instead of trapping the user in an unrelated Fuzzel process.
+            continue
+            ;;
+          *"Zasilanie") exec power-menu ;;
+          *) exit 0 ;;
+        esac
+      done
     '';
   };
-
   shortcut-menu = pkgs.writeShellApplication {
     name = "shortcut-menu";
     runtimeInputs = [ pkgs.fuzzel ];
@@ -596,6 +736,7 @@ let
         # Sixteen 34 px rows leave room for the prompt and padding on the
         # laptop's 800 px logical display; longer sections remain scrollable.
         "$renderer" | fuzzel \
+          --config=${config.xdg.configHome}/fuzzel/global-menu.ini \
           --dmenu \
           --only-match \
           --minimal-lines \
@@ -1004,6 +1145,19 @@ let
 in
 
 {
+  # Only the hierarchical desktop menu owns horizontal navigation. Keeping
+  # these overrides separate preserves text-cursor arrows in every other
+  # Fuzzel launcher and picker.
+  xdg.configFile."fuzzel/global-menu.ini".text = ''
+    include=${config.xdg.configHome}/fuzzel/fuzzel.ini
+
+    [key-bindings]
+    cursor-left=Control+b
+    cursor-right=Control+f
+    custom-1=Right
+    custom-2=Left
+  '';
+
   imports = [
     inputs.zen-browser.homeModules.twilight
     ./agent-manager.nix

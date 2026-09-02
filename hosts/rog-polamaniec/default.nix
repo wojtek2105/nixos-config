@@ -68,6 +68,15 @@
   # Wartość jest używana tylko wtedy, gdy `features.laptop = true`.
   backlightDevice = "amdgpu_bl2";
 
+  # Ploopy Adept używa liniowego ruchu bez przyspieszania; sensitivity mieści
+  # się w zakresie od -1 do 1, gdzie -0.5 umiarkowanie spowalnia wyłącznie kursor
+  # trackballa. Nazwę urządzenia można potwierdzić po aktywacji przez:
+  # hyprctl devices
+  trackball = {
+    name = "ploopy-corporation-ploopy-adept-trackball-mouse";
+    sensitivity = -0.5;
+  };
+
   # Źródło obrazu dla replay GPU Screen Recorder.
   # "focused_monitor" automatycznie wybiera monitor aktywny w Hyprlandzie
   # w chwili uruchamiania replay. Nie przełącza nagrania między monitorami

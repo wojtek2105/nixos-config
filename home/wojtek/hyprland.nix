@@ -1,4 +1,4 @@
-{ backlightDevice, desktopFeatures, inputs, lib, pkgs, uiScale, username, ... }:
+{ backlightDevice, desktopFeatures, inputs, lib, pkgs, trackball ? null, uiScale, username, ... }:
 
 let
   theme = import ./theme.nix { inherit inputs; };
@@ -9,6 +9,13 @@ let
   personalApps = desktopFeatures.personalApps or { };
   easyeffectsEnabled = personalApps.easyeffects or false;
   plexampEnabled = personalApps.plexamp or false;
+  # Hyprlock accepts raster images, not SVG. Rasterise the same full Tux +
+  # TOTEM mascot as Plymouth so locking needs no converter or extra process.
+  wojtechLockMascot = pkgs.runCommand "wojtech-tux-totem-lock.png" {
+    nativeBuildInputs = [ pkgs.librsvg ];
+  } ''
+    rsvg-convert --width 220 ${../../assets/branding/wojtech-tux-totem-transparent.svg} > "$out"
+  '';
 
   wallpaperPathsFor = wallpapers:
     lib.concatMapStringsSep "\n        "
@@ -160,6 +167,85 @@ let
     '';
   };
 
+  touchpad-control = pkgs.writeShellApplication {
+    name = "touchpad-control";
+    runtimeInputs = with pkgs; [
+      coreutils
+      hyprland
+      jq
+      libnotify
+      swayosd
+    ];
+    text = ''
+      action="''${1:-toggle}"
+      case "$action" in
+        enable|disable|toggle) ;;
+        *)
+          printf 'Użycie: touchpad-control {enable|disable|toggle}\n' >&2
+          exit 2
+          ;;
+      esac
+
+      mapfile -t touchpads < <(
+        hyprctl devices -j \
+          | jq -r '.mice[]? | select((.name // "") | test("touchpad"; "i")) | .name'
+      )
+
+      if (( ''${#touchpads[@]} == 0 )); then
+        notify-send --urgency=critical \
+          "Touchpad" \
+          "Hyprland nie zgłosił urządzenia z nazwą touchpad. Sprawdź: hyprctl devices"
+        exit 1
+      fi
+
+      # Hyprland's Lua API can set a per-device `enabled` value, but cannot read
+      # it back reliably. Scope the tiny state file to one compositor instance so
+      # a restarted session never inherits stale disabled state.
+      state_file="''${XDG_RUNTIME_DIR:?}/touchpad-control-''${HYPRLAND_INSTANCE_SIGNATURE:?}.state"
+      current=enabled
+      if [[ -r "$state_file" ]]; then
+        read -r current < "$state_file" || current=enabled
+      fi
+
+      case "$action" in
+        enable) next=enabled ; enabled=true ;;
+        disable) next=disabled ; enabled=false ;;
+        toggle)
+          if [[ "$current" == disabled ]]; then
+            next=enabled
+            enabled=true
+          else
+            next=disabled
+            enabled=false
+          fi
+          ;;
+      esac
+
+      for device in "''${touchpads[@]}"; do
+        # Hyprland normalizes device names, making the JSON string returned by
+        # jq safe to pass back to the Lua configuration API without guessing a
+        # machine-specific touchpad identifier.
+        lua_name="$(jq --null-input --arg name "$device" '$name')"
+        hyprctl eval \
+          "hl.device({ name = $lua_name, enabled = $enabled })" \
+          >/dev/null
+      done
+
+      printf '%s\n' "$next" > "$state_file"
+      if [[ "$next" == enabled ]]; then
+        message='Touchpad włączony'
+      else
+        message='Touchpad wyłączony'
+      fi
+
+      swayosd-client \
+        --custom-message="$message" \
+        --custom-icon=input-touchpad-symbolic \
+        >/dev/null 2>&1 \
+        || notify-send "Touchpad" "$message"
+    '';
+  };
+
 in
 {
   xdg.configFile."uwsm/env".text = ''
@@ -188,7 +274,7 @@ in
     # parallel Hyprland target stops graphical-session.target during startup,
     # which tears down the UWSM compositor immediately after login.
     systemd.enable = false;
-    extraLuaFiles."config" = builtins.replaceStrings
+    extraLuaFiles."config" = (builtins.replaceStrings
       [
         "@POLKIT_AGENT@"
         "@UWSM_FINALIZE@"
@@ -226,9 +312,19 @@ in
         (lib.optionalString laptopEnabled ''
           bind_exec("XF86MonBrightnessUp", "swayosd-client --brightness=+5 --device=${backlightDevice}", { locked = true, repeating = true })
           bind_exec("XF86MonBrightnessDown", "swayosd-client --brightness=-5 --device=${backlightDevice}", { locked = true, repeating = true })
+          bind_exec("XF86TouchpadToggle", "touchpad-control toggle", { locked = true })
         '')
       ]
-      (builtins.readFile ./hyprland.lua);
+      (builtins.readFile ./hyprland.lua))
+      + lib.optionalString (trackball != null) ''
+        -- Trackballs need a per-device setting: global pointer input settings
+        -- would also affect the touchpad and every other mouse.
+        hl.device({
+          name = "${trackball.name}",
+          accel_profile = "flat",
+          sensitivity = ${toString trackball.sensitivity},
+        })
+      '';
 
     settings = {
       # The actual configuration is kept in hyprland.lua. Home Manager writes
@@ -249,6 +345,16 @@ in
         color = "rgba(${c.background}ff)";
         blur_passes = 3;
         blur_size = 8;
+      };
+      image = {
+        monitor = "";
+        path = "${wojtechLockMascot}";
+        # 124 px keeps the full mascot readable while the clock remains the
+        # primary visual anchor on compact displays.
+        size = 124;
+        position = "0, 184";
+        halign = "center";
+        valign = "center";
       };
       input-field = {
         monitor = "";
@@ -280,7 +386,10 @@ in
 
   services.awww.enable = true;
 
-  home.packages = lib.optionals laptopEnabled [ scripts.display-power-refresh ];
+  home.packages = lib.optionals laptopEnabled [
+    scripts.display-power-refresh
+    touchpad-control
+  ];
 
   systemd.user.services.display-power-refresh = lib.mkIf laptopEnabled {
     Unit = {

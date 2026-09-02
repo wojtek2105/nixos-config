@@ -130,6 +130,11 @@ Przed kontynuacją sprawdź szczególnie:
 - moduły kontrolera dysku i CPU,
 - `nixpkgs.hostPlatform`.
 
+Dla komputerów ARM64 ustaw w manifeście hosta `system = "aarch64-linux"`.
+Flake przekazuje tę wartość do `nixosSystem`; nie zmieniaj globalnie
+architektury innych hostów. Wygenerowany plik sprzętowy powinien również
+wykazywać `nixpkgs.hostPlatform = "aarch64-linux"`.
+
 ## 4. Konfiguracja `hosts/nowy-host/default.nix`
 
 Poniższy szablon pokazuje wszystkie obsługiwane pola manifestu hosta:
@@ -143,6 +148,9 @@ Poniższy szablon pokazuje wszystkie obsługiwane pola manifestu hosta:
   # Flake utworzy użytkownika i skonfiguruje dla niego Home Managera, greetd,
   # grupy, ścieżki profilu, Ironbar oraz katalog zapisu replayów.
   username = "nowy-user";
+
+  # Platforma hosta. Domyślnie jest to x86_64-linux; dla Snapdragonów użyj:
+  # system = "aarch64-linux";
 
   # Opcjonalna przyjazna nazwa widoczna w narzędziach systemowych.
   # Pominięcie pola powoduje użycie wartości `username`.
@@ -332,7 +340,7 @@ według mapy `features` z manifestu. Nie należy powtarzać tych importów w
 | Moduł | Co włącza | Kiedy importować |
 |---|---|---|
 | `common.nix` | Flakes, ZRAM skalowany do 50% RAM-u, strefę Warszawa, polskie locale, Git, curl, jq, fd i ripgrep | Praktycznie na każdym hoście |
-| `desktop.nix` | Hyprland/UWSM, automatyczną sesję greetd dla wybranego użytkownika, PipeWire, Bluetooth, awaryjny Thunar, Polkit i fonty | Na hostach graficznych |
+| `desktop.nix` | Greetd/Tuigreet z logowaniem hasłem i uruchamianiem Hyprlanda przez UWSM, PipeWire, Bluetooth, awaryjny Thunar, Polkit i fonty | Na hostach graficznych |
 | `development-core.nix` | Fish, Codex i GNU Make | Gdy potrzebne są podstawowe narzędzia deweloperskie bez Dockera |
 | `docker.nix` | Docker uruchamiany ręcznie, grupę `docker`, Compose, lazydocker i lazyssh | Gdy `features.docker = true` |
 | `gaming.nix` | Steam, Proton-GE, Gamescope, GameMode oraz grafikę i ALSA 32-bit | Gdy `features.gaming = true` |
@@ -523,11 +531,9 @@ sync
 reboot
 ```
 
-Obecny `modules/desktop.nix` uruchamia pierwszą sesję Hyprlanda automatycznie
-dla użytkownika z manifestu. Hasło nadal jest potrzebne do `sudo`. Jeśli siostra
-ma dostawać ekran logowania po każdym uruchomieniu, należy przed instalacją
-dodać osobną, sterowaną z manifestu opcję zamiast usuwać autologowanie globalnie
-dla wszystkich hostów.
+Obecny `modules/desktop.nix` pokazuje ekran Tuigreet po każdym uruchomieniu.
+Hasło użytkownika jest wymagane przed rozpoczęciem sesji Hyprlanda, którą
+uruchamia UWSM; hasło pozostaje też wymagane do `sudo`.
 
 ## 11. Kontrola po uruchomieniu
 

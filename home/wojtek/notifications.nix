@@ -41,7 +41,9 @@ in
       ];
       widget-config = {
         title = {
-          text = "Powiadomienia";
+          # The bell is a Nerd Font glyph already loaded by SwayNC's interface
+          # font; it provides hierarchy without an extra image asset.
+          text = "  Powiadomienia";
           clear-all-button = true;
           button-text = "Wyczyść wszystko";
         };

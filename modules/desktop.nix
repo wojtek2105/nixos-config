@@ -7,30 +7,31 @@ let
     "text=white"
     "time=yellow"
     "container=black"
-    "title=bright-magenta"
+    "title=bright-white"
     "greet=bright-white"
     "prompt=yellow"
     "input=bright-white"
-    "action=bright-black"
+    "action=bright-magenta"
     "button=bright-magenta"
   ];
+
+  # Keep the login path independent of a mutable session menu: each successful
+  # password entry starts the supported UWSM-managed Hyprland session.
+  uwsmHyprlandCommand = "${pkgs.uwsm}/bin/uwsm start -e -D Hyprland hyprland.desktop";
 
   tuigreetCommand = lib.escapeShellArgs [
     "${pkgs.tuigreet}/bin/tuigreet"
     "--cmd"
-    "${pkgs.uwsm}/bin/uwsm start -e -D Hyprland hyprland.desktop"
+    uwsmHyprlandCommand
     "--user"
     username
     "--remember"
-    "--remember-user-session"
     "--user-menu"
-    "--sessions"
-    "/run/current-system/sw/share/wayland-sessions"
     "--title"
     "--custom-title"
-    " Zaloguj się "
+    "WOJTECH  //  ${hostName}"
     "--greeting"
-    "RED  >  GREEN  >  REFACTOR  |  ${hostName}"
+    "Lekki · szybki · nowoczesny Linux na NixOS"
     "--greet-align"
     "center"
     "--time"
@@ -39,9 +40,9 @@ let
     "--width"
     "54"
     "--window-padding"
-    "2"
+    "3"
     "--container-padding"
-    "2"
+    "3"
     "--prompt-padding"
     "1"
     "--asterisks"
@@ -49,8 +50,9 @@ let
     "●"
     "--theme"
     tuigreetTheme
-    # A quiet TDD-like stream: green test heads, Biscuit-pink active checks and
-    # a dark failure trail. Twelve FPS keeps the greeter responsive and cheap.
+    # A restrained Matrix field restores the TDD character without competing
+    # with the password form. At 12 FPS and short trails it stays legible and
+    # costs little during the brief, otherwise idle greeter session.
     "--background"
     "matrix"
     "--background-fps"
@@ -96,15 +98,10 @@ in
 
   services.greetd = {
     enable = true;
-    # Tuigreet owns VT1 after autologin ends; keep boot messages from drawing
-    # over its centered form and corrupting the terminal UI.
+    # Tuigreet owns VT1 from boot; keep boot messages from drawing over its
+    # centered form and corrupting the terminal UI.
     useTextGreeter = true;
     settings = {
-      initial_session = {
-        command = "${pkgs.uwsm}/bin/uwsm start -e -D Hyprland hyprland.desktop";
-        user = username;
-      };
-
       default_session = {
         command = tuigreetCommand;
         user = "greeter";

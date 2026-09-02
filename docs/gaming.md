@@ -10,12 +10,17 @@ klienta przywraca poprzedni stan.
 
 Po aktywowaniu GameMode dla gry moduł `modules/gaming.nix`:
 
-- ustawia governor CPU i profil platformy na `performance`,
+- ustawia governor CPU na `performance`,
 - nadaje grze `nice -10`,
 - ustawia najwyższy skonfigurowany priorytet I/O (`ioprio = 0`),
 - blokuje wygaszacz na czas działania klienta,
 - pozostawia `scx_bpfland` jako aktywny scheduler,
 - nie podkręca GPU i nie wymusza ręcznego poziomu wydajności karty.
+
+Na hoście ASUS `modules/hardware-asus-laptop.nix` dodaje do GameMode hooki
+`asusctl`: pierwsza uruchomiona gra przełącza profil laptopa na `Performance`,
+a zamknięcie ostatniej przywraca `Balanced` przy zasilaczu albo `Quiet` na
+baterii. Nie zmienia to ustawień Hyprlanda ani czułości myszy/trackballa.
 
 Daemon jest aktywowany na żądanie przez D-Bus. Nie trzeba uruchamiać ani włączać
 go ręcznie. Po pierwszym aktywowaniu konfiguracji należy ponownie zalogować się
@@ -107,6 +112,12 @@ polecenie powinno ponownie pokazać stan nieaktywny. Bardziej szczegółowe logi
 ```bash
 systemctl --user status gamemoded.service
 journalctl --user -u gamemoded.service -b --no-pager
+```
+
+Na ASUS-ie aktywny profil można równolegle potwierdzić przez:
+
+```bash
+asusctl profile get
 ```
 
 Aktywny GameMode nie oznacza automatycznie wyższego średniego FPS. Jego zadaniem

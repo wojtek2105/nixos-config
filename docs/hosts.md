@@ -20,12 +20,35 @@ Obecnie repozytorium zawiera jeden gotowy do aktywacji host:
 Laptop to ASUS ROG Zephyrus G14 GA402RK. Moduł AMD zapewnia grafikę i wczesne
 ładowanie `amdgpu`. Niezależny moduł ASUS używa najnowszego jądra z przypiętego
 `nixpkgs`, ładuje `asus-armoury` oraz uruchamia `asusd`; polecenie `asusctl`
-i ROG Control Center są dostępne deklaratywnie.
+i ROG Control Center są dostępne deklaratywnie. `asusd` wybiera profil
+`Balanced` na zasilaczu i `Quiet` na baterii. Każdy profil ma osobną,
+deklaratywną krzywą wentylatorów CPU i GPU, która rozpoczyna chłodzenie
+wcześniej od ustawień firmware i dochodzi do pełnych obrotów przy 100°C.
+`Performance` nie jest wymuszany na pulpicie. Pierwsza gra uruchomiona przez
+GameMode przełącza go tymczasowo przez `asusctl`, używając wtedy najbardziej
+agresywnej z trzech krzywych; po zamknięciu ostatniej gry wraca `Balanced` na
+zasilaczu lub `Quiet` na baterii. Na zasilaniu AC ten profil stosuje maksima
+zgłaszane przez firmware: 80 W dla APU i 115 W dla całej platformy. Na baterii
+ręczny power tuning pozostaje wyłączony. Po
+wczytaniu wartości początkowych `asusd` zapisuje tuning oraz krzywe jako swój
+mutowalny stan; dalsze zmiany z ROG Control Center przetrwają restart usługi.
 
 Flake automatycznie wystawia katalogi `hosts/<nazwa>/` zawierające `default.nix`
 i własny `hardware-configuration.nix`.
 Allowlista w `.gitignore` decyduje, które hosty i profile użytkowników mogą być
 wersjonowane. Sekrety, hasła, profile Wi-Fi i klucze SSH pozostają poza repo.
+
+## ASUS Vivobook S 15 ze Snapdragonem
+
+`hosts/armaniec/` jest przygotowany jako host `aarch64-linux` dla Vivobooka S
+15 ze Snapdragonem X Elite. Używa pełnego profilu `home/wojtek` oraz
+zewnętrznego modułu X Elite z device tree, kernelem, initrd i firmware dla tego
+modelu. Obejmuje Ironbar, kompletną sesję Hyprlanda i narzędzia użytkownika,
+w tym Zen Browser, Codex i GNU Make. Gaming, Docker, VR, nagrywanie, metryki
+AMD oraz aplikacje opcjonalne pozostają wyłączone; host nie importuje modułów
+AMD GPU ani ASUS ROG. Katalog celowo nie zawiera `hardware-configuration.nix`,
+więc flake nie wystawi outputu, dopóki plik z własnymi UUID-ami nie zostanie
+dodany na konkretnym laptopie. Instrukcja znajduje się w jego `README.md`.
 
 ## White Monster
 

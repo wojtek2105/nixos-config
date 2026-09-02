@@ -109,6 +109,7 @@
         "kickstart-nvim": "kickstart-nvim",
         "nixpkgs": "nixpkgs",
         "wlctl": "wlctl",
+        "x1e-nixos-config": "x1e-nixos-config",
         "zen-browser": "zen-browser"
       }
     },
@@ -129,6 +130,27 @@
       "original": {
         "owner": "aashish-thapa",
         "repo": "wlctl",
+        "type": "github"
+      }
+    },
+    "x1e-nixos-config": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1760225811,
+        "narHash": "sha256-hq14CPivJF7VVG92XoZgvfYcHQHXC/nIwktIp5yyrhQ=",
+        "owner": "JamiKettunen",
+        "repo": "x1e-vivobook-nixos-config",
+        "rev": "83f1db015007018330871d99cbe07a78da385192",
+        "type": "github"
+      },
+      "original": {
+        "owner": "JamiKettunen",
+        "ref": "vivobook",
+        "repo": "x1e-vivobook-nixos-config",
         "type": "github"
       }
     },

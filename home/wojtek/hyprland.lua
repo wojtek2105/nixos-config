@@ -19,6 +19,9 @@ hl.env("ELECTRON_OZONE_PLATFORM_HINT", "auto")
 hl.config({
   input = {
     kb_layout = "pl",
+    -- Disable Caps Lock for every keyboard in Wojtek's Hyprland session. The
+    -- physical key still reaches Voxtype's separate evdev hotkey listener.
+    kb_options = "caps:none",
     follow_mouse = 1,
     sensitivity = 0,
     touchpad = {

@@ -44,6 +44,11 @@ na hostach z włączonymi metrykami AMD GPU.
 Opcjonalny harness schedulerów pozostaje osobnym outputem flake oraz modułem
 `scheduler-benchmark.nix` sterowanym przez `features.schedulerBenchmark`.
 Domyślne `false` nie dodaje jego narzędzi do closure hosta i nie uruchamia usług.
+
+`boot-splash.nix` jest wspólną warstwą pierwszego kontaktu z systemem: uruchamia
+Plymouth jeszcze w initrd, łączy paletę Biscuit ze statyczną maskotką Tux i
+ogranicza zwykły strumień logów. Diagnostyka pozostaje dostępna przez `Esc` w
+czasie bootu.
 Wspólny `modules/common.nix` włącza ZRAM o pojemności 50% fizycznej pamięci;
 limit skaluje się automatycznie na każdym hoście i nie zależy od konta
 użytkownika ani nie rezerwuje z góry połowy RAM-u. Ten sam moduł ustawia

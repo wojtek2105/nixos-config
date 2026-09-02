@@ -25,6 +25,8 @@
 !/hosts/white-monster/**
 !/hosts/izakomp/
 !/hosts/izakomp/**
+!/hosts/armaniec/
+!/hosts/armaniec/**
 
 # User home configurations explicitly approved for versioning
 /home/*/

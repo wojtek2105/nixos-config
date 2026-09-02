@@ -355,7 +355,7 @@ let
         type = "label";
         name = "global-menu";
         class = "island global-menu";
-        label = "";
+        label = "󰌌";
         tooltip = "Menu pulpitu\nAplikacje, narzędzia, screenshoty i zasilanie\nSuper+D";
         on_click_left = "global-menu";
       }
@@ -1181,7 +1181,9 @@ in
         min-height: 28px;
         padding: 0 8px;
         color: @text;
-        background-color: alpha(@panel, 0.90);
+        /* 0.62 gives the wallpaper a deliberate glass presence. Raise toward
+           0.75 if a future bright wallpaper compromises small-text contrast. */
+        background-color: alpha(@panel, 0.62);
         border: 1px solid alpha(@line, 0.62);
         border-radius: 9px;
         box-shadow: 0 2px 6px alpha(@base, 0.42);
@@ -1189,27 +1191,28 @@ in
 
       .island:hover {
         color: @bright;
-        background-color: alpha(@panel-hover, 0.95);
+        background-color: alpha(@panel-hover, 0.62);
         border-color: alpha(@active, 0.76);
       }
 
       #global-menu {
-        min-width: 28px;
-        padding: 0 7px;
-        color: @active;
-        font-size: 16px;
+        /* The Nerd Font keyboard glyph connects the system menu to the TOTEM
+           identity without turning this compact target into an illustration. */
+        min-width: 32px;
+        padding: 0 6px;
+        color: @text;
+        font-size: 20px;
         font-weight: 800;
       }
 
       #global-menu:hover {
-        color: @base;
-        background-color: @active;
-        border-color: alpha(@bright, 0.54);
+        color: @bright;
+        border-color: alpha(@active, 0.90);
       }
 
       #workspace-island {
         padding: 0 5px;
-        background-color: alpha(@panel, 0.92);
+        background-color: alpha(@panel, 0.62);
         border-color: alpha(@line, 0.72);
       }
 
@@ -1247,7 +1250,7 @@ in
 
       #workspace-island .item.visible:not(.focused):not(.urgent) {
         color: @base;
-        background: @olive;
+        background: alpha(@olive, 0.62);
         box-shadow: inset 0 0 0 1px alpha(@bright, 0.10);
         font-weight: 800;
       }
@@ -1257,7 +1260,7 @@ in
         min-height: 22px;
         margin: 3px 1px;
         color: @base;
-        background: @active;
+        background: alpha(@active, 0.62);
         border: none;
         border-radius: 99px;
         box-shadow: inset 0 0 0 1px alpha(@bright, 0.10);
@@ -1279,7 +1282,7 @@ in
 
       #workspace-island .item.urgent {
         color: @base;
-        background: @critical;
+        background: alpha(@critical, 0.62);
         box-shadow: inset 0 0 0 1px alpha(@bright, 0.16);
         font-size: 11px;
         font-weight: 900;
@@ -1287,30 +1290,30 @@ in
 
       #workspace-island .item:not(.focused):not(.visible):not(.urgent):hover {
         color: @bright;
-        background: alpha(@surface, 0.72);
+        background: alpha(@surface, 0.62);
         border: none;
         box-shadow: inset 0 0 0 1px alpha(@line, 0.42);
       }
 
       #workspace-island .item.visible:not(.focused):not(.urgent):hover {
         color: @base;
-        background: @yellow;
+        background: alpha(@yellow, 0.62);
       }
 
       #workspace-island .item.focused:not(.urgent):hover {
         color: @base;
-        background: @bright;
+        background: alpha(@bright, 0.62);
       }
 
       #workspace-island .item.urgent:hover {
         color: @base;
-        background: @critical;
+        background: alpha(@critical, 0.62);
         box-shadow: inset 0 0 0 2px alpha(@bright, 0.24);
       }
 
       .metric {
         padding: 0 5px;
-        background-color: alpha(@panel, 0.90);
+        background-color: alpha(@panel, 0.62);
         border-color: alpha(@line, 0.62);
         border-radius: 0;
         box-shadow: none;
@@ -1392,7 +1395,7 @@ in
       }
 
       .metric:hover {
-        background-color: alpha(@panel-hover, 0.95);
+        background-color: alpha(@panel-hover, 0.62);
       }
 
       #docker { color: @text; }
@@ -1571,12 +1574,12 @@ in
 
       #battery.profile-warning {
         color: @warning;
-        background-color: alpha(@orange, 0.13);
+        background-color: alpha(@orange, 0.62);
       }
 
       #battery.profile-critical {
         color: @critical;
-        background-color: alpha(@red, 0.18);
+        background-color: alpha(@red, 0.62);
         border-color: alpha(@critical, 0.76);
       }
 
@@ -1626,7 +1629,7 @@ in
         margin-left: 5px;
         padding: 0 7px;
         color: @text;
-        background-color: alpha(@panel, 0.90);
+        background-color: alpha(@panel, 0.62);
         border: 1px solid alpha(@line, 0.62);
         border-radius: 9px;
         box-shadow: 0 2px 6px alpha(@base, 0.42);
@@ -1648,7 +1651,7 @@ in
 
       #tray .item:hover {
         color: @bright;
-        background-color: alpha(@panel-hover, 0.95);
+        background-color: alpha(@panel-hover, 0.62);
         border-color: alpha(@active, 0.76);
       }
 
@@ -1672,7 +1675,7 @@ in
         margin: 5px 10px 5px 0;
         padding: 1px;
         color: @base;
-        background: @active;
+        background: alpha(@active, 0.62);
         border: 1px solid alpha(@base, 0.92);
         border-radius: 99px;
         box-shadow: none;
@@ -1687,7 +1690,9 @@ in
       popover contents,
       .popup {
         color: @text;
-        background: alpha(@panel, 0.99);
+        /* One shared glass value keeps popups, hover states and islands at
+           62% opacity while preserving their semantic Biscuit colours. */
+        background: alpha(@panel, 0.62);
         border: 1px solid alpha(@line, 0.92);
         border-radius: 11px;
         box-shadow: 0 8px 24px alpha(@base, 0.74);
@@ -1757,7 +1762,7 @@ in
 
       .popup-clock calendar header button:hover {
         color: @bright;
-        background: alpha(@surface, 0.70);
+        background: alpha(@surface, 0.62);
       }
 
       .popup-clock calendar .day-name {
@@ -1774,7 +1779,7 @@ in
 
       .popup-clock calendar .day-number:hover {
         color: @bright;
-        background: alpha(@surface, 0.90);
+        background: alpha(@surface, 0.62);
       }
 
       .popup-clock calendar .other-month {
@@ -1783,7 +1788,7 @@ in
 
       .popup-clock calendar .today {
         color: @base;
-        background: @active;
+        background: alpha(@active, 0.62);
         font-weight: 800;
       }
 

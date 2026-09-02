@@ -70,7 +70,9 @@ in
 {
   services.swayosd = {
     enable = true;
-    topMargin = 0.85;
+    # Center OSD feedback; 0.5 is the vertical midpoint, while 0.85 positioned
+    # volume and brightness feedback near the bottom edge.
+    topMargin = 0.5;
     stylePath = biscuitStyle;
   };
 

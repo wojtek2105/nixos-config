@@ -9,6 +9,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Snapdragon X Elite needs a device-tree, initrd modules, firmware and a
+    # kernel not yet supplied by the generic NixOS ARM64 installer.
+    x1e-nixos-config = {
+      url = "github:JamiKettunen/x1e-vivobook-nixos-config/vivobook";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     wlctl = {
       url = "github:aashish-thapa/wlctl";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -46,9 +53,9 @@
   outputs =
     inputs@{ nixpkgs, home-manager, ... }:
     let
-      system = "x86_64-linux";
+      defaultSystem = "x86_64-linux";
       pkgs = import nixpkgs {
-        inherit system;
+        system = defaultSystem;
         config.allowUnfree = true;
       };
       # Benchmark dependencies stay outside system closures unless a host
@@ -95,6 +102,8 @@
           features ? { },
           homeProfile ? username,
           replayConfig ? { },
+          system ? defaultSystem,
+          trackball ? null,
           uiScale ? 2,
           userDescription ? username,
           username,
@@ -169,7 +178,7 @@
                     useUserPackages = true;
                     backupFileExtension = "hm-backup";
                     extraSpecialArgs = {
-                      inherit backlightDevice desktopFeatures inputs uiScale username;
+                      inherit backlightDevice desktopFeatures inputs trackball uiScale username;
                       replayConfig = defaultReplayConfig // replayConfig;
                     };
                     users.${username} = import homeModule;
@@ -185,7 +194,7 @@
           };
     in
     {
-      apps.${system}.scheduler-benchmark = {
+      apps.${defaultSystem}.scheduler-benchmark = {
         type = "app";
         program = "${schedulerBenchmark}/bin/scheduler-benchmark";
       };
@@ -195,9 +204,9 @@
           (name: _: mkHost name (import (./hosts + "/${name}")))
           hostDirectories;
 
-      packages.${system}.scheduler-benchmark = schedulerBenchmark;
+      packages.${defaultSystem}.scheduler-benchmark = schedulerBenchmark;
 
-      devShells.${system}.default = pkgs.mkShellNoCC {
+      devShells.${defaultSystem}.default = pkgs.mkShellNoCC {
         packages = with pkgs; [
           codex
           git

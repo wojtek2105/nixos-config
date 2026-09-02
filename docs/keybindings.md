@@ -19,6 +19,10 @@ Menu obejmuje wszystkie skróty zadeklarowane przez tę konfigurację. Dla Yazi,
 tmux i Neovim pokazuje dodatkowo najważniejsze skróty wbudowane; pełne mapy tych
 aplikacji pozostają dostępne w ich kontekstowej pomocy.
 
+W profilu `wojtek` Caps Lock jest wyłączony dla wszystkich klawiatur w
+Hyprlandzie. Fizyczny klawisz pozostaje dostępny dla wbudowanego hotkeya
+Voxtype, ustawianego przez jego konfigurator TUI.
+
 ## System i aplikacje
 
 | Skrót | Działanie |
@@ -36,6 +40,10 @@ aplikacji pozostają dostępne w ich kontekstowej pomocy.
 | `Super+Escape` | Otwórz menu zasilania Wleave |
 | `Super+Shift+V` | Wybierz wpis historii schowka i automatycznie go wklej |
 | `Super+F1` | Otwórz centrum pomocy ze skrótami |
+
+W drzewie `Super+D` strzałki `↑` i `↓` zmieniają zaznaczenie, `→` albo
+`Enter` otwierają gałąź lub wykonują akcję, a `←` wraca o jeden poziom.
+Na poziomie głównym `←`, podobnie jak `Esc`, zamyka menu.
 
 ## Okna i pulpity
 
@@ -88,6 +96,11 @@ Długość klipu w opisie menu pochodzi z
 | play/pause | Wstrzymaj lub wznów odtwarzanie przez Playerctl |
 | następny / poprzedni | Zmień utwór przez Playerctl |
 | jaśniej / ciemniej | Zmień jasność ekranu o 5% i pokaż OSD na hostach laptopowych |
+| `Fn+F10` | Włącz lub wyłącz touchpad i pokaż OSD na hostach laptopowych |
+
+Konfiguracja ASUS ROG Zephyrus obsługuje kombinację `Fn+F10` jako symbol
+`XF86TouchpadToggle`. Przełącznik automatycznie odnajduje urządzenia, których
+nazwa zawiera `touchpad`; nie koduje na stałe identyfikatora konkretnego modelu.
 
 ## Yazi
 

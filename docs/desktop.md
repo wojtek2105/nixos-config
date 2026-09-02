@@ -24,6 +24,14 @@ przez Hyprlanda jako `This config is a STUB`, aby nie mógł przejąć kolejnej 
 - Ironbar jako jedyny panel pulpitu,
 - SwayNC jako usługa użytkownika systemd,
 - SwayOSD dla zmian głośności, mikrofonu i jasności,
+- Voxtype z lokalnym Whisper `large-v3`: polskie dyktowanie uruchamiane na
+  żądanie przez wbudowany, konfigurowalny hotkey, z modelem pobieranym raz do
+  danych zalogowanego użytkownika i bez wysyłania dźwięku do zewnętrznej usługi. Natywne
+  powiadomienia Voxtype w SwayNC pokazują rozpoczęcie nagrywania, przejście do
+  transkrypcji i wynik. Wbudowany hotkey Voxtype ustawia się w jego
+  konfiguratorze TUI. NixOS kopiuje polski szablon tylko przy pierwszym
+  uruchomieniu, a późniejsze zmiany w TUI pozostają własnością użytkownika.
+  Krótki słownik DevOps, programowania, IT i gamingu ułatwia rozpoznawanie nazw technologii,
 - Yazi jako domyślny menedżer plików oraz Thunar jako awaryjny interfejs GUI,
 - Hyprlock i Hypridle,
 - Awww jako backend tapety,
@@ -35,22 +43,37 @@ przez Hyprlanda jako `This config is a STUB`, aby nie mógł przejąć kolejnej 
 
 ## Wejście i zakończenie sesji
 
-Greetd zachowuje automatyczne uruchomienie pierwszej sesji po starcie systemu.
-Po świadomym wylogowaniu pokazuje Tuigreet na czystym VT1, bez komunikatów
-bootowania rysowanych na formularzu. Widok ma jeden zwarty kontener o szerokości
-54 znaków: najpierw tytuł i sekwencję `RED > GREEN > REFACTOR` z nazwą hosta,
-potem polską datę z godziną, użytkownika i pole hasła z widocznymi kropkami.
+Od chwili przejęcia grafiki przez initrd do startu Greetd ekran bootowania
+prowadzi Plymouth z własnym motywem Biscuit. Na środku jest duża maskotka Tux
+z białym brzuchem na przezroczystym tle, trzymająca dwie lustrzane połówki
+klawiatury TOTEM; pod nią płynnie obraca się drobny pierścień Biscuit z różowym
+łukiem, z częstotliwością około 30 FPS. Tło jest czyste `#000000`, aby na OLED
+wygaszać piksele podczas startu. Animacja działa wyłącznie w initrd i nie
+dodaje procesu po zalogowaniu. Zwykłe
+komunikaty jądra i usług są ukryte,
+lecz `Esc` podczas startu przełącza na widok diagnostyczny; ostrzeżenia i błędy
+pozostają tam dostępne.
+
+Greetd pokazuje Tuigreet na czystym VT1 po każdym uruchomieniu systemu i po
+wylogowaniu, bez komunikatów bootowania rysowanych na formularzu. Pomyślne
+logowanie zawsze uruchamia Hyprlanda przez UWSM; ekran nie udostępnia menu
+alternatywnych sesji. Widok ma jeden zwarty kontener o szerokości 54 znaków z
+większym oddechem: najpierw tytuł `WOJTECH // <host>`, potem opis `Lekki · szybki
+· nowoczesny Linux na NixOS`, polską datę z godziną, użytkownika i pole hasła z
+widocznymi kropkami.
 Paleta 16 kolorów konsoli pochodzi bezpośrednio z `theme.nix`, dlatego role ANSI
 Tuigreet odpowiadają rzeczywistym barwom Biscuit: róż prowadzi fokus i skróty,
 żółty opisuje czas oraz pola, a czarne tło utrzymuje niski poziom jasności.
 
-Za formularzem płynie spokojna animacja `matrix` inspirowana cyklem TDD:
-zielone czoła strumieni oznaczają przechodzący test, róż aktywny etap, a ciemny
-czerwono-brązowy ślad wcześniejszy błąd. Działa przy 12 FPS, z krótkimi
-strumieniami i wolnym ruchem, wyłącznie gdy Tuigreet faktycznie czeka po
-wylogowaniu; nie dodaje procesu do normalnej sesji ani do autologowania.
-Tuigreet udostępnia również wybór użytkownika, sesji i polecenia oraz menu
+Za formularzem płynie dyskretna, 12-klatkowa animacja Matrix w zieleni, różu i
+selekcji Biscuit; krótkie ślady zachowują oddech ekranu, ale nie konkurują z
+polem hasła. Tuigreet udostępnia wybór użytkownika i polecenia oraz menu
 wyłączenia i restartu pod `F12`.
+
+Wszystkie powierzchnie Ironbara mają 62% krycia: wyspy, aktywne i hoverowane
+elementy, popupy, tooltipy oraz podświetlenia kalendarza. Tapeta pozostaje więc
+wyraźnie widoczna w całym interfejsie, a role Biscuit nadal rozróżniają stan
+aktywny, ostrzeżenie i błąd.
 
 `Super+Escape` uruchamia wrapper `power-menu`, który otwiera Wleave na aktualnie
 aktywnym monitorze. Pięć równych kafli mieści się w jednym,
@@ -87,16 +110,38 @@ sekcje dopasowują wysokość do zawartości, a dłuższe pokazują maksymalnie 
 wierszy i pozostają przewijalne, dzięki czemu menu mieści się na ekranie
 laptopa przy skali logicznej `2`.
 
-`Super+D` otwiera lekkie globalne menu pulpitu w stylu Omarchy. Jest to
-jednorazowy widok Fuzzela, bez demona ani pętli odświeżania: prowadzi do
-launchera aplikacji, Foota, Zen, Yazi, narzędzi zrzutu ekranu, historii
-schowka, pomocy skrótów i Wleave. Na hostach z `features.screenRecording = true`
-pojawiają się w nim również sterowanie nakładką GPU Screen Recorder, zapis
-replay i przełącznik bufora replay. Lewy przycisk dedykowanego elementu
-Ironbara wywołuje to samo polecenie `global-menu`, więc skrót i panel zawsze
-mają ten sam zestaw działań. Lista ma osiem podstawowych, ikonowych wierszy
-(jedenaście z nagrywaniem), kompaktowy prompt `Pulpit ›` i dziedziczy kontrast,
-odstępy oraz różowy fokus Biscuit z konfiguracji Fuzzela.
+`Super+D` otwiera lekkie, dwupoziomowe globalne menu pulpitu w stylu Omarchy.
+Jest to widok Fuzzela uruchamiany na żądanie, bez demona ani pętli odświeżania.
+Jego przycisk w Ironbarze używa spokojnego glifu klawiatury Nerd Font na standardowej,
+półprzezroczystej powierzchni panelu; rozjaśnia się dopiero przy hoverze.
+Pierwszy poziom pozostaje krótkim drzewem sześciu gałęzi:
+
+- **Aplikacje** — launcher, Foot, Zen, Yazi i awaryjny Thunar;
+- **Przechwytywanie** — screenshot, podgląd karty HDMI/USB oraz, gdy włączono
+  `features.screenRecording`, nakładka GPU Screen Recorder, zapis replay i
+  przełączanie bufora;
+- **Narzędzia** — przełącznik polskiego dyktowania Voxtype, jego diagnostyka i
+  konfigurator TUI w Foot oraz historia schowka. Ten sam konfigurator jest
+  widoczny jako aplikacja **Voxtype Configure** w launcherze `Super+Space`;
+- **System i pulpit** — następna tapeta, wygaszacz oraz na laptopie przełącznik
+  touchpada opisany tak samo jak `Fn+F10`;
+- **Pomoc skrótów** — deklaratywne centrum map klawiszy;
+- **Zasilanie** — kafle Wleave.
+
+Każde podmenu ma pozycję powrotu. `→` i `Enter` otwierają zaznaczoną gałąź
+lub wykonują akcję, `←` wraca do korzenia, a na korzeniu zamyka menu. Sekcje
+pomocy skrótów również wracają po `←` albo `Esc`, zamiast otwierać odłączony
+widok. `Esc` zamyka widok z każdego poziomu. Te poziome mapowania należą do osobnej
+konfiguracji Fuzzela używanej wyłącznie przez `global-menu`, więc nie odbierają
+strzałek polom tekstowym pozostałych pickerów. W obrębie jednego otwartego
+menu Fuzzel zachowuje zaznaczenie gałęzi i jej ostatniej pozycji po `←` i
+ponownym `→`; kolejne otwarcie `Super+D` zaczyna celowo od początku. Następna tapeta uruchamia
+istniejącą jednostkę `rotate-wallpaper.service`, dzięki czemu ręczna i czasowa
+rotacja korzystają z jednego mechanizmu. Podgląd karty wywołuje
+`usb-capture-viewer`, który automatycznie preferuje zewnętrzne wejście V4L2.
+Lewy przycisk dedykowanego elementu Ironbara wywołuje to samo polecenie
+`global-menu`, więc skrót i panel zawsze pokazują identyczne drzewo. Widoki
+dziedziczą kontrast, odstępy i różowy fokus Biscuit z konfiguracji Fuzzela.
 
 ## Skalowanie
 
@@ -292,7 +337,8 @@ startu, w którym Hyprland widział tylko `simpledrm` i kończył pracę komunik
   przesuwa się w lewo i tworzy z licznikiem wyśrodkowaną parę; badge `18×18 px`
   jest wyśrodkowany pionowo i ma ciemny border zamiast jasnej obwódki;
   licznik używa pogrubionej ciemnej cyfry na różowym badge'u
-  Biscuit, a panel zawiera wyłącznie nagłówek, czyszczenie i listę powiadomień,
+  Biscuit. Nagłówek używa lekkiego glifu dzwonka z Nerd Fontu, a panel zawiera
+  wyłącznie nagłówek, czyszczenie i listę powiadomień,
 - powiadomienia pojawiają się pod panelem w prawym górnym rogu jako karty z
   ikoną, tytułem, treścią, krótkim czasem względnym i kolorem ważności,
 - przycisk aparatu pozwala krótkim lewym kliknięciem wskazać całe okno, a
@@ -359,9 +405,15 @@ osobnym archiwum [benchmarków pulpitu](benchmarks.md).
 ## Blokada i bezczynność
 
 - po 5 minutach uruchamiany jest animowany wygaszacz,
+- ekran blokady Hyprlock zachowuje czysty formularz hasła; nad zegarem pokazuje
+  pełną, oryginalną maskotkę Tux + TOTEM, zrasteryzowaną podczas budowania
+  konfiguracji, więc odblokowanie nie uruchamia dodatkowego konwertera ani usługi,
 - wygaszacz działa z pełną częstotliwością monitora na zasilaczu i najwyżej
   60 FPS na baterii; wspólne wykrywanie źródła zasilania nie zakłada nazw
   urządzeń takich jak `BAT0` ani `AC0`,
+- tło Foot ma 62% krycia także wtedy, gdy TTE ustawi własny kolor terminala,
+  więc animacja TDD pozostaje czytelna, a aktualna tapeta jest spokojnie
+  widoczna pod nią,
 - okno wygaszacza przejmuje fokus i włącza raportowanie ruchu myszy w Foot;
   dowolny klawisz, ruch albo kliknięcie zamyka nakładkę, natomiast syntetyczne
   zdarzenie wznowienia generowane przy mapowaniu okna jest ignorowane,
