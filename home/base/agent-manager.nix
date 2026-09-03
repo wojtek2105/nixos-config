@@ -325,8 +325,8 @@ let
     };
 
   crabcodeLocal = mkCrabcodeOllama {
-    # On farm hosts the normal entry point shares the ROG profile. Iza's host
-    # deliberately binds it only to its own loopback Ollama instance.
+    # On farm hosts the normal entry point shares the ROG profile. A host with
+    # ollamaFarm disabled deliberately binds it only to loopback Ollama.
     # Its packaged binary is prepended to PATH, so the final invocation does
     # not recurse into this Home Manager wrapper.
     name = "crabcode";

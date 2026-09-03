@@ -197,6 +197,10 @@ Poniższy szablon pokazuje wszystkie obsługiwane pola manifestu hosta:
     # modele i ustawienia GUI pozostają prywatnymi danymi użytkownika.
     ollama = false;
 
+    # Zdalne profile Crabcode i routing między hostami; wymaga `ollama = true`.
+    # Zostaw false dla Crabcode korzystającego wyłącznie z lokalnej Ollamy.
+    ollamaFarm = false;
+
     # Steam, Proton-GE, Gamescope, GameMode i biblioteki 32-bit.
     gaming = false;
 
@@ -396,7 +400,7 @@ po skopiowaniu konfiguracji nie wymaga ręcznej zmiany.
 
 - `docker`, `ollama`, `gaming`, `vr`, `screenRecording`, `hardwareDiagnostics` i
   `schedulerBenchmark` warunkowo importują kompletne moduły systemowe,
-- `amdGpuMetrics`, `docker`, `ollama`, `screenRecording`, `laptop` i `personalApps` są
+- `amdGpuMetrics`, `docker`, `ollama`, `ollamaFarm`, `screenRecording`, `laptop` i `personalApps` są
   przekazywane także do Home Managera i sterują wyłącznie pasującym interfejsem,
 - `personalApps` rozdziela Discord, Plexamp i EasyEffects, więc wyłączenie jednej
   aplikacji usuwa jej pakiet oraz skrót bez wpływu na pozostałe,

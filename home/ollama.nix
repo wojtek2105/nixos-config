@@ -233,7 +233,7 @@ in
 
       `crabcode-manager` może przez MCP utworzyć lokalnego workera `crabcode`
       albo, tylko dla naprawdę trudnego zadania, workera `codex`. Profile ROG,
-      White Monster i Armaniec oraz `ollama-farm-status` nie są na izakomp
+      White Monster i Armaniec oraz `ollama-farm-status` nie są na tym hoście
       instalowane ani pokazywane w selektorze Agent Managera.
 
       Przed pierwszym uruchomieniem pobierz model do lokalnego kontenera:

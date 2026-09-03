@@ -269,7 +269,7 @@ Logowanie Codexa i limity konta są współdzielone z normalnym CLI, ale nie maj
 wpływu na sesje Crabcode/Ollama. Konfiguracja nie zapisuje tokenów ani danych
 uwierzytelniających w repozytorium.
 
-Gdy `features.ollama = true`, selektor narzędzi zawiera `crabcode`,
+Gdy `features.ollamaFarm = true`, selektor narzędzi zawiera `crabcode`,
 `crabcode-manager` oraz trzy nazwane workery farmy. Zwykły `crabcode` używa
 lokalnego endpointu, a nazwane workery pobierają adres i model z `hosts.env`.
 Agent Manager przekazuje Crabcode ten sam serwer MCP przez warstwę zgodności z

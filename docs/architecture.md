@@ -23,6 +23,10 @@ White Monsterze; ten może utworzyć Codexa, gdy lokalne rozumowanie nie wystarc
 Przy niedostępnym White Monsterze manager może eskalować do Codexa bezpośrednio.
 Sesje pozostają widoczne w TUI; natywne subagenty Codexa są wyłączone, aby nie
 tworzyć drugiego, ukrytego drzewa.
+Jawna cecha hosta `features.ollamaFarm` rozdziela profile zdalnej farmy od
+lokalnego Crabcode. Jej wyłączenie pozostawia tylko loopback Ollamy i opcjonalną
+eskalację przez MCP do Codexa; włączenie dodaje nazwane workery hostów oraz
+sondę `ollama-farm-status`.
 
 Pulpit korzysta wyłącznie z Ironbara. Kod Waybara, Noctalii i narzędzia do ich
 porównywania został usunięty, a historyczne wyniki pozostały w dokumentacji.
