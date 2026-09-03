@@ -529,7 +529,9 @@ in
       OLLAMA_GID := $(shell id -g)
       export OLLAMA_UID OLLAMA_GID
 
-      .PHONY: help fix-searxng-permissions init-searxng-config vulkan rocm cpu vulkan-cpu rocm-cpu down apply-webui-defaults pull-vulkan pull-rocm pull-cpu pull-searxng restart-searxng logs
+      MODEL ?=
+
+      .PHONY: help fix-searxng-permissions init-searxng-config vulkan rocm cpu vulkan-cpu rocm-cpu down apply-webui-defaults pull pull-vulkan pull-rocm pull-cpu pull-searxng restart-searxng logs
 
       help: ## 📖 Pokaż dostępne polecenia
       	@awk 'BEGIN { FS = ":.*## " } /^[a-zA-Z0-9][a-zA-Z0-9_.-]*:.*## / && $$1 != "help" { printf "\033[36m%-20s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -573,6 +575,17 @@ in
 
       pull-searxng: ## ⬇️ Pobierz obraz SearXNG
       	docker-compose pull searxng
+
+      pull: ## 🤖 Pobierz model do uruchomionej Ollamy: make pull MODEL=qwen3.5:9b
+      	@test -n "$(MODEL)" || { echo "Podaj MODEL=nazwa:model" >&2; exit 2; }
+      	@for service in ollama-vulkan ollama-rocm ollama-cpu; do \
+      	  if docker-compose ps -q "$$service" | grep -q .; then \
+      	    docker-compose exec "$$service" ollama pull "$(MODEL)"; \
+      	    exit $$?; \
+      	  fi; \
+      	done; \
+      	echo "Nie działa żaden kontener Ollamy — uruchom najpierw make vulkan, make rocm albo make cpu" >&2; \
+      	exit 1
 
       restart-searxng: init-searxng-config ## 🔄 Zrestartuj SearXNG
       	docker-compose restart searxng

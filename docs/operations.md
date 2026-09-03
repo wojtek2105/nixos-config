@@ -207,12 +207,16 @@ OLLAMA_ROUTER_URL=$OLLAMA_ROG_URL
 OLLAMA_ROUTER_MODEL=qwen3.5:9b
 ```
 
-Na ROG-u pobierz go przed zmianą pliku:
+Pobierz model do aktualnie uruchomionego kontenera Ollamy:
 
 ```bash
 cd ~/Dev/Ollama
-docker compose --profile vulkan exec ollama-vulkan ollama pull qwen3.5:9b
+make pull MODEL=qwen3.5:9b
 ```
+
+Target wybiera działającą usługę w kolejności Vulkan, ROCm, CPU. Gdy uruchomione
+są równocześnie GPU i CPU, model trafia do wariantu GPU; gdy żadna Ollama nie
+działa, polecenie kończy się czytelnym błędem.
 
 Crabcode startuje z `reasoning-effort=low` dla Qwena 3.5, Qwena 3.8 i
 Granite 4.2. Poziom można zmienić w selektorze modelu/thinking w Crabcode:
