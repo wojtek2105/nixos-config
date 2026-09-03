@@ -1,0 +1,52 @@
+{
+  "backlightDevice": "amdgpu_bl2",
+  "features": {
+    "amdGpuMetrics": true,
+    "bluetooth": true,
+    "docker": true,
+    "gaming": true,
+    "hardwareDiagnostics": false,
+    "laptop": true,
+    "ollama": true,
+    "ollamaFarm": true,
+    "personalApps": {
+      "discord": true,
+      "easyeffects": true,
+      "plexamp": true
+    },
+    "schedulerBenchmark": false,
+    "screenRecording": true,
+    "voxtype": true,
+    "vr": true
+  },
+  "homeOverlay": "wojtek",
+  "homeProfile": "wojtek",
+  "hostName": "rog-polamaniec",
+  "modules": {
+    "bootSplash": true,
+    "common": true,
+    "desktop": true,
+    "developmentCore": true,
+    "hardwareAmdGpu": true,
+    "hardwareAsusLaptop": true,
+    "lanMouse": true,
+    "x1e": false
+  },
+  "replayConfig": {
+    "captureSource": "focused_monitor"
+  },
+  "system": "x86_64-linux",
+  "systemSettings": {
+    "bootTimeout": 1,
+    "ignoreLidSwitch": true,
+    "lanMousePeerHost": "white-monster",
+    "stateVersion": "26.05"
+  },
+  "trackball": {
+    "name": "ploopy-corporation-ploopy-adept-trackball-mouse",
+    "sensitivity": -0.5
+  },
+  "uiScale": 2,
+  "userDescription": "Polamaniec",
+  "username": "wojtek"
+}

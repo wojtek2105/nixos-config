@@ -36,7 +36,7 @@ zbędne koła po udanej weryfikacji.
 Pierwszy przebieg pobiera model do
 `${XDG_DATA_HOME:-$HOME/.local/share}/wallpaper-flux2-klein/hf-cache`. Wynik
 domyślny to
-`home/wojtek/wallpapers/work/import-48/flux2-klein-tests/01-frieren-klein4b.png`.
+`home/base/wallpapers/work/import-48/flux2-klein-tests/01-frieren-klein4b.png`.
 
 Oficjalna karta modelu podaje około 13 GiB VRAM, dlatego 8-gigabajtowy RX 6800S
 jest profilem eksperymentalnym nawet z offloadem. Domyślne 1024×288 zachowuje

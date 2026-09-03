@@ -10,7 +10,7 @@ scale="${REALESRGAN_SCALE:-4}"
 tile="${REALESRGAN_TILE:-256}"
 gpu_id="${REALESRGAN_GPU_ID:-1}"
 shard_count="${UPSCALE_SHARDS:-4}"
-log_dir="$repo_root/home/wojtek/wallpapers/work/import-48/upscale-logs"
+log_dir="$repo_root/home/base/wallpapers/work/import-48/upscale-logs"
 
 run_worker() {
   local shard="$1"

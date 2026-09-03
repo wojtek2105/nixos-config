@@ -2,7 +2,7 @@
 set -euo pipefail
 
 if ! command -v mpv >/dev/null 2>&1; then
-  printf 'Brak mpv w PATH. Jest deklarowany w home/wojtek/desktop.nix.\n' >&2
+  printf 'Brak mpv w PATH. Jest deklarowany w home/base/desktop.nix.\n' >&2
   exit 1
 fi
 

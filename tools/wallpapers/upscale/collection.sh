@@ -16,7 +16,7 @@ if [[ ! "$shard_index" =~ ^[0-9]+$ || ! "$shard_count" =~ ^[1-9][0-9]*$ ]] \
 fi
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)"
-wallpaper_root="$repo_root/home/wojtek/wallpapers"
+wallpaper_root="$repo_root/home/base/wallpapers"
 manifest="$wallpaper_root/collection.json"
 work_root="$wallpaper_root/work/import-48"
 stage_name="${UPSCALE_STAGE_NAME:-upscaled-32x9}"

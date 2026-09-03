@@ -31,7 +31,7 @@ Preferowane są oficjalne repozytoria GitHub i dokumentacja pierwotna.
 - [hyprwm/Hyprland](https://github.com/hyprwm/Hyprland) — compositor i dispatchery.
 - [Oficjalny przykład konfiguracji Lua Hyprlanda](https://github.com/hyprwm/Hyprland/blob/main/example/hyprland.lua) — struktura `hl.config`, bindy, animacje i reguły.
 - [hyprwm/Hyprland Wiki](https://github.com/hyprwm/hyprland-wiki) — dokumentacja Hyprlanda.
-- [Grim](https://gitlab.freedesktop.org/emersion/grim) — bezpośrednie przechwytywanie obrazu pod Waylandem.
+- [Wayshot](https://github.com/waycrate/wayshot) — lekkie, natywne dla wlroots przechwytywanie obrazu pod Waylandem.
 - [Slurp](https://gitlab.freedesktop.org/emersion/slurp) — lekki wybór geometrii obszaru ekranu.
 - [Satty](https://github.com/gabm/Satty) — edycja, adnotacje, zapis i kopiowanie screenshotów.
 - [Fuzzel](https://codeberg.org/dnkl/fuzzel) — lekki launcher oraz menu wyboru pod Waylandem.
@@ -55,6 +55,12 @@ Preferowane są oficjalne repozytoria GitHub i dokumentacja pierwotna.
 - [fish-shell/fish-shell](https://github.com/fish-shell/fish-shell) — domyślna powłoka interaktywna.
 - [IlanCosman/tide](https://github.com/IlanCosman/tide) — prompt Fish ze statusem Git i czasem poleceń.
 - [tmux/tmux](https://github.com/tmux/tmux) — multiplekser i trwałe sesje terminalowe.
+- [YoanWai/agent-manager](https://github.com/YoanWai/agent-manager) — panel TUI
+  zarządzający widocznymi sesjami agentów i jego serwer MCP.
+- [Blankeos/crabcode](https://github.com/Blankeos/crabcode) — agent kodujący TUI
+  w Rust używany przez lokalne profile Ollama.
+- [Crabcode: zgodność z OpenCode](https://crabcode.rs/config/opencode-compatibility/) —
+  obsługiwany format providerów, instrukcji, uprawnień i serwerów MCP.
 - [Pakiet Foot w nixpkgs](https://github.com/NixOS/nixpkgs/blob/master/pkgs/by-name/fo/foot/package.nix) — deklaratywny pakiet lekkiego terminala Wayland.
 - [Wiremix](https://github.com/tsowell/wiremix) — interfejs TUI do urządzeń i strumieni PipeWire.
 - [wlctl](https://github.com/aashish-thapa/wlctl) — lekki interfejs TUI w Rust

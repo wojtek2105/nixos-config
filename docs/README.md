@@ -18,12 +18,12 @@ Ten katalog opisuje stan konfiguracji, sposób jej obsługi oraz plan rozbudowy.
 - [Lan Mouse](lan-mouse.md) — współdzielenie klawiatury i myszy z White Monster
   bez przesyłania obrazu.
 - [Replay](replay.md) — konfiguracja bufora GPU Screen Recorder.
-- [Host](hosts.md) — konfiguracja laptopa ROG.
-- [Nowy host i użytkownik](new-host.md) — kompletna instrukcja kopiowania,
-  adaptacji sprzętu, profilu Home Managera i instalacji.
+- [Hosty](hosts.md) — aktywne i przygotowane konfiguracje komputerów.
+- [Nowy host i użytkownik](new-host.md) — generator manifestu, adaptacja
+  sprzętu, profil Home Managera i instalacja.
 - [Plan rozbudowy](roadmap.md) — kolejne etapy rozwoju konfiguracji.
 - [Źródła](sources.md) — upstreamy i dokumentacja techniczna.
 
 Dokumentacja opisuje konfigurację deklaratywną z plików Nix oraz śledzonego
-`home/wojtek/hyprland.lua`. Ręczne zmiany w `~/.config` mogą zostać nadpisane
+`home/base/hyprland.lua`. Ręczne zmiany w `~/.config` mogą zostać nadpisane
 przez Home Manager i nie powinny być traktowane jako źródło prawdy.

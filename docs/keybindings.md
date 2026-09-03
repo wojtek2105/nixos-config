@@ -19,9 +19,9 @@ Menu obejmuje wszystkie skróty zadeklarowane przez tę konfigurację. Dla Yazi,
 tmux i Neovim pokazuje dodatkowo najważniejsze skróty wbudowane; pełne mapy tych
 aplikacji pozostają dostępne w ich kontekstowej pomocy.
 
-W profilu `wojtek` Caps Lock jest wyłączony dla wszystkich klawiatur w
-Hyprlandzie. Fizyczny klawisz pozostaje dostępny dla wbudowanego hotkeya
-Voxtype, ustawianego przez jego konfigurator TUI.
+Gdy host ma `features.voxtype = true`, profil `wojtek` wyłącza Caps Lock dla
+wszystkich klawiatur w Hyprlandzie. Fizyczny klawisz pozostaje dostępny dla
+wbudowanego hotkeya Voxtype, ustawianego przez jego konfigurator TUI.
 
 ## System i aplikacje
 
@@ -68,10 +68,10 @@ Na poziomie głównym `←`, podobnie jak `Esc`, zamyka menu.
 
 | Skrót | Działanie |
 | --- | --- |
-| `Print` | Kliknij okno albo przeciągnij obszar i otwórz edytor Satty |
-| `Shift+Print` | Przechwyć aktywne okno i otwórz Satty |
-| `Ctrl+Print` | Przechwyć cały ekran i otwórz Satty |
-| `Super+Shift+S` | Otwórz menu wyboru trybu zrzutu ekranu |
+| `Print` | Kliknij okno albo przeciągnij obszar; zapisz PNG i skopiuj go do schowka |
+| `Shift+Print` | Przechwyć aktywne okno, zapisz PNG i skopiuj go do schowka |
+| `Ctrl+Print` | Przechwyć cały ekran, zapisz PNG i skopiuj go do schowka |
+| `Super+Shift+S` | Otwórz menu trybu zrzutu oraz checkbox edycji Satty |
 | `Super+Ctrl+S` | Uruchom animowany wygaszacz `WOJTECH` |
 | `Enter` w Satty | Zapisz PNG, skopiuj go do schowka i zamknij edytor |
 | `Esc` w Satty | Anuluj edycję i zamknij bez zapisu |
@@ -92,7 +92,7 @@ Długość klipu w opisie menu pochodzi z
 | --- | --- |
 | głośniej / ciszej | Zmień głośność wyjścia o 5% i pokaż OSD |
 | wyciszenie głośników | Przełącz wyciszenie wyjścia i pokaż OSD |
-| wyciszenie mikrofonu | Przełącz wyciszenie mikrofonu i pokaż OSD |
+| `M3` (laptop) | Przełącz wyciszenie domyślnego mikrofonu PipeWire i pokaż jego rzeczywisty stan |
 | play/pause | Wstrzymaj lub wznów odtwarzanie przez Playerctl |
 | następny / poprzedni | Zmień utwór przez Playerctl |
 | jaśniej / ciemniej | Zmień jasność ekranu o 5% i pokaż OSD na hostach laptopowych |

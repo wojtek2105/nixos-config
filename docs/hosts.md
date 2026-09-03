@@ -2,7 +2,9 @@
 
 ## ROG Polamaniec
 
-Obecnie repozytorium zawiera jeden gotowy do aktywacji host:
+Repozytorium automatycznie wystawia tylko hosty z własnym
+`hardware-configuration.nix`; obecnie gotowe do aktywacji są hosty opisane
+przez ich manifesty i sprzęt.
 
 - output flake: `rog-polamaniec`,
 - hostname: `rog-polamaniec`,
@@ -38,10 +40,20 @@ i własny `hardware-configuration.nix`.
 Allowlista w `.gitignore` decyduje, które hosty i profile użytkowników mogą być
 wersjonowane. Sekrety, hasła, profile Wi-Fi i klucze SSH pozostają poza repo.
 
+## izakomp
+
+Host `izakomp` używa własnego profilu i nakładki użytkownika, ale współdzieli
+bazową konfigurację Crabcode. Ma włączony lokalny stos Ollamy. Agent Manager
+pokazuje na nim tylko lokalne `crabcode`, lokalny `crabcode-manager` oraz
+`codex`; nie instaluje profili zdalnej farmy. Manager wykonuje rutynową pracę
+lokalnie i może przez MCP eskalować naprawdę trudne zadanie bezpośrednio do
+Codexa.
+
 ## ASUS Vivobook S 15 ze Snapdragonem
 
 `hosts/armaniec/` jest przygotowany jako host `aarch64-linux` dla Vivobooka S
-15 ze Snapdragonem X Elite. Używa pełnego profilu `home/wojtek` oraz
+15 ze Snapdragonem X Elite. Używa profilu `home/wojtek`, który importuje
+`home/base`, oraz
 zewnętrznego modułu X Elite z device tree, kernelem, initrd i firmware dla tego
 modelu. Obejmuje Ironbar, kompletną sesję Hyprlanda i narzędzia użytkownika,
 w tym Zen Browser, Codex i GNU Make. Gaming, Docker, VR, nagrywanie, metryki
@@ -53,7 +65,7 @@ dodany na konkretnym laptopie. Instrukcja znajduje się w jego `README.md`.
 ## White Monster
 
 `hosts/white-monster/` jest przygotowany dla desktopa z Radeonem RX 9070 XT.
-Współdzieli profil `home/wojtek`, pulpit, tapety, aplikacje, Docker, gaming,
+Współdzieli profil `home/wojtek` importujący `home/base`: pulpit, tapety, aplikacje, Docker, gaming,
 nagrywanie i przewodowy ALVR, ale ma `features.laptop = false` i nie importuje
 modułu ASUS-a ani ustawień pokrywy. Do czasu wygenerowania na tym komputerze
 jego własnego `hardware-configuration.nix` host pozostaje bezpiecznie pominięty
@@ -61,13 +73,15 @@ przez flake; dokładna komenda znajduje się w `hosts/white-monster/README.md`.
 
 ## Nowy host i użytkownik
 
-1. Skopiuj katalog istniejącego hosta do `hosts/<nowy-host>/` i wygeneruj dla
-   niego właściwy `hardware-configuration.nix`.
-2. W jego `default.nix` zmień `username`, mapę `features` oraz — na laptopie —
-   `backlightDevice`. Nazwa hosta wynika automatycznie z nazwy katalogu.
-3. Aby skopiować również profil użytkownika, skopiuj `home/wojtek/` do
-   `home/<username>/`. Plików wewnątrz nie trzeba zmieniać.
-4. Alternatywnie nie kopiuj profilu i ustaw `homeProfile = "wojtek"`; nowe konto
-   użyje wtedy istniejącej konfiguracji Home Managera.
-5. Dodaj nowy host i użytkownika do allowlist w `.gitignore`, a następnie do
+1. Uruchom `make host-manager`; przy braku Gum i jq skrypt sam otwiera
+   jednorazowy `nix shell`, bez instalowania zależności do systemu. W menu
+   używaj `↑`/`↓` do wyboru, `→` lub Enter, aby przejść dalej albo przełączyć
+   opcję, oraz `←` lub Esc, aby wrócić. Każda pozycja pokazuje krótki opis i
+   aktualny stan.
+2. Utwórz lub edytuj `hosts/<nowy-host>/host.json`, wybierając moduły i
+   funkcje. Generator nie tworzy konfiguracji sprzętu.
+3. Profil `home/base` jest wspólną bazą pulpitu dla kont. Profile użytkowników importują go; nie kopiuj bazy dla
+   kolejnego użytkownika: wybierz go w managerze, a różnice sprzętowe i moduły
+   zachowaj wyłącznie w `hosts/<host>/host.json`.
+4. Dodaj nowy host i użytkownika do allowlist w `.gitignore`, a następnie do
    indeksu Git, ponieważ flake oparty na repo nie widzi plików nieśledzonych.

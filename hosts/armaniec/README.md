@@ -2,7 +2,7 @@
 
 Ten host to ostrożny punkt startowy dla wariantu Vivobook S 15 z procesorem
 Snapdragon X Elite. Używa platformy `aarch64-linux`, pełnego profilu
-`home/wojtek` oraz modułu `x1e-nixos-config` dostosowanego do tego modelu:
+`home/wojtek` importującego `home/base` oraz modułu `x1e-nixos-config` dostosowanego do tego modelu:
 własnego kernela, device tree, initrd i firmware. Zapewnia kompletną sesję
 Hyprland z Ironbarem i narzędziami użytkownika, ale nie włącza gamingu,
 Dockera, nagrywania, VR, metryk AMD ani modułów przeznaczonych dla laptopa ROG.

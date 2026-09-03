@@ -3,21 +3,26 @@
 ## Flake
 
 `flake.nix` przypina zależności w `flake.lock` i automatycznie udostępnia każdy
-katalog `hosts/<nazwa>/`, który zawiera `default.nix`. Obecnie dostępny jest:
+katalog `hosts/<nazwa>/`, który zawiera `default.nix` oraz własny
+`hardware-configuration.nix`. Obecnie dostępne są hosty mające oba pliki:
 
 ```text
+nixosConfigurations.izakomp
 nixosConfigurations.rog-polamaniec
+nixosConfigurations.white-monster
 ```
 
 Domyślny `devShell` zapewnia Codex, Git i Neovim do pracy nad konfiguracją.
 
 Profil Home Managera instaluje Agent Manager jako warstwę operacyjną nad
-trwałymi sesjami Codexa w tmux. Osobne launchery używają lekkiego
-`gpt-5.6-luna` z rozumowaniem `medium` dla kierownika oraz mocniejszego
-`gpt-5.6-terra` z rozumowaniem `high` dla workerów. Kierownik deleguje przez MCP
-Agent Managera, dzięki czemu workerzy pozostają widoczni w TUI; natywne
-subagenty Codexa są w tych profilach wyłączone, aby nie tworzyć drugiego,
-ukrytego drzewa.
+trwałymi sesjami CLI w tmux. Jeden profil Codexa używa `gpt-5.6-terra` z
+rozumowaniem `medium` zarówno dla korzenia, jak i workerów. Alternatywny
+`crabcode-manager` działa na małym lokalnym Qwenie i domyślnie tworzy przez MCP
+workery Crabcode/Ollama. Trudne zadanie eskaluje najpierw do większego modelu na
+White Monsterze; ten może utworzyć Codexa, gdy lokalne rozumowanie nie wystarczy.
+Przy niedostępnym White Monsterze manager może eskalować do Codexa bezpośrednio.
+Sesje pozostają widoczne w TUI; natywne subagenty Codexa są wyłączone, aby nie
+tworzyć drugiego, ukrytego drzewa.
 
 Pulpit korzysta wyłącznie z Ironbara. Kod Waybara, Noctalii i narzędzia do ich
 porównywania został usunięty, a historyczne wyniki pozostały w dokumentacji.
@@ -31,7 +36,12 @@ Główne wejścia:
 - przypięty upstream Kickstart jako odizolowany PoC przyszłej konfiguracji Neovima.
 
 Home Manager działa jako moduł NixOS i korzysta z globalnego zestawu pakietów.
-Manifest hosta wybiera nazwę konta oraz profil z `home/<profil>/`.
+`home/base/` jest wejściem wspólnej bazy sesji Home Managera, a
+`home/individual/<nazwa>/override.nix` jest trwałą nakładką dla jednego konta.
+Home Manager importuje oba moduły podczas budowania profilu. `hosts/<host>/host.json`
+jest manifestem hosta: wybiera nazwę hosta i konta,
+profil z `home/<profil>/`, moduły bazowe oraz funkcje. `default.nix` tylko
+odczytuje JSON, a `modules/host-base.nix` dołącza wskazane moduły.
 Flake odczytuje `theme.nix` z wybranego profilu i przekazuje jego paletę także
 modułom NixOS. Dzięki temu konsola oraz Tuigreet używają tych samych kolorów co
 sesja Home Managera bez wiązania modułu systemowego z nazwą konta lub profilu.
@@ -114,7 +124,8 @@ użytkownik świadomie nie przełączy konfiguracji na bezprzewodowy ALVR.
 
 - `hosts/rog-polamaniec/` zawiera manifest, sprzęt i parametry laptopa.
 - `modules/` zawiera współdzielone funkcje systemowe.
-- `home/wojtek/` zawiera przenośne ustawienia sesji użytkownika.
+- `home/base/` zawiera przenośne ustawienia wspólnej sesji; profile w
+  `home/<użytkownik>/` importują tę bazę.
 - `docs/` dokumentuje zachowanie, obsługę i plan rozwoju.
 
 ## Zasady

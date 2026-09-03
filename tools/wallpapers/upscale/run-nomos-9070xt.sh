@@ -120,7 +120,7 @@ done
   exit 1
 }
 
-work_root="$repo_root/home/wojtek/wallpapers/work/import-48"
+work_root="$repo_root/home/base/wallpapers/work/import-48"
 mkdir -p "$work_root/$stage_name"
 printf 'Czekam na wyłączną blokadę GPU: %s\n' "$work_root/nomos-rocm-gpu.lock"
 exec 9>"$work_root/nomos-rocm-gpu.lock"
@@ -200,9 +200,9 @@ done
 python_args=(
   python3 tools/wallpapers/upscale/nomos8kdat.py
   --model /runtime/models/4xNomos8kDAT.safetensors
-  --manifest /repo/home/wojtek/wallpapers/collection.json
-  --input-dir /repo/home/wojtek/wallpapers/work/import-48/masters
-  --output-dir "/repo/home/wojtek/wallpapers/work/import-48/$stage_name"
+  --manifest /repo/home/base/wallpapers/collection.json
+  --input-dir /repo/home/base/wallpapers/work/import-48/masters
+  --output-dir "/repo/home/base/wallpapers/work/import-48/$stage_name"
 )
 if [[ "$mode" == test ]]; then
   python_args+=(--slug "$slug")
@@ -222,7 +222,7 @@ elif [[ "$mode" == file || "$mode" == file-fp32 ]]; then
   output_path="$work_root/$stage_name/external/$output_name"
   python_args+=(
     --input-file "/input/$input_name"
-    --output-file "/repo/home/wojtek/wallpapers/work/import-48/$stage_name/external/$output_name"
+    --output-file "/repo/home/base/wallpapers/work/import-48/$stage_name/external/$output_name"
     --target-width "$file_target_width"
     --target-height "$file_target_height"
   )
@@ -233,7 +233,7 @@ printf 'Nomos8kDAT RX 9070 XT: mode=%s dtype=%s source_scale=%s tile=%s overlap=
   "${NOMOS_TILE:-$default_tile}" "${NOMOS_OVERLAP:-32}" "${NOMOS_BLEND:-0.65}"
 printf 'GPU PCI=%s render=%s ROCm ordinal=%s; bez HSA override.\n' \
   "$gpu_pci" "$render_node" "$gpu_ordinal"
-printf 'Staging: home/wojtek/wallpapers/work/import-48/%s\n' "$stage_name"
+printf 'Staging: home/base/wallpapers/work/import-48/%s\n' "$stage_name"
 if [[ "$mode" == file || "$mode" == file-fp32 ]]; then
   printf 'Wejście tylko do odczytu: %s\nWynik: %s\n' "$input_path" "$output_path"
 fi

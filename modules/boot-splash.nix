@@ -58,9 +58,10 @@ let
     Window.SetBackgroundBottomColor(${channel splashBackground 0}, ${channel splashBackground 2}, ${channel splashBackground 4});
 
     mascot.source = Image("wojtech-totem.png");
-    # 560 px gives the full TOTEM mascot a clear, deliberate presence while
-    # retaining room for the spinner on 768 px-tall displays.
-    mascot.image = mascot.source.Scale(560, 560);
+    # 720 px keeps the mascot readable on high-density displays; reduce this
+    # only for panels shorter than 900 px, so the spinner remains below it
+    # rather than clipping at the bottom edge.
+    mascot.image = mascot.source.Scale(720, 720);
     mascot.sprite = Sprite(mascot.image);
     spinner.source = Image("spinner.png");
     spinner.steps = 30;

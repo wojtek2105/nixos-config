@@ -143,11 +143,6 @@ in
     };
   };
 
-  hardware.bluetooth = {
-    enable = true;
-    powerOnBoot = true;
-  };
-
   services = {
     gvfs.enable = true;
     tumbler.enable = true;

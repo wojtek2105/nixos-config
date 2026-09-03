@@ -12,7 +12,7 @@ let
 
     ${lib.optionalString (cfg.peerHost != null) ''
       [[clients]]
-      # ROG hands input to White Monster at the right screen edge.
+      # The host manifest chooses the peer and the screen edge.
       position = "${cfg.peerPosition}"
       hostname = "${cfg.peerHost}"
       activate_on_startup = true

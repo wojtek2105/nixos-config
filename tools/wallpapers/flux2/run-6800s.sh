@@ -18,8 +18,8 @@ case "$mode" in
     ;;
 esac
 
-input="${2:-$repo_root/home/wojtek/wallpapers/32x9/01-frieren.png}"
-output="${3:-$repo_root/home/wojtek/wallpapers/work/import-48/flux2-klein-tests/01-frieren-klein4b.png}"
+input="${2:-$repo_root/home/base/wallpapers/32x9/01-frieren.png}"
+output="${3:-$repo_root/home/base/wallpapers/work/import-48/flux2-klein-tests/01-frieren-klein4b.png}"
 prompt_file="${FLUX2_PROMPT_FILE:-$repo_root/tools/wallpapers/flux2/prompts/preserve-anime-detail.txt}"
 
 if [[ -z "$render_node" ]]; then

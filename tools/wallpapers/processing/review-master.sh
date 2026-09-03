@@ -10,7 +10,7 @@ action="$1"
 slug="$2"
 reason="${3:-manual-review}"
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)"
-work_root="$repo_root/home/wojtek/wallpapers/work/import-48"
+work_root="$repo_root/home/base/wallpapers/work/import-48"
 master_file="$work_root/masters/$slug.png"
 
 if [[ ! -s "$master_file" ]]; then

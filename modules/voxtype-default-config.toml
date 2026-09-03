@@ -1,0 +1,80 @@
+# Voxtype Configuration
+#
+# Declarative first-run profile. After the initial copy to
+# ~/.config/voxtype/config.toml, Voxtype's TUI owns subsequent edits.
+
+state_file = "auto"
+engine = "whisper"
+
+[hotkey]
+# Caps Lock is handled by Voxtype through evdev; the host configuration grants
+# the user the required `input` group membership.
+enabled = true
+key = "CAPSLOCK"
+modifiers = []
+mode = "push_to_talk"
+
+[audio]
+# PipeWire follows the current default microphone, avoiding a machine-specific
+# PulseAudio or ALSA source name.
+device = "default"
+sample_rate = 16000
+max_duration_secs = 120
+
+[whisper]
+model = "large-v3"
+language = "pl"
+translate = false
+# Loading on demand releases the large model's RAM/VRAM between dictations.
+on_demand_loading = true
+gpu_isolation = false
+flash_attention = false
+eager_processing = false
+mode = "local"
+
+[output]
+mode = "type"
+fallback_to_clipboard = true
+type_delay_ms = 0
+pre_type_delay_ms = 0
+auto_submit = false
+shift_enter_newlines = false
+
+[output.notification]
+on_recording_start = true
+on_recording_stop = true
+on_transcription = true
+show_engine_icon = true
+
+[status]
+icon_theme = "nerd-font"
+
+[text]
+spoken_punctuation = true
+smart_auto_submit = false
+
+[parakeet]
+streaming = false
+model = "parakeet-unified-en-0.6b"
+
+[meeting]
+enabled = false
+
+[meeting.diarization]
+enabled = false
+
+[meeting.audio]
+source = "mic"
+
+[osd]
+enabled = true
+frontend = "gtk4"
+position = "bottom-center"
+width_px = 400
+height_px = 48
+margin_px = 24
+top_margin = 0.85
+opacity = 0.95
+waveform_window_secs = 3.0
+peak_decay_db_per_sec = 6.0
+waveform_gain = 10.0

@@ -15,7 +15,7 @@ black_21="${6:-2.0}"
 black_32="${7:-2.0}"
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)"
-wallpaper_root="$repo_root/home/wojtek/wallpapers"
+wallpaper_root="$repo_root/home/base/wallpapers"
 manifest="$wallpaper_root/collection.json"
 
 source_root="$(jq -r '.sourceRoot // "16x9"' "$manifest")"

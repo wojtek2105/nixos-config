@@ -39,7 +39,7 @@ done
 [[ -e /dev/kfd && -d /dev/dri ]] || { printf 'Brak urządzeń ROCm /dev/kfd lub /dev/dri.\n' >&2; exit 1; }
 docker info >/dev/null
 
-work_root="$repo_root/home/wojtek/wallpapers/work/import-48"
+work_root="$repo_root/home/base/wallpapers/work/import-48"
 mkdir -p "$work_root/$stage_name"
 printf 'Czekam na wyłączną blokadę GPU: %s\n' "$work_root/nomos-rocm-gpu.lock"
 exec 9>"$work_root/nomos-rocm-gpu.lock"
@@ -106,9 +106,9 @@ done
 python_args=(
   python3 tools/wallpapers/upscale/nomos8kdat.py
   --model /runtime/models/4xNomos8kDAT.safetensors
-  --manifest /repo/home/wojtek/wallpapers/collection.json
-  --input-dir /repo/home/wojtek/wallpapers/work/import-48/masters
-  --output-dir "/repo/home/wojtek/wallpapers/work/import-48/$stage_name"
+  --manifest /repo/home/base/wallpapers/collection.json
+  --input-dir /repo/home/base/wallpapers/work/import-48/masters
+  --output-dir "/repo/home/base/wallpapers/work/import-48/$stage_name"
 )
 if [[ "$mode" == test ]]; then
   python_args+=(--slug "$slug")
@@ -124,7 +124,7 @@ printf 'Nomos8kDAT RX 6800S: mode=%s dtype=%s source_scale=%s tile=%s overlap=%s
   "$mode" "${NOMOS_DTYPE:-bfloat16}" "${NOMOS_SOURCE_SCALE:-1.0}" \
   "${NOMOS_TILE:-512}" "${NOMOS_OVERLAP:-32}" "${NOMOS_BLEND:-0.65}" \
   "$gpu_pci" "$render_node"
-printf 'Staging: home/wojtek/wallpapers/work/import-48/%s\n' "$stage_name"
+printf 'Staging: home/base/wallpapers/work/import-48/%s\n' "$stage_name"
 printf 'Ctrl+C zatrzyma kontener i proces ROCm tego przebiegu.\n'
 
 docker "${docker_args[@]}" "$image" "${python_args[@]}" &

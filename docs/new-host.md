@@ -1,8 +1,8 @@
 # Nowy host i użytkownik krok po kroku
 
-Ten przewodnik opisuje utworzenie nowej konfiguracji przez skopiowanie hosta
-`rog-polamaniec` oraz profilu `home/wojtek`. Po wykonaniu opisanych zmian nazwa
-hosta i użytkownika nie jest zaszyta we współdzielonych modułach.
+Ten przewodnik opisuje utworzenie nowej konfiguracji przez generator hosta oraz
+współdzielony profil Home Managera. Nazwa hosta, użytkownika i ścieżka profilu
+są parametrami manifestu — nie trzeba ich przepisywać we współdzielonych modułach.
 
 ## Założenia
 
@@ -19,7 +19,7 @@ krótka, zapisana małymi literami i nie zawierać spacji.
 
 1. Zrób kopię danych z docelowego komputera i zdecyduj, czy dysk będzie
    wyczyszczony, szyfrowany albo używany w dual boot.
-2. W bieżącym checkoutcie przygotuj osobny host i profil użytkownika.
+2. W bieżącym checkoutcie utwórz manifest nowego hosta i wybierz profil użytkownika.
 3. Dopasuj manifest funkcji i importy sprzętowe, ale nie kopiuj konfiguracji
    sprzętowej ROG-a.
 4. Przenieś dokładnie ten checkout na Live ISO: przez zatwierdzony i wypchnięty
@@ -54,45 +54,59 @@ wskazywane przez `flake.nix` i importy Nix. Dotyczy to również nowych modułó
 oraz trzech plików z `home/<profil>/wallpapers/fallback/`. Nie przenoś haseł,
 tokenów, prywatnych kluczy SSH ani profili Wi-Fi.
 
-## 1. Wybór sposobu użycia profilu Home Managera
+## 1. Interaktywny manager i wspólny profil Home Managera
 
-Są dwa poprawne warianty.
+Domyślnie nowy użytkownik współdzieli źródła istniejącego profilu, ale zachowuje
+oddzielny katalog `/home/<username>` i stan aplikacji. Uruchom manager:
+
+```bash
+make host-manager
+```
+
+Jeżeli `gum`, `jq` lub Git nie są dostępne, manager sam uruchomi się w
+jednorazowym `nix shell`. Narzędzia nie są instalowane do systemu ani dodawane
+do flake. Wybierz **Utwórz host od zera**, uzupełnij dane użytkownika i wybierz
+architekturę, profil oraz moduły. Później ten sam manager edytuje host, zmienia
+moduły on/off, pokazuje diff i — wyłącznie po potwierdzeniu — uruchamia check,
+build, test albo switch.
+
+W menu `↑`/`↓` zmienia zaznaczenie, `→` oraz Enter potwierdzają wybór lub
+przełączają pozycję, a `←` i Esc cofają o jeden poziom. Pozycje zawierają
+przyjazną nazwę, opis i stan, więc nie trzeba znać technicznych kluczy takich
+jak `x1e`: jest to obsługa laptopów Snapdragon X Elite i jest dostępna tylko
+dla architektury ARM64.
+
+Wynik to `hosts/nowy-host/host.json` z wszystkimi zmiennymi oraz dwa małe pliki
+Nix będące stałym mostkiem do wspólnej konfiguracji. JSON jest jedynym miejscem
+edycji nazwy hosta, użytkownika, skali, funkcji i modułów. Wspólny profil to
+`base`; własne dodatki umieszczaj w `home/individual/<użytkownik>/override.nix`.
+
+```bash
+make host-manager
+```
 
 ### Osobna kopia profilu użytkownika
 
-Ten wariant pozwala później niezależnie zmieniać ustawienia obu kont:
+Jeżeli profil ma się później rozwijać niezależnie, skopiuj go przed utworzeniem
+hosta i wskaż jego nazwę w polu **Wspólny profil Home Managera**:
 
 ```bash
-cp -a home/wojtek home/nowy-user
+mkdir -p home/nowy-user
+cat > home/nowy-user/default.nix <<'EOF'
+{ ... }: { imports = [ ../base/default.nix ]; }
+EOF
+make host-manager
 ```
 
-W plikach skopiowanego katalogu nie trzeba zmieniać `wojtek` na nową nazwę.
-Nazwa konta i katalog domowy zostaną przekazane przez manifest hosta.
+Generator nie modyfikuje ani nie kopiuje profilu automatycznie. Każdy profil
+musi zawierać `default.nix` i `theme.nix`; flake przekazuje jego paletę również
+do systemowego Tuigreet.
 
-### Współdzielenie istniejącego profilu
+## 2. Konfiguracja sprzętu
 
-Nie kopiuj katalogu `home/wojtek`. W manifeście nowego hosta ustaw:
-
-```nix
-username = "nowy-user";
-homeProfile = "wojtek";
-```
-
-Powstanie oddzielne konto `/home/nowy-user`, ale jego konfiguracja będzie
-budowana ze źródeł w `home/wojtek`. Stan programów i pliki użytkowników nadal
-pozostają oddzielne. Każdy samodzielny profil musi zawierać `theme.nix`; flake
-przekazuje jego paletę zarówno do Home Managera, jak i systemowego Tuigreet.
-
-## 2. Skopiowanie hosta
-
-```bash
-mkdir hosts/nowy-host
-cp hosts/rog-polamaniec/default.nix hosts/nowy-host/
-cp hosts/rog-polamaniec/configuration.nix hosts/nowy-host/
-```
-
-Celowo nie kopiuj `hardware-configuration.nix`. Dzięki temu nie da się przez
-przypadek zbudować nowego hosta z UUID-ami dysków i modułami ROG-a.
+Generator celowo nie tworzy ani nie kopiuje `hardware-configuration.nix`.
+Dzięki temu nie da się przez przypadek zbudować nowego hosta z UUID-ami dysków
+i modułami ROG-a.
 
 Po dodaniu własnego `hardware-configuration.nix` nazwa katalogu automatycznie
 staje się:
@@ -135,7 +149,13 @@ Flake przekazuje tę wartość do `nixosSystem`; nie zmieniaj globalnie
 architektury innych hostów. Wygenerowany plik sprzętowy powinien również
 wykazywać `nixpkgs.hostPlatform = "aarch64-linux"`.
 
-## 4. Konfiguracja `hosts/nowy-host/default.nix`
+## 4. Dane hosta i moduły
+
+Nie edytuj `default.nix` ani `configuration.nix`: oba są stałymi adapterami
+do `host.json`. Wybieraj moduły i funkcje przez `make host-manager`; chroni to
+przed zestawami Ollama bez Dockera, ASUS bez AMD GPU, laptopa bez desktopu oraz
+X1E poza ARM64. Pozostała historyczna lista poniżej opisuje znaczenie pól
+przeniesionych do JSON.
 
 Poniższy szablon pokazuje wszystkie obsługiwane pola manifestu hosta:
 
@@ -157,8 +177,8 @@ Poniższy szablon pokazuje wszystkie obsługiwane pola manifestu hosta:
   userDescription = "Nowy użytkownik";
 
   # Opcjonalna nazwa katalogu w home/. Domyślnie jest równa `username`.
-  # Ustaw "wojtek", aby użyć home/wojtek bez kopiowania profilu.
-  # homeProfile = "wojtek";
+  # Profil użytkownika importuje wspólną bazę home/base.
+  # homeProfile = "nowy-user";
 
   # Jedna mapa steruje modułami NixOS i odpowiadającymi im elementami pulpitu.
   features = {
@@ -166,9 +186,16 @@ Poniższy szablon pokazuje wszystkie obsługiwane pola manifestu hosta:
     # Ustaw true tylko dla GPU obsługiwanego przez skrypt AMD w tym repo.
     amdGpuMetrics = false;
 
+    # BlueZ i zasilanie adaptera po starcie; włącz tylko, gdy host ma Bluetooth.
+    bluetooth = false;
+
     # Docker, Compose, lazydocker, lazyssh oraz integracja z pulpitem.
     # Daemon pozostaje uruchamiany ręcznie.
     docker = false;
+
+    # Lokalny Compose Ollama + Open WebUI w ~/Dev/Ollama. Wymaga Dockera;
+    # modele i ustawienia GUI pozostają prywatnymi danymi użytkownika.
+    ollama = false;
 
     # Steam, Proton-GE, Gamescope, GameMode i biblioteki 32-bit.
     gaming = false;
@@ -188,6 +215,10 @@ Poniższy szablon pokazuje wszystkie obsługiwane pola manifestu hosta:
 
     # Bateria, jasność i klawisze regulacji ekranu w sesji użytkownika.
     laptop = false;
+
+    # Lokalne dyktowanie Whisper oraz dostęp do grupy input dla hotkeya.
+    # Włączenie dodaje też skróty, launcher i wskaźnik Ironbara.
+    voxtype = false;
 
     # Każda większa aplikacja może być przełączana osobno.
     personalApps = {
@@ -262,7 +293,7 @@ Minimalny, komentowany szablon oparty na ROG-u:
     # Podstawowe narzędzia, locale, strefa czasowa i obsługa flakes.
     ../../modules/common.nix
 
-    # Hyprland, greetd, PipeWire, Bluetooth, awaryjny Thunar, fonty i usługi.
+    # Hyprland, greetd, PipeWire, awaryjny Thunar, fonty i usługi.
     ../../modules/desktop.nix
 
     # Fish, Codex i GNU Make.
@@ -340,13 +371,16 @@ według mapy `features` z manifestu. Nie należy powtarzać tych importów w
 | Moduł | Co włącza | Kiedy importować |
 |---|---|---|
 | `common.nix` | Flakes, ZRAM skalowany do 50% RAM-u, strefę Warszawa, polskie locale, Git, curl, jq, fd i ripgrep | Praktycznie na każdym hoście |
-| `desktop.nix` | Greetd/Tuigreet z logowaniem hasłem i uruchamianiem Hyprlanda przez UWSM, PipeWire, Bluetooth, awaryjny Thunar, Polkit i fonty | Na hostach graficznych |
+| `desktop.nix` | Greetd/Tuigreet z logowaniem hasłem i uruchamianiem Hyprlanda przez UWSM, PipeWire, awaryjny Thunar, Polkit i fonty | Na hostach graficznych |
+| `bluetooth.nix` | BlueZ i zasilanie adaptera po starcie | Gdy `features.bluetooth = true` |
 | `development-core.nix` | Fish, Codex i GNU Make | Gdy potrzebne są podstawowe narzędzia deweloperskie bez Dockera |
 | `docker.nix` | Docker uruchamiany ręcznie, grupę `docker`, Compose, lazydocker i lazyssh | Gdy `features.docker = true` |
+| `ollama.nix` | Pakiet Compose dla lokalnego stosu Ollama + Open WebUI | Gdy `features.ollama = true` i Docker jest włączony |
 | `gaming.nix` | Steam, Proton-GE, Gamescope, GameMode oraz grafikę i ALSA 32-bit | Gdy `features.gaming = true` |
 | `vr.nix` | ALVR, Steam i ADB dla przewodowego Quest 2; bez usług i otwierania portów | Gdy `features.vr = true` |
 | `scheduler-benchmark.nix` | Zachowany harness, stress-ng, SuperTuxKart i schedulery SCX | Doraźnie, gdy `features.schedulerBenchmark = true` |
 | `screen-recording.nix` | GPU Screen Recorder i oficjalne UI | Gdy `features.screenRecording = true` |
+| `voxtype.nix` | Lokalne dyktowanie Voxtype, model i dostęp do grupy `input` | Gdy `features.voxtype = true` |
 | `hardware-amd-gpu.nix` | `amdgpu` w initrd i systemową obsługę grafiki | Tylko dla GPU AMD |
 | `hardware-diagnostics.nix` | libva-utils, radeontop i vulkan-tools | Doraźnie, gdy `features.hardwareDiagnostics = true` |
 | `hardware-asus-laptop.nix` | Najnowsze jądro, `asus-armoury`, `asusd`, UPower, profile zasilania i ROG Control Center | Tylko dla zgodnych laptopów ASUS |
@@ -360,9 +394,9 @@ po skopiowaniu konfiguracji nie wymaga ręcznej zmiany.
 
 ### Jedno źródło prawdy: `features`
 
-- `docker`, `gaming`, `vr`, `screenRecording`, `hardwareDiagnostics` i
+- `docker`, `ollama`, `gaming`, `vr`, `screenRecording`, `hardwareDiagnostics` i
   `schedulerBenchmark` warunkowo importują kompletne moduły systemowe,
-- `amdGpuMetrics`, `docker`, `screenRecording`, `laptop` i `personalApps` są
+- `amdGpuMetrics`, `docker`, `ollama`, `screenRecording`, `laptop` i `personalApps` są
   przekazywane także do Home Managera i sterują wyłącznie pasującym interfejsem,
 - `personalApps` rozdziela Discord, Plexamp i EasyEffects, więc wyłączenie jednej
   aplikacji usuwa jej pakiet oraz skrót bez wpływu na pozostałe,
@@ -395,7 +429,7 @@ zawartość `xdg.configFile."screensaver/wojtech.txt"`. Identyfikator techniczny
 `org.polamaniec.screensaver` może pozostać bez zmian; jeśli go zmieniasz, zrób
 to spójnie w `default.nix` oraz regule okna w `hyprland.lua`.
 
-Skrypty produkcji tapet w `tools/` wskazują obecnie katalog `home/wojtek`.
+Skrypty produkcji tapet w `tools/` wskazują obecnie katalog `home/base`.
 Nie wpływa to na działanie pulpitu siostry, ale przed generowaniem osobnego
 zestawu tapet trzeba świadomie zmienić ich katalog docelowy.
 
@@ -412,7 +446,7 @@ W `.gitignore` dodaj:
 !/home/nowy-user/**
 ```
 
-Drugiej pary nie dodawaj, jeśli używasz `homeProfile = "wojtek"` i nie tworzysz
+Drugiej pary nie dodawaj, jeśli używasz profilu użytkownika importującego `home/base` i nie tworzysz
 `home/nowy-user`.
 
 Następnie:
@@ -564,7 +598,8 @@ pomijany przez Git. Przed dodaniem do indeksu użyj `path:.`.
 ### Brakuje profilu Home Managera
 
 Jeśli `username = "nowy-user"`, flake domyślnie szuka
-`home/nowy-user/default.nix`. Skopiuj profil albo ustaw:
+`home/nowy-user/default.nix`. Utwórz profil importujący `home/base`, albo
+ustaw istniejący profil użytkownika:
 
 ```nix
 homeProfile = "wojtek";

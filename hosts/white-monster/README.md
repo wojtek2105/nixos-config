@@ -1,6 +1,6 @@
 # White Monster
 
-Ten host współdzieli przenośny profil desktopowy `home/wojtek`: środowisko
+Ten host używa profilu `home/wojtek`, który importuje przenośną bazę desktopową `home/base`: środowisko
 Hyprland, aplikacje, gaming, Docker, VR i nagrywanie ekranu. Nie importuje
 modułu `hardware-asus-laptop.nix`, usług `asusd`, ROG Control Center, obsługi
 baterii, pokrywy, podświetlenia matrycy ani automatyki eDP. Moduł

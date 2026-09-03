@@ -2,7 +2,7 @@
 set -euo pipefail
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)"
-work_root="$repo_root/home/wojtek/wallpapers/work/import-48"
+work_root="$repo_root/home/base/wallpapers/work/import-48"
 mkdir -p "$work_root/finalized"
 
 shopt -s nullglob

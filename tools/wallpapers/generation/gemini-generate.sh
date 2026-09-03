@@ -2,7 +2,7 @@
 set -euo pipefail
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)"
-wallpaper_root="$repo_root/home/wojtek/wallpapers"
+wallpaper_root="$repo_root/home/base/wallpapers"
 secret_root="${XDG_CONFIG_HOME:-${HOME:?}/.config}/nixos-config/secrets"
 key_file="${GEMINI_API_KEY_FILE:-$secret_root/gemini-wallpapers.key}"
 prompt_file="${1:-}"

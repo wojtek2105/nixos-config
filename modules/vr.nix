@@ -26,9 +26,9 @@
           --prefix PATH : ${lib.makeBinPath [ pkgs.android-tools ]}
       '';
     };
-    # Wireless ALVR discovery and streaming use TCP/UDP 9943-9944. Keep this
-    # enabled while Wi-Fi is an intended fallback for the native wired mode.
-    openFirewall = true;
+    # This capability is for wired ADB transport only. Keep ALVR's Wi-Fi ports
+    # closed; a future wireless capability must opt in explicitly per host.
+    openFirewall = false;
   };
 
   # SteamVR is installed from the Steam library after activation. Enabling
@@ -73,7 +73,7 @@
       fi
 
       exec ${pkgs.steam-run}/bin/steam-run \
-        /home/wojtek/.local/share/Steam/steamapps/common/SteamVR/tools/steamvr_environments/game/steamtours.sh \
+        "''${HOME}/.local/share/Steam/steamapps/common/SteamVR/tools/steamvr_environments/game/steamtours.sh" \
         -vr -retail -vulkan -useappid SteamVRAppID -nowindow
     '')
     (pkgs.writeShellScriptBin "phasmophobia-vr" ''

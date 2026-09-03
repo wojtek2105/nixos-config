@@ -15,7 +15,7 @@ if [[ ! "$shard_index" =~ ^[0-9]+$ || ! "$shard_count" =~ ^[1-9][0-9]*$ ]] \
   exit 64
 fi
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)"
-wallpaper_root="$repo_root/home/wojtek/wallpapers"
+wallpaper_root="$repo_root/home/base/wallpapers"
 manifest="$wallpaper_root/collection.json"
 source_root="$(jq -r '.sourceRoot // "16x9"' "$manifest")"
 work_root="$wallpaper_root/work/import-48"

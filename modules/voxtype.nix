@@ -1,12 +1,16 @@
-{ lib, pkgs, ... }:
+{ inputs, lib, pkgs, username, ... }:
 
 let
-  voxtype = pkgs.voxtype-vulkan;
+  voxtype = inputs.voxtype.packages.${pkgs.stdenv.hostPlatform.system}.vulkan;
+  voxtypeOsdGtk4 = inputs.voxtype.packages.${pkgs.stdenv.hostPlatform.system}."osd-gtk4";
+  defaultUserConfig = ./voxtype-default-config.toml;
   servicePath = lib.makeBinPath [
     pkgs.curl
     pkgs.wl-clipboard
     pkgs.wtype
+    pkgs.which
     voxtype
+    voxtypeOsdGtk4
   ];
   prepareModel = pkgs.writeShellScript "voxtype-prepare-large-v3" ''
     model_path="''${XDG_DATA_HOME:-$HOME/.local/share}/voxtype/models/ggml-large-v3.bin"
@@ -30,13 +34,25 @@ let
 
     # Nix provides a polished first-run baseline, but a user-owned TUI config
     # must remain mutable and never be replaced by later NixOS activations.
-    [[ -e "$config_file" ]] && exit 0
+    # Voxtype 0.7.5 cannot save its older short template in the TUI (upstream
+    # #421). Migrate only that known form: `state_file` is mandatory in the
+    # bundled full template and absent from the previous Nix-generated file.
+    if [[ -e "$config_file" ]]; then
+      ${pkgs.gnugrep}/bin/grep -q '^state_file[[:space:]]*=' "$config_file" && exit 0
+      if [[ ! -e "$config_file.pre-full-template" ]]; then
+        ${pkgs.coreutils}/bin/cp --preserve=mode \
+          "$config_file" "$config_file.pre-full-template"
+      fi
+    fi
 
     ${pkgs.coreutils}/bin/mkdir -p "$config_directory"
     ${pkgs.coreutils}/bin/cp /etc/voxtype/config.toml "$config_file"
   '';
   voxtypeEnvironment = [
     "PATH=${servicePath}"
+    # Keep the user journal useful without retaining routine transcription
+    # progress. `warn` still records failures that need attention.
+    "RUST_LOG=warn"
     # The user-owned TUI configuration is the runtime authority. Do not add
     # VOXTYPE_* overrides here: systemd environment variables silently win over
     # ~/.config/voxtype/config.toml and make `voxtype configure` appear broken.
@@ -44,56 +60,26 @@ let
 in
 {
   config = {
+    # The optional built-in hotkey reads evdev directly. Grant this sensitive
+    # group only on hosts that explicitly opt into Voxtype.
+    users.users.${username}.extraGroups = [ "input" ];
+
     # Vulkan makes local Whisper inference practical on the AMD and Intel GPUs
     # expected by this flake. `large-v3` is the most accurate multilingual
     # Whisper model; its 3.1 GB file stays in each user's XDG data directory,
     # rather than being duplicated in the immutable system closure.
     environment.systemPackages = [
       voxtype
+      # The Vulkan package includes only the OSD launcher. The separately
+      # packaged GTK4 frontend below is what actually renders its waveform.
+      voxtypeOsdGtk4
       pkgs.wl-clipboard
       pkgs.wtype
     ];
 
-    # This is copied once to a new user's config directory before Voxtype
-    # starts. Later changes through `voxtype configure` stay user-owned.
-    environment.etc."voxtype/config.toml".text = ''
-    engine = "whisper"
-
-    [audio]
-    # PipeWire selects the user's current default microphone, so this works
-    # across hosts without encoding an ALSA or PulseAudio device name.
-    device = "default"
-    sample_rate = 16000
-    max_duration_secs = 120
-
-    [whisper]
-    backend = "local"
-    model = "large-v3"
-    language = "pl"
-    translate = false
-    # Technical, DevOps and gaming vocabulary bias; keep this a compact list
-    # of names so ordinary Polish speech stays natural.
-    initial_prompt = "Polskie dyktowanie techniczne: NixOS, Nix, flakes, Home Manager, Hyprland, systemd, Docker, Kubernetes, Terraform, Ansible, GitHub Actions, CI/CD, Linux, Bash, Rust, Python, TypeScript, JavaScript, PostgreSQL, Redis, API, CLI, GPU, Vulkan, Steam, Discord, Valheim."
-    # Loading only for a dictation releases the large model's RAM/VRAM between
-    # uses. This is the safe portable default for laptop and gaming hosts.
-    on_demand_loading = true
-
-    [hotkey]
-    # The user chooses and enables Voxtype's built-in hotkey in its TUI. Keep
-    # the system fallback disabled so headless hosts never claim evdev access.
-    enabled = false
-    mode = "toggle"
-
-    [output]
-    mode = "type"
-    # Hyprland is wlroots-based, so wtype preserves Polish Unicode directly.
-    # Clipboard remains a safe fallback for a focused application that rejects
-    # virtual keyboard input.
-    driver_order = ["wtype", "clipboard"]
-
-    [text]
-    spoken_punctuation = true
-    '';
+    # This complete start-up profile was saved through the Voxtype v1 TUI.
+    # Later TUI changes stay user-owned and are not overwritten by activation.
+    environment.etc."voxtype/config.toml".source = defaultUserConfig;
 
     systemd.user.services.voxtype = {
     description = "Voxtype local Polish voice dictation";

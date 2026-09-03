@@ -14,7 +14,7 @@ black_21="${5:-2.0}"
 black_32="${6:-2.0}"
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)"
-wallpaper_root="$repo_root/home/wojtek/wallpapers"
+wallpaper_root="$repo_root/home/base/wallpapers"
 
 if [[ -n "${MAGICK_BIN:-}" ]]; then
   magick_bin="$MAGICK_BIN"

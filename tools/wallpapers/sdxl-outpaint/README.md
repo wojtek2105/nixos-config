@@ -10,9 +10,9 @@ Po przygotowaniu środowiska ROCm z Diffusers uruchom w kontenerze AMD ROCm:
 
 ```bash
 PYTHONPATH=/runtime/python python3 tools/wallpapers/sdxl-outpaint/outpaint.py \
-  home/wojtek/wallpapers/new-upscaled/02-frieren.png \
-  home/wojtek/wallpapers/work/regenerate-2026-08-27/candidates/02-forest-sdxl.png \
-  home/wojtek/wallpapers/prompts/regenerate-32x9/02-frieren-forest-camp-characters-locked-v4.4-5.txt
+  home/base/wallpapers/new-upscaled/02-frieren.png \
+  home/base/wallpapers/work/regenerate-2026-08-27/candidates/02-forest-sdxl.png \
+  home/base/wallpapers/prompts/regenerate-32x9/02-frieren-forest-camp-characters-locked-v4.4-5.txt
 ```
 
 Najpierw przygotuj overlay Pythona zawierający `requirements-runtime.txt` oraz

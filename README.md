@@ -1,7 +1,8 @@
 # NixOS configuration
 
-Deklaratywna konfiguracja NixOS dla hosta `rog-polamaniec`, oparta na flakes,
-Home Managerze i Hyprlandzie.
+Deklaratywna konfiguracja NixOS dla wielu hostów, oparta na flakes, Home
+Managerze i Hyprlandzie. Każdy host wybiera użytkownika, profil Home Managera
+i zestaw funkcji w osobnym manifeście.
 
 Repozytorium źródłowe: `https://github.com/wojtek2105/nixos-config.git`.
 
@@ -33,3 +34,5 @@ sudo nixos-rebuild switch --flake path:.#rog-polamaniec
 Pełna dokumentacja i plan rozwoju znajdują się w [docs/](docs/README.md).
 Instrukcja skopiowania konfiguracji na nowy komputer i konto znajduje się w
 [docs/new-host.md](docs/new-host.md).
+
+Interaktywny wybór hosta, modułów i funkcji uruchamia `make host-manager`.

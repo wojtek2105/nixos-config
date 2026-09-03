@@ -1,0 +1,15 @@
+{
+  "hostName": "white-monster",
+  "system": "x86_64-linux",
+  "username": "wojtek",
+  "userDescription": "White Monster",
+  "homeProfile": "wojtek",
+  "homeOverlay": "wojtek",
+  "uiScale": 1,
+  "backlightDevice": null,
+  "trackball": null,
+  "replayConfig": { "captureSource": "focused_monitor" },
+  "systemSettings": { "bootTimeout": 1, "ignoreLidSwitch": false, "lanMousePeerHost": null, "stateVersion": "26.05", "useLatestKernel": true },
+  "modules": { "common": true, "bootSplash": true, "desktop": true, "developmentCore": true, "hardwareAmdGpu": true, "hardwareAsusLaptop": false, "lanMouse": true, "x1e": false },
+  "features": { "amdGpuMetrics": true, "bluetooth": true, "docker": true, "ollama": true, "ollamaFarm": true, "gaming": true, "vr": true, "screenRecording": true, "hardwareDiagnostics": false, "schedulerBenchmark": false, "laptop": false, "voxtype": true, "personalApps": { "discord": true, "easyeffects": true, "plexamp": true } }
+}

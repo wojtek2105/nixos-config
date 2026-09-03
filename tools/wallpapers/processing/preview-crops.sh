@@ -14,7 +14,7 @@ if [[ ! "$step" =~ ^[1-9][0-9]*$ ]]; then
 fi
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)"
-wallpaper_root="$repo_root/home/wojtek/wallpapers"
+wallpaper_root="$repo_root/home/base/wallpapers"
 work_root="$wallpaper_root/work/import-48"
 manifest="$wallpaper_root/collection.json"
 master="$work_root/masters/$slug.png"

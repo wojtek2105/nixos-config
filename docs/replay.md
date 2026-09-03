@@ -57,9 +57,9 @@ Pliki są zapisywane w `~/Videos/Replays`.
 
 - pakiet: `modules/screen-recording.nix`,
 - profil laptopa: `hosts/rog-polamaniec/configuration.nix`,
-- kontroler uruchamiania na żądanie: `gsr-control` w `home/wojtek/default.nix`,
-- skróty: `home/wojtek/hyprland.nix`,
-- konfiguracja nakładki: `home/wojtek/default.nix`.
+- kontroler uruchamiania na żądanie: `gsr-control` w `home/base/default.nix`,
+- skróty: `home/base/hyprland.nix`,
+- konfiguracja nakładki: `home/base/default.nix`.
 
 Plik `~/.config/gpu-screen-recorder/config_ui` jest generowany przez Home Manager.
 Oficjalne globalne skróty UI są wyłączone, aby nakładka nie przechwytywała całej

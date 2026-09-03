@@ -182,13 +182,13 @@ tools/wallpapers/upscale/run-nomos-6800s.sh batch 3
 
 ## Katalogi danych
 
-- `home/wojtek/wallpapers/raw/16x9/` — materiały źródłowe; JPEG-i są
+- `home/base/wallpapers/raw/16x9/` — materiały źródłowe; JPEG-i są
   wersjonowane jako wejście do upscale'u i outpaintu 32:9, a pozostałe formaty
   RAW pozostają lokalne.
-- `home/wojtek/wallpapers/work/import-48/masters/` — mastery przed finalizacją.
-- `home/wojtek/wallpapers/work/import-48/accepted/` — decyzje QA i offsety.
-- `home/wojtek/wallpapers/work/import-48/upscale-logs/` — logi lokalnego SR.
-- `home/wojtek/wallpapers/{16x9,21x9,32x9}/` — aktywna kolekcja używana przez
+- `home/base/wallpapers/work/import-48/masters/` — mastery przed finalizacją.
+- `home/base/wallpapers/work/import-48/accepted/` — decyzje QA i offsety.
+- `home/base/wallpapers/work/import-48/upscale-logs/` — logi lokalnego SR.
+- `home/base/wallpapers/{16x9,21x9,32x9}/` — aktywna kolekcja używana przez
   konfigurację pulpitu.
 
 Modele i środowiska uruchomieniowe nie trafiają do Git. Instalatory zapisują je

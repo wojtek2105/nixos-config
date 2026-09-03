@@ -33,6 +33,104 @@ Po ręcznym sprawdzeniu pulpitu, sieci, dźwięku i nagrywania:
 sudo nixos-rebuild switch --flake path:.#rog-polamaniec
 ```
 
+## Ollama
+
+Moduł `modules/ollama.nix` włącza się wyłącznie przez `features.ollama = true`
+w manifeście wybranego hosta i wymaga równoczesnego `features.docker = true`.
+Po aktywacji umieszcza `compose.yaml` oraz krótkie `README.md` w
+`~/Dev/Ollama`; nie uruchamia Dockera ani kontenerów. Wszystkie modele i dane
+Open WebUI pozostają mutowalne w `~/Dev/Ollama/data/`.
+
+Ręczny start jednego backendu GPU:
+
+```bash
+sudo systemctl start docker
+cd ~/Dev/Ollama
+make vulkan
+# albo na obsługiwanym GPU AMD:
+make rocm
+```
+
+Open WebUI jest dostępne w LAN pod `http://ADRES-LAN:3000`, a API wybranego GPU
+pod `http://ADRES-LAN:11434`; adres hosta pokaże `hostname -I`. Profil `cpu`
+można dodać równolegle; jego API działa na porcie `11435`. Vulkan jest
+przenośnym fallbackiem, natomiast ROCm na nieobsługiwanym GPU należy traktować
+jako eksperymentalny. Szczegóły zarządzania profilami znajdują się w
+`~/Dev/Ollama/README.md`. Ollama i SearXNG nie mają uwierzytelniania, więc
+porty LAN są przeznaczone wyłącznie dla zaufanej sieci.
+
+Ten sam stos uruchamia też SearXNG w LAN pod `http://ADRES-LAN:8080`. Cache jest
+w `~/Dev/Ollama/data/searxng/cache/`, a jego mutowalna konfiguracja w
+`~/Dev/Ollama/data/searxng/config/settings.yml`. Pierwsze `make vulkan`,
+`make rocm` albo `make cpu` tworzy ten plik z unikalnym 256-bitowym
+`server.secret_key`; kolejne uruchomienia nie nadpisują konfiguracji ani sekretu.
+Jeżeli zastaną oficjalny placeholder `ultrasecretkey`, bezpiecznie zastępują go
+nowym sekretem. Istniejący plik bez żadnego `server.secret_key` powoduje błąd
+zamiast cichego nadpisania potencjalnych ręcznych ustawień.
+Plik pozostaje poza Nix store i Git. Open WebUI jest już skonfigurowane
+zmiennymi Compose do korzystania z SearXNG: web search jest włączone, pobiera
+najwyżej trzy strony po 12 000 znaków, `DEFAULT_MODEL_METADATA` udostępnia tę
+funkcję modelom i ustawia ją jako ich domyślną funkcję, a
+`DEFAULT_INTERFACE_SETTINGS` włącza ją w każdym nowym czacie i ustawia
+domyślną regułę języka odpowiedzi. Konfiguracja
+bazowa włącza też `search.formats: [html, json]`, więc endpoint wymagany przez
+Open WebUI nie zwraca 403. Model korzystający z Native function calling sam
+decyduje, czy i ile razy wyszukać; użytkownik może wyłączyć narzędzie tylko w
+konkretnym czacie, gdy rozmowa ma pozostać offline.
+
+SearXNG działa z UID i GID użytkownika wywołującego Make; na standardowym
+NixOS dla `wojtek:users` jest to `1000:100`. `FORCE_OWNERSHIP=false` zapobiega
+ponownemu przejmowaniu bind mountów przez kontenerowy UID 977. Po migracji ze
+starszej konfiguracji napraw właściciela tylko danych SearXNG, a potem uruchom
+stos ponownie:
+
+```bash
+cd ~/Dev/Ollama
+make fix-searxng-permissions
+make vulkan
+```
+
+Konfiguracja usuwa z odziedziczonego katalogu silniki `ahmia` i `torch`, które
+w aktualnym obrazie nie rejestrują się poprawnie. Limiter instancji publicznych
+jest wyłączony, ponieważ ten stos działa wyłącznie w zaufanym LAN-ie i nie ma
+Valkey. Pusty `limiter.toml` jest obejściem ostrzeżenia emitowanego przez SearXNG
+nawet przy wyłączonym limiterze. CAPTCHA lub `Too Many Requests` z pojedynczego
+silnika nie oznacza awarii całego SearXNG: silnik jest czasowo zawieszany, a
+wyniki zwracają pozostałe źródła.
+
+Open WebUI zapisuje ustawienia administratora typu ConfigVar w swojej bazie,
+więc same ENV są seedem pierwszego startu. `make apply-webui-defaults` wykonuje
+deklaratywną synchronizację wyłącznie globalnych ustawień należących do stosu:
+SearXNG, WWW, streaming, Native function calling, kompaktowanie oraz parametry
+zadań. Polecenie następnie restartuje tylko Open WebUI. Nie usuwa ani nie
+zmienia kont, czatów, pobranych modeli, ręcznie utworzonych modeli ani połączeń
+API. Przed restartem wypisuje diff wyłącznie synchronizowanych kluczy; nie
+wyświetla sekretów ani danych ręcznie konfigurowanych połączeń.
+
+Wszystkie kontenery Ollamy dostają domyślny kontekst 16k, Flash Attention i
+8-bitowy cache KV. Native function calling jest domyślnym i wspieranym trybem
+Open WebUI; nie włączaj Legacy. Dla agentowych wywołań narzędzi wybieraj model
+z prawdziwą obsługą structured tool calls — małe modele mogą zwracać
+niepoprawne wywołania. `DEFAULT_MODEL_PARAMS` włącza też strumieniowanie
+odpowiedzi domyślnie (`stream: true`) i celowo nie ustawia `max_tokens`.
+Ominięcie opcjonalnego pola pozostawia modelowi decyzję o zakończeniu odpowiedzi;
+twardą granicą nadal jest jego okno kontekstu 16k współdzielone przez prompt,
+historię, narzędzia i wynik. Limit `1200` dotyczy wyłącznie pomocniczego modelu
+zadań Open WebUI. Parametry można nadpisać dla modelu lub pojedynczego czatu.
+
+Context Compaction jest włączony: przy około 11k tokenów Open WebUI streszcza
+starsze tury, zachowując ostatnie 40% wiadomości dosłownie. Pełna historia
+pozostaje w GUI, a kompaktowanie zmienia tylko kontekst wysyłany do modelu.
+Próg pozostawia miejsce w 16k dla system promptu, narzędzi, wyników SearXNG i
+odpowiedzi. Streszczenia używają modelu zadań Open WebUI; dla krytycznych,
+długich rozmów ustaw w GUI mocniejszy task model niż mały lokalny worker.
+
+Globalne ustawienia konta zawierają prompt nakazujący odpowiadać w języku
+ostatniej wiadomości użytkownika, więc polskie pytania dostają polskie
+odpowiedzi mimo angielskich wyników wyszukiwania. Kod, polecenia, logi, nazwy API
+i identyfikatory pozostają w oryginalnej formie. Prompt modelu utworzonego przez
+administratora w Workspace ma wyższy priorytet i może tę regułę zastąpić.
+
 ## PoC Neovima z Kickstart
 
 `nvim-kickstart` korzysta z osobnego `NVIM_APPNAME`, więc nie modyfikuje
@@ -45,7 +143,7 @@ Po pierwszym starcie sprawdź `:checkhealth`. Pełne usunięcie PoC wymaga usuni
 osobnych katalogów `nvim-kickstart` z `~/.config`, `~/.local/share`,
 `~/.local/state` i `~/.cache`; zwykły profil Neovima pozostaje wtedy nietknięty.
 
-## Zespół Codexa w Agent Managerze
+## Zespół agentów w Agent Managerze
 
 Uruchom panel z terminala:
 
@@ -53,28 +151,145 @@ Uruchom panel z terminala:
 agent-manager
 ```
 
-Przy pierwszym zadaniu utwórz sesję narzędziem `codex-manager`. Jest to lekki
-kierownik na `gpt-5.6-luna` z poziomem rozumowania `medium`, wystarczającym do
-podziału pracy, koordynacji i odbioru wyników. Kierownik tworzy workerów przez
-MCP, zawsze wybierając narzędzie `codex`; ten wpis uruchamia `codex-worker` na
-mocniejszym `gpt-5.6-terra` z poziomem `high`. Ten podział rezerwuje większy
-budżet rozumowania dla ograniczonych zadań wykonawczych, bez mnożenia kosztu
-sesji zarządzającej. Domyślny bezpiecznik instrukcji ogranicza zespół do czterech
-workerów, o ile zadanie jawnie nie wymaga większej liczby.
+Zwykłe `crabcode` uruchamia bezpośrednio profil ROG z Qwenem 3.5 9B,
+niezależnie od panelu. Ten sam launcher jest używany przez narzędzie
+`crabcode` w Agent Managerze. Model dla obu ustawia
+`OLLAMA_ROG_MODEL` w zapisywalnym `~/.config/ollama-router/hosts.env`; gdy
+wpisu nie ma, fallbackiem jest `qwen3.5:9b`.
+
+Do zwykłej pracy wybierz `crabcode-manager`. Sam kierownik działa lokalnie na
+Qwenie 3.5 9B z lekkim rozumowaniem, sprawdza `ollama-farm-status` i przez MCP kieruje typowe zadania do
+`crabcode`, `crabcode-rog-polamaniec`, `crabcode-white-monster` albo
+`crabcode-armaniec`. Trudną pracę kieruje najpierw do White Monstera, którego
+większy Qwen używa rozumowania i sam decyduje, czy rozwiązać zadanie lokalnie,
+czy utworzyć jednego workera `codex`. Jeżeli White Monster jest niedostępny,
+manager może dla takiego zadania uruchomić Codexa bezpośrednio. Nie zużywa
+tokenów Codexa na samo routowanie, statusy ani podsumowania.
+
+Na `izakomp` ten sam profil ma celowo węższy zakres: korzysta wyłącznie z
+lokalnej Ollamy pod `127.0.0.1:11434`, nie instaluje `ollama-farm-status` i nie
+pokazuje profili ROG, White Monster ani Armaniec. Może utworzyć tylko lokalnego
+workera `crabcode` albo, dla naprawdę trudnego zadania, `codex`. Lokalny model
+i endpoint można opcjonalnie zmienić przez `OLLAMA_LOCAL_MODEL` oraz
+`OLLAMA_LOCAL_URL` w `~/.config/ollama-router/hosts.env`; fallbackami są
+`qwen3.5:9b` i `http://127.0.0.1:11434/v1`.
+
+Wszystkie profile Crabcode/Ollama i Codex odpowiadają w języku ostatniego
+żądania użytkownika. Manager wpisuje ten język jawnie do zadań delegowanych,
+aby angielskie instrukcje techniczne workera nie zmieniły języka odpowiedzi.
+
+Każda widoczna sesja może przez MCP Agent Managera wywołać `create_session`;
+parametr `tool` wybiera launcher i backend modelu, a nie drugi serwer MCP.
+Rodzic zachowuje odpowiedzialność za przegląd i integrację wyniku dziecka.
+Polecenie pracy wyłącznie lokalnej zabrania managerowi uruchamiania Codexa. Po
+błędzie limitu Codexa ani manager, ani White Monster nie ponawiają go i
+kontynuują na osiągalnych workerach lokalnych, wskazując ewentualne ograniczenia.
+Limitu nie da się pewnie sprawdzić przed uruchomieniem sesji, a kontekst nie jest
+automatycznie przenoszony pomiędzy różnymi CLI.
+
+White Monster z 9070 XT jest preferowany dla większego modelu lub dłuższego
+kontekstu. Dla trudnego zadania jest obowiązkowym pierwszym stopniem eskalacji,
+jeśli endpoint i skonfigurowany model są dostępne; opóźnienie sondy wpływa tylko
+na wybór hosta dla pracy rutynowej.
+
+Przed uruchomieniem panelu skonfiguruj na swoim koncie
+`~/.config/ollama-router/hosts.env` z trwałymi adresami LAN i modelami faktycznie
+pobranymi na każdym hoście:
+
+```bash
+OLLAMA_ROG_URL=http://192.168.1.10:11434/v1
+OLLAMA_ROG_MODEL=qwen3.5:9b
+OLLAMA_WHITE_MONSTER_URL=http://192.168.1.20:11434/v1
+OLLAMA_WHITE_MONSTER_MODEL=qwen3:30b
+OLLAMA_ARMANIEC_URL=http://192.168.1.30:11434/v1
+OLLAMA_ARMANIEC_MODEL=qwen3:4b-instruct
+OLLAMA_ROUTER_URL=$OLLAMA_ROG_URL
+OLLAMA_ROUTER_MODEL=qwen3.5:9b
+```
+
+Na ROG-u pobierz go przed zmianą pliku:
+
+```bash
+cd ~/Dev/Ollama
+docker compose --profile vulkan exec ollama-vulkan ollama pull qwen3.5:9b
+```
+
+Crabcode startuje z `reasoning-effort=low` dla Qwena 3.5, Qwena 3.8 i
+Granite 4.2. Poziom można zmienić w selektorze modelu/thinking w Crabcode:
+Qwen 3.5 oferuje `low` / `medium` / `high`, a Qwen3.8 `low` / `medium` /
+`xhigh`. Nieznany GGUF celowo nie dostaje parametru reasoning, aby nie wysyłać
+nieobsługiwanej wartości do Ollamy.
+
+### Poziom reasoning Qwen3.8 w Open WebUI
+
+`Reasoning Tags` modelu służą tylko do zwijania `<think>...</think>`; nie
+ustawiają intensywności reasoning. Zainstalowana ręcznie Function
+[Reasoning Effort Selector](https://openwebui.com/posts/reasoning_effort_selector_ee572967)
+zapewnia właściwy parametr Qwen3.8. To zewnętrzny kod Python wykonywany przez
+Open WebUI, dlatego przed aktualizacją należy przeczytać jego źródło w GUI.
+
+Ustaw ją raz jako filtr domyślny, aby nie wybierać jej przy każdej wiadomości:
+
+1. `Workspace -> Functions`: włącz `Reasoning Effort` i w menu `...` aktywuj
+   ikonę globu.
+2. `Workspace -> Models -> <Qwen3.8> -> Filters`: zaznacz `Reasoning Effort`.
+3. W `Default Filters` wybierz `Reasoning Effort` i rozpocznij nowy czat.
+4. W Valve/ustawieniach Function ustaw `low` jako domyślne.
+
+Qwen3.8 rozumie tylko `low`, `medium` i `xhigh`; `high` nie jest jego poziomem.
+Wybór wpływa na kolejną wiadomość, a nie na już zakończone odpowiedzi.
+
+Plik jest celowo lokalny i mutowalny: modele, adresy i sprzęt różnią się między
+hostami. `ollama-farm-status` mierzy tylko osiągalność, krótki czas API i listę
+już załadowanych modeli; nie widzi kolejki tokenów, więc nie gwarantuje czasu
+całej odpowiedzi. Worker ma zgłosić timeout/przeciążenie, a rodzic może wtedy
+ponowić małą, ograniczoną próbę na innym hoście — nie uruchamiaj równolegle tych
+samych zmian tylko po to, aby „ścigać” hosty.
+
+Farmę można uruchamiać etapami. Host bez działającego endpointu albo pobranego
+modelu pojawi się jako `unavailable` i nie może zostać wybrany. Przy samym
+ROG-u manager kieruje pracę lokalną wyłącznie tam; White Monster i Armaniec
+zaczną uczestniczyć dopiero po uzupełnieniu ich adresów, modeli i usług.
 
 Najważniejsze operacje w panelu:
 
-- `n` tworzy sesję; dla korzenia wybierz `codex-manager`,
+- `n` tworzy sesję; dla oszczędzania tokenów wybierz jako korzeń `crabcode-manager`,
 - `Enter` otwiera zaznaczoną sesję, a `Ctrl+Q` wraca do panelu,
 - `Space` wysyła wiadomość bez przełączania sesji,
 - `Ctrl+R` otwiera przegląd zmian workera,
 - `x` zatrzymuje sesję z zachowaniem rekordu, a `v` ją wznawia,
 - `q` zamyka tylko panel; sesje nadal działają w prywatnym serwerze tmux.
 
-Po aktywacji sprawdź ręcznie, że manager widzi serwer MCP, tworzy workera jako
-`codex`, czeka na jego wynik i pokazuje jego status oraz diff w panelu. Logowanie
-Codexa i limity konta są współdzielone z normalnym CLI; konfiguracja nie zapisuje
-żadnych tokenów ani danych uwierzytelniających w repozytorium.
+Po aktywacji sprawdź ręcznie, że lokalny manager widzi serwer MCP, domyślnie
+tworzy lokalne workery, a trudne zadanie najpierw przekazuje do
+`crabcode-white-monster`. White Monster powinien móc utworzyć `codex`; po jego
+wyłączeniu manager powinien dla trudnego zadania móc utworzyć Codexa
+bezpośrednio. Każdy rodzic powinien czekać na wynik i pokazywać status oraz diff.
+Logowanie Codexa i limity konta są współdzielone z normalnym CLI, ale nie mają
+wpływu na sesje Crabcode/Ollama. Konfiguracja nie zapisuje tokenów ani danych
+uwierzytelniających w repozytorium.
+
+Gdy `features.ollama = true`, selektor narzędzi zawiera `crabcode`,
+`crabcode-manager` oraz trzy nazwane workery farmy. Zwykły `crabcode` używa
+lokalnego endpointu, a nazwane workery pobierają adres i model z `hosts.env`.
+Agent Manager przekazuje Crabcode ten sam serwer MCP przez warstwę zgodności z
+formatem OpenCode, więc lokalny manager
+może tworzyć workery na farmie, a White Monster może oszczędnie delegować
+nierozwiązane trudne zadanie do Codexa. Nie zastępuje to modelu w już istniejącej
+sesji; wybór narzędzia przy tworzeniu sesji określa backend. Open WebUI można
+podłączyć ręcznie przez jego
+API zgodne z OpenAI pod `http://ADRES-LAN:3000/api` i osobny klucz API
+użytkownika; nie zapisuj klucza w Nix ani Git.
+
+Agent Manager 0.33 zawsze dodaje wbudowany wpis `opencode`. Konfiguracja
+przekierowuje ten zgodnościowy alias do polecenia `crabcode`, więc nie instaluje
+ani nie uruchamia OpenCode; do nowych sesji i automatyzacji używaj nazw
+`crabcode*`. Alias możesz ukryć raz przez `s -> CLIs`, odznaczając `opencode`.
+Ta wersja Agent Managera nie zna magazynu sesji Crabcode, dlatego
+po `x`, a następnie `v`, nie odtwarza automatycznie identyfikatora rozmowy.
+Crabcode zachowuje własną historię w `~/.local/state/crabcode`, którą można
+otworzyć ręcznie z jego listy sesji. Samo `q` lub `Ctrl+Q` nie zatrzymuje sesji
+tmux i nie powoduje tego ograniczenia.
 
 Wersja Agent Managera jest przypięta razem z oficjalnym hashem, aby build i
 rollback były powtarzalne. Aktualizacja do najnowszego taga sprowadza się do:
@@ -262,7 +477,8 @@ wybrany wpis z powrotem do schowka i wkleić go do aktywnego okna.
    a bieżące wartości powinny zmieniać się w popupie co około 2 sekundy;
    sprawdzić wyśrodkowanie cyfr pulpitów oraz osobne miejsce dzwonka i licznika
    przy co najmniej jednym powiadomieniu.
-8. Sprawdzić `Print`, `Super+Shift+S` oraz zapis i kopiowanie z Satty.
+8. Sprawdzić `Print`, `Super+Shift+S` oraz zapis i kopiowanie z Satty; na
+   laptopie hybrydowym dGPU powinno pozostać uśpione także podczas edycji.
 9. Otworzyć `about:policies` w Zen i potwierdzić Dark Reader oraz Bitwarden na
    pasku narzędzi i w prywatnym oknie.
 10. Po zamknięciu i ponownym uruchomieniu Zen sprawdzić Biscuit w interfejsie,
