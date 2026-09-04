@@ -282,6 +282,7 @@ let
         pkgs.jq
         pkgs.playwright-mcp
         pkgs.ripgrep
+        pkgs.tmux
         searxngMcp
       ];
       text = ''
@@ -313,24 +314,80 @@ let
 
         runtime_parent="''${XDG_RUNTIME_DIR:-''${TMPDIR:-/tmp}}"
         runtime_config_dir="$(mktemp -d "$runtime_parent/cline-profile.XXXXXX")"
-        provider_settings="$runtime_config_dir/providers.json"
-        mcp_settings="$runtime_config_dir/cline_mcp_settings.json"
+        runtime_settings_dir="$runtime_config_dir/settings"
+        mkdir -p "$runtime_settings_dir"
+        provider_settings="$runtime_settings_dir/providers.json"
+        models_registry="$runtime_settings_dir/models.json"
+        mcp_settings="$runtime_settings_dir/cline_mcp_settings.json"
         trap 'rm -rf -- "$runtime_config_dir"' EXIT HUP INT TERM
 
-        # Native Ollama uses the API root, not the OpenAI-compatible /v1 path.
-        endpoint="''${endpoint%/v1}"
+        # Agent Manager 0.33 does not export its id for every custom MCP style.
+        # A managed pane is always named am_<session-id>, so recover the exact
+        # id from tmux. A standalone `cline` intentionally has no manager MCP.
+        session_id="''${AGENT_MANAGER_SESSION_ID:-}"
+        if [[ -z "$session_id" && -n "''${TMUX_PANE:-}" ]]; then
+          manager_session="$(tmux display-message -p -t "$TMUX_PANE" '#S' 2>/dev/null || true)"
+          if [[ "$manager_session" == am_* ]]; then
+            session_id="''${manager_session#am_}"
+          fi
+        fi
+        if [[ -n "$session_id" ]]; then
+          export AGENT_MANAGER_SESSION_ID="$session_id"
+        fi
+
+        # Cline's native Ollama adapter reduces every non-zero effort to the
+        # boolean `think=true`. Use Ollama's OpenAI-compatible endpoint and
+        # declare the local model capability so Cline exposes the effort picker
+        # and forwards low/medium/high/xhigh instead.
+        endpoint="''${endpoint%/}"
+        endpoint="''${endpoint%/v1}/v1"
         jq -n \
           --arg endpoint "$endpoint" \
           --arg model "$model" \
-          '{ollama: {provider: "ollama", baseUrl: $endpoint, model: $model,
-            apiProvider: "ollama", ollamaBaseUrl: $endpoint, ollamaModelId: $model}}' \
+          '{"ollama-farm": {
+            provider: "ollama-farm",
+            apiKey: "ollama",
+            baseUrl: $endpoint,
+            model: $model
+          }}' \
           > "$provider_settings"
+
+        # Cline stores custom model metadata in models.json next to
+        # providers.json. A named provider avoids the built-in generic
+        # provider's manual model-id screen.
+        jq -n \
+          --arg endpoint "$endpoint" \
+          --arg model "$model" \
+          '{version: 1, providers: {
+            "ollama-farm": {
+              provider: {
+                name: "Ollama farm",
+                baseUrl: $endpoint,
+                defaultModelId: $model,
+                protocol: "openai-chat",
+                client: "openai-compatible",
+                capabilities: ["streaming", "tools", "reasoning"]
+              },
+              models: {
+                ($model): {
+                  id: $model,
+                  name: $model,
+                  contextWindow: 16384,
+                  maxInputTokens: 16384,
+                  maxTokens: 8192,
+                  capabilities: ["streaming", "tools", "reasoning"],
+                  supportsReasoning: true
+                }
+              }
+            }
+          }}' \
+          > "$models_registry"
 
         # Playwright is registered but disabled until enabled in Cline's MCP
         # screen. No source-control MCP is installed.
         jq -n \
           --arg agent_manager "${agentManager}/bin/agent-manager" \
-          --arg session_id "''${AGENT_MANAGER_SESSION_ID:-}" \
+          --arg session_id "$session_id" \
           --arg tmux_tmpdir "''${TMUX_TMPDIR:-}" \
           --arg runtime_dir "''${XDG_RUNTIME_DIR:-}" \
           --arg searxng "${searxngMcp}/bin/searxng-mcp" \
@@ -341,7 +398,7 @@ let
               command: $agent_manager, args: ["mcp"],
               env: {AGENT_MANAGER_SESSION_ID: $session_id,
                 TMUX_TMPDIR: $tmux_tmpdir, XDG_RUNTIME_DIR: $runtime_dir},
-              disabled: false, autoApprove: []
+              disabled: ($session_id == ""), autoApprove: []
             },
             searxng: {
               command: $searxng, env: {SEARXNG_URL: $searxng_url},
@@ -360,8 +417,8 @@ let
         system_prompt="$(<${instructions})"
         export CLINE_PROVIDER_SETTINGS_PATH="$provider_settings"
         export CLINE_MCP_SETTINGS_PATH="$mcp_settings"
-        exec ${clineCli}/bin/cline \
-          --provider ollama \
+        ${clineCli}/bin/cline \
+          --provider ollama-farm \
           --model "$model" \
           --thinking "$requested_reasoning" \
           --system "$system_prompt" \

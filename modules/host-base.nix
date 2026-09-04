@@ -30,7 +30,9 @@ in
   };
 
   hardware = {
-    enableRedistributableFirmware = settings.enableVivobookS15;
+    # Wi-Fi, Bluetooth and GPUs on every supported host require firmware that
+    # is not part of the fully free set; this must not depend on one ARM model.
+    enableRedistributableFirmware = true;
   } // lib.optionalAttrs settings.enableVivobookS15 {
     asus-vivobook-s15.enable = true;
   };
