@@ -15,18 +15,16 @@ nixosConfigurations.white-monster
 Domyślny `devShell` zapewnia Codex, Git i Neovim do pracy nad konfiguracją.
 
 Profil Home Managera instaluje Agent Manager jako warstwę operacyjną nad
-trwałymi sesjami CLI w tmux. Jeden profil Codexa używa `gpt-5.6-terra` z
-rozumowaniem `medium` zarówno dla korzenia, jak i workerów. Alternatywny
-`crabcode-manager` działa na małym lokalnym Qwenie i domyślnie tworzy przez MCP
-workery Crabcode/Ollama. Trudne zadanie eskaluje najpierw do większego modelu na
-White Monsterze; ten może utworzyć Codexa, gdy lokalne rozumowanie nie wystarczy.
-Przy niedostępnym White Monsterze manager może eskalować do Codexa bezpośrednio.
-Sesje pozostają widoczne w TUI; natywne subagenty Codexa są wyłączone, aby nie
-tworzyć drugiego, ukrytego drzewa.
-Jawna cecha hosta `features.ollamaFarm` rozdziela profile zdalnej farmy od
-lokalnego Crabcode. Jej wyłączenie pozostawia tylko loopback Ollamy i opcjonalną
-eskalację przez MCP do Codexa; włączenie dodaje nazwane workery hostów oraz
-sondę `ollama-farm-status`.
+trwałymi sesjami CLI w tmux. Codex używa `gpt-5.6-terra` z rozumowaniem
+`medium`. Lokalny kierownik to profil `rog-polamaniec-low` (na hostach
+lokalnych `local-low`): przez MCP tworzy widoczne workery i używa Codexa tylko
+po nieudanej eskalacji do White Monstera. ROG udostępnia `low` / `medium` /
+`high`, a White Monster z Qwenem 3.8 `low` / `medium` / `xhigh`; każdy profil
+wysyła wyłącznie prawidłowy dla modelu effort. Sesje pozostają widoczne w TUI;
+natywne subagenty Codexa są wyłączone, aby nie tworzyć drugiego ukrytego drzewa.
+`features.ollamaFarm` rozdziela profile zdalnej farmy od lokalnego Cline.
+Wyłączenie pozostawia lokalne trzy profile i opcjonalną eskalację do Codexa,
+a włączenie dodaje White Monstera oraz sondę `ollama-farm-status`.
 
 Pulpit korzysta wyłącznie z Ironbara. Kod Waybara, Noctalii i narzędzia do ich
 porównywania został usunięty, a historyczne wyniki pozostały w dokumentacji.

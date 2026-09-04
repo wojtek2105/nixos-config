@@ -219,11 +219,11 @@ in
       ustaw wartość globalną w jego konfiguracji.
 
       ${if !ollamaFarmEnabled then ''
-      ## Lokalny Crabcode w Agent Managerze
+      ## Lokalny Cline w Agent Managerze
 
-      Polecenie `crabcode` i profil `crabcode-manager` używają wyłącznie
-      lokalnej Ollamy pod `http://127.0.0.1:11434/v1`. Domyślnym modelem jest
-      `qwen3.5:9b`. Opcjonalne nadpisanie przechowuj poza Git w pliku
+      Profile `local-low`, `local-medium` i `local-high` używają wyłącznie
+      lokalnej Ollamy pod `http://127.0.0.1:11434/v1`. `local-low` jest
+      kierownikiem; domyślnym modelem jest `qwen3.5:9b`. Nadpisanie przechowuj poza Git w pliku
       `~/.config/ollama-router/hosts.env`:
 
       ```bash
@@ -231,9 +231,9 @@ in
       OLLAMA_LOCAL_MODEL=qwen3.5:9b
       ```
 
-      `crabcode-manager` może przez MCP utworzyć lokalnego workera `crabcode`
-      albo, tylko dla naprawdę trudnego zadania, workera `codex`. Profile ROG,
-      White Monster i Armaniec oraz `ollama-farm-status` nie są na tym hoście
+      `local-low` może przez MCP utworzyć lokalnego workera albo, tylko dla
+      naprawdę trudnego zadania, workera `codex`. Profile ROG, White Monster i
+      `ollama-farm-status` nie są na tym hoście
       instalowane ani pokazywane w selektorze Agent Managera.
 
       Przed pierwszym uruchomieniem pobierz model do lokalnego kontenera:
@@ -242,30 +242,27 @@ in
       docker compose --profile rocm exec ollama-rocm ollama pull qwen3.5:9b
       ```
 
-      Crabcode startuje dla Qwena 3.5 z `reasoning-effort=low`; w jego selektorze
-      modelu/thinking można przełączyć poziom na `medium` albo `high`.
+      Profile wymuszają odpowiednio `low`, `medium` oraz `high` dla Qwena 3.5.
+      Zwykłe `cline` uruchamia profil low. Playwright jest dostępny w ekranie
+      MCP tego samego TUI, ale pozostaje domyślnie wyłączony.
 
       Agent Manager 0.33 zawsze dodaje wbudowany wpis `opencode`. Jest to tylko
-      alias zgodnościowy uruchamiający Crabcode; możesz ukryć go raz przez
+      alias zgodnościowy uruchamiający Cline; możesz ukryć go raz przez
       `s -> CLIs`, odznaczając `opencode`.
       '' else ''
       ## Local workers in Agent Manager
 
-      Polecenie `crabcode` uruchamia Crabcode na profilu ROG z Qwenem 3.5 9B.
-      Ten sam launcher jest dostępny jako narzędzie `crabcode` w Agent
-      Managerze. Model zmieniasz dla obu w `OLLAMA_ROG_MODEL` w zapisywalnym
-      `~/.config/ollama-router/hosts.env`; przy braku wpisu bezpiecznym
-      fallbackiem jest `qwen3.5:9b`. Worker uruchomiony z panelu dostaje MCP
-      Agent Managera, więc może raportować status i używać narzędzi zarządzania
-      sesją.
+      Profile `rog-polamaniec-low`, `rog-polamaniec-medium` i
+      `rog-polamaniec-high` uruchamiają Qwena 3.5 9B. `rog-polamaniec-low` jest
+      kierownikiem; model wszystkich trzech zmieniasz w `OLLAMA_ROG_MODEL`.
 
       ## Lokalny manager całej farmy modeli
 
-      Agent Manager udostępnia `crabcode-manager` oraz osobne workery dla
-      `rog-polamaniec`, `white-monster` i `armaniec`. Manager działa domyślnie
+      Agent Manager udostępnia trzy profile ROG i po skonfigurowaniu White
+      Monstera trzy profile Qwena 3.8. `rog-polamaniec-low` działa domyślnie
       na Qwenie 3.5 9B z lekkim rozumowaniem,
       może wykonywać zadania samodzielnie i przez MCP domyślnie tworzy workery
-      Crabcode/Ollama. Naprawdę trudną architekturę, diagnozę, integrację lub
+      Cline/Ollama. Naprawdę trudną architekturę, diagnozę, integrację lub
       przegląd wysokiego ryzyka przekazuje najpierw do większego Qwena na
       `white-monster`. Ten worker może przez MCP uruchomić Codexa, jeśli lokalne
       rozumowanie nie wystarczy. Gdy White Monster jest niedostępny, manager może
@@ -280,11 +277,7 @@ in
       OLLAMA_ROG_URL=http://192.168.1.10:11434/v1
       OLLAMA_ROG_MODEL=qwen3.5:9b
       OLLAMA_WHITE_MONSTER_URL=http://192.168.1.20:11434/v1
-      OLLAMA_WHITE_MONSTER_MODEL=qwen3:30b
-      OLLAMA_ARMANIEC_URL=http://192.168.1.30:11434/v1
-      OLLAMA_ARMANIEC_MODEL=qwen3:4b-instruct
-      OLLAMA_ROUTER_URL=$OLLAMA_ROG_URL
-      OLLAMA_ROUTER_MODEL=qwen3.5:9b
+      OLLAMA_WHITE_MONSTER_MODEL=qwen3.8:27b
       ```
 
       Przed pierwszym uruchomieniem routera pobierz jego model na ROG-u:
@@ -293,29 +286,28 @@ in
       docker compose --profile vulkan exec ollama-vulkan ollama pull qwen3.5:9b
       ```
 
-      Crabcode startuje z `reasoning-effort=low` dla Qwena 3.5, Qwena 3.8 i
-      Granite 4.2. Poziom można zmienić w selektorze modelu/thinking w Crabcode:
-      Qwen 3.5 ma `low`, `medium` i `high`, a Qwen3.8 ma `low`, `medium` i
-      `xhigh`. Dla nieznanego GGUF launcher nie wysyła parametru reasoning.
+      Qwen 3.5 ma profile `low`, `medium` i `high`, a Qwen3.8 `low`, `medium`
+      i `xhigh`. Nieobsługiwany effort kończy launcher czytelnym błędem.
+      Zwykłe `cline` uruchamia profil low. Playwright jest zarejestrowany w
+      każdym profilu, ale domyślnie wyłączony, aby nie obciążać sesji Qwena
+      jego schematami narzędzi.
 
       Każdy wpis modelu musi istnieć na wskazanym hoście. Adresy odczytasz na
       nim przez `hostname -I`; użyj stałych adresów DHCP lub własnego DNS.
       Farmę można uruchamiać etapami: nieskonfigurowany host będzie oznaczony
       jako `unavailable` i manager go nie wybierze, więc początkowo może działać
       wyłącznie ROG.
-      Następnie uruchom `agent-manager` i utwórz sesję `crabcode-manager`.
+      Następnie uruchom `agent-manager` i utwórz sesję `rog-polamaniec-low`.
       Polecenie `ollama-farm-status` pokazuje ręcznie ten sam status, którego
       manager używa przed wyborem workera. Aby pracować po wyczerpaniu limitu,
       poleć managerowi działać wyłącznie lokalnie; po błędzie limitu sam nie
       ponowi Codexa. Kontekst nie jest przenoszony automatycznie pomiędzy CLI.
 
       Agent Manager 0.33 zawsze dodaje wbudowany wpis `opencode`. Jest to tylko
-      zgodnościowy alias przekierowany tutaj do `crabcode`; OpenCode nie jest
+      zgodnościowy alias przekierowany tutaj do profilu low; OpenCode nie jest
       instalowany. Możesz ukryć go raz przez `s -> CLIs`, odznaczając
-      `opencode`. Ta wersja managera nie potrafi automatycznie zapisać i
-      wznowić identyfikatora rozmowy Crabcode po `x` oraz `v`. Crabcode zachowuje
-      jednak historię w `~/.local/state/crabcode`, a zamknięcie samego panelu
-      pozostawia działające sesje tmux bez zmian.
+      `opencode`. Cline zachowuje historię w `~/.cline/`; zamknięcie samego
+      panelu pozostawia działające sesje tmux bez zmian.
       ''}
 
       Zmiana GPU wymaga najpierw zatrzymania poprzedniego wariantu:

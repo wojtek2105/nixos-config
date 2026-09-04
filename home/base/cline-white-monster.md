@@ -1,6 +1,6 @@
 ---
-name: crabcode-white-monster
-description: Solve difficult work with the White Monster local model and gate escalation to Codex.
+name: cline-white-monster
+description: Solve difficult work with the White Monster Cline/Ollama model and gate escalation to Codex.
 ---
 
 # White Monster Reasoning Gate

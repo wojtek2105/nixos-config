@@ -3,55 +3,8 @@
 let
   version = "0.33.0";
   agentManagerHash = "sha256-rne6ZzaPolj4JySB8Q2YohGcoIAy5BVFOF3EIToAWDw=";
-  crabcodeVersion = "0.0.11";
   farmEnabled = desktopFeatures.ollamaFarm or false;
   localOnlyProfile = !farmEnabled;
-
-  crabcodeRelease =
-    if pkgs.stdenv.hostPlatform.system == "x86_64-linux" then {
-      target = "x86_64-unknown-linux-gnu";
-      hash = "sha256-u+fIA8NMKd/HMq7LhvKI8wbliiXgIxsFznDShnsTf3Y=";
-    } else if pkgs.stdenv.hostPlatform.system == "aarch64-linux" then {
-      target = "aarch64-unknown-linux-gnu";
-      hash = "sha256-XUoftb4/1bKixioVWcia++4FBk3bI77Yc+nnhutJpn4=";
-    } else
-      throw "Crabcode ${crabcodeVersion} nie udostępnia paczki dla ${pkgs.stdenv.hostPlatform.system}";
-
-  # Upstream publishes checksummed native binaries but is not yet available
-  # in the pinned Nixpkgs. Keep the release and both supported Linux hashes
-  # explicit so every host gets a reproducible package without curl installers.
-  crabcodePackage = pkgs.stdenvNoCC.mkDerivation {
-    pname = "crabcode";
-    version = crabcodeVersion;
-
-    src = pkgs.fetchurl {
-      url = "https://github.com/Blankeos/crabcode/releases/download/v${crabcodeVersion}/crabcode-${crabcodeRelease.target}.tar.xz";
-      inherit (crabcodeRelease) hash;
-    };
-
-    nativeBuildInputs = [ pkgs.autoPatchelfHook ];
-    buildInputs = [
-      pkgs.openssl
-      pkgs.stdenv.cc.cc.lib
-    ];
-
-    installPhase = ''
-      runHook preInstall
-      install -Dm755 crabcode "$out/bin/crabcode"
-      install -Dm644 LICENSE "$out/share/licenses/crabcode/LICENSE"
-      install -Dm644 README.md "$out/share/doc/crabcode/README.md"
-      install -Dm644 CHANGELOG.md "$out/share/doc/crabcode/CHANGELOG.md"
-      runHook postInstall
-    '';
-
-    meta = {
-      description = "Fast Rust terminal coding agent with OpenCode-compatible configuration";
-      homepage = "https://crabcode.rs";
-      license = lib.licenses.mit;
-      mainProgram = "crabcode";
-      platforms = [ "x86_64-linux" "aarch64-linux" ];
-    };
-  };
 
   languagePolicy = ''
     Always answer in the language of the most recent end-user request unless
@@ -105,6 +58,43 @@ let
     };
   };
 
+  clineVersion = "3.0.61";
+  clineCli = pkgs.stdenvNoCC.mkDerivation {
+    pname = "cline-cli";
+    version = clineVersion;
+
+    src = pkgs.fetchurl {
+      url = "https://registry.npmjs.org/@cline/cli-linux-x64/-/cli-linux-x64-${clineVersion}.tgz";
+      hash = "sha256-4PFWZ6XObZAuYVRmBbQPMsJCrAXz9M6N+OC6yWsJctA=";
+    };
+
+    nativeBuildInputs = [ pkgs.autoPatchelfHook ];
+    buildInputs = [ pkgs.stdenv.cc.cc.lib ];
+    dontStrip = true;
+
+    unpackPhase = ''
+      runHook preUnpack
+      tar -xzf "$src"
+      runHook postUnpack
+    '';
+
+    installPhase = ''
+      runHook preInstall
+      mkdir -p "$out/bin" "$out/lib/cline"
+      cp -R package/. "$out/lib/cline/"
+      ln -s ../lib/cline/bin/cline "$out/bin/cline"
+      runHook postInstall
+    '';
+
+    meta = {
+      description = "Terminal coding agent with Plan and Act modes";
+      homepage = "https://github.com/cline/cline";
+      license = lib.licenses.asl20;
+      mainProgram = "cline";
+      platforms = [ "x86_64-linux" ];
+    };
+  };
+
   codexInstructions = languagePolicy + ''
     You are a visible Agent Manager session. If the user started you as the root
     session, keep ownership of requirements, decomposition, coordination,
@@ -112,11 +102,12 @@ let
     bounded work, stay within that scope and return concrete evidence and a
     concise handoff. Delegate independent work through Agent Manager MCP and
     ${if localOnlyProfile then ''
-      On this local-only host, choose only tool="codex" or tool="crabcode" for every child;
+      On this local-only host, choose only tool="codex", "local-low",
+      "local-medium", or "local-high" for every child;
       no remote Ollama farm profiles are installed on this host.
     '' else ''
-      Choose tool="codex", "crabcode", or an explicit "crabcode-*" tool for
-      every child.
+      Choose tool="codex" or an explicit ROG/White Monster effort profile for
+      every child. Do not use the hidden OpenCode compatibility alias.
     ''}
     State its backend, objective, authority, expected handoff, and exact file
     scope.
@@ -125,14 +116,110 @@ let
     visible and controllable in Agent Manager.
   '';
 
-  localWorkerInstructions = pkgs.writeText "crabcode-language-instructions.md"
+  localWorkerInstructions = pkgs.writeText "cline-language-instructions.md"
     languagePolicy;
-  localManagerInstructions = pkgs.writeText "crabcode-manager-instructions.md"
-    (builtins.readFile ./crabcode-manager.md + "\n" + languagePolicy);
-  localOnlyManagerInstructions = pkgs.writeText "crabcode-local-manager-instructions.md"
-    (builtins.readFile ./crabcode-local-manager.md + "\n" + languagePolicy);
-  whiteMonsterInstructions = pkgs.writeText "crabcode-white-monster-instructions.md"
-    (builtins.readFile ./crabcode-white-monster.md + "\n" + languagePolicy);
+  localManagerInstructions = pkgs.writeText "cline-manager-instructions.md"
+    (builtins.readFile ./cline-manager.md + "\n" + languagePolicy);
+  localOnlyManagerInstructions = pkgs.writeText "cline-local-manager-instructions.md"
+    (builtins.readFile ./cline-local-manager.md + "\n" + languagePolicy);
+  whiteMonsterInstructions = pkgs.writeText "cline-white-monster-instructions.md"
+    (builtins.readFile ./cline-white-monster.md + "\n" + languagePolicy);
+
+  # Keep the local SearXNG integration dependency-free. It speaks the small
+  # stdio subset of MCP needed by Cline and caps results before they reach a
+  # model's context window.
+  searxngMcpProgram = pkgs.writeText "searxng-mcp.py" ''
+    import json
+    import os
+    import sys
+    import urllib.parse
+    import urllib.request
+
+    server_info = {"name": "searxng", "version": "1.0.0"}
+    search_tool = {
+        "name": "search",
+        "description": "Search the local SearXNG instance and return compact web results.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "minLength": 1},
+                "max_results": {"type": "integer", "minimum": 1, "maximum": 5},
+            },
+            "required": ["query"],
+            "additionalProperties": False,
+        },
+    }
+
+    def respond(message):
+        print(json.dumps(message, ensure_ascii=False), flush=True)
+
+    def search(arguments):
+        query = arguments.get("query")
+        if not isinstance(query, str) or not query.strip():
+            raise ValueError("query must be a non-empty string")
+        limit = arguments.get("max_results", 5)
+        if not isinstance(limit, int):
+            raise ValueError("max_results must be an integer")
+        limit = min(max(limit, 1), 5)
+        endpoint = os.environ.get("SEARXNG_URL", "http://127.0.0.1:8080").rstrip("/")
+        url = endpoint + "/search?" + urllib.parse.urlencode({"q": query, "format": "json"})
+        request = urllib.request.Request(url, headers={"Accept": "application/json"})
+        with urllib.request.urlopen(request, timeout=10) as response:
+            payload = json.load(response)
+        results = []
+        for result in payload.get("results", [])[:limit]:
+            results.append({
+                "title": result.get("title", ""),
+                "url": result.get("url", ""),
+                "snippet": result.get("content", "")[:800],
+                "engine": result.get("engine", ""),
+            })
+        return results
+
+    for line in sys.stdin:
+        try:
+            request = json.loads(line)
+            method = request.get("method")
+            request_id = request.get("id")
+            if method == "initialize":
+                result = {
+                    "protocolVersion": "2025-06-18",
+                    "capabilities": {"tools": {}},
+                    "serverInfo": server_info,
+                }
+            elif method == "tools/list":
+                result = {"tools": [search_tool]}
+            elif method == "tools/call":
+                params = request.get("params", {})
+                if params.get("name") != "search":
+                    raise ValueError("unknown tool")
+                results = search(params.get("arguments", {}))
+                result = {
+                    "content": [{"type": "text", "text": json.dumps(results, ensure_ascii=False)}],
+                    "structuredContent": {"results": results},
+                }
+            elif method and request_id is None:
+                continue
+            else:
+                raise ValueError("method not found")
+            if request_id is not None:
+                respond({"jsonrpc": "2.0", "id": request_id, "result": result})
+        except Exception as error:
+            if "request_id" in locals() and request_id is not None:
+                respond({
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "error": {"code": -32602, "message": str(error)},
+                })
+  '';
+
+  searxngMcp = pkgs.writeShellApplication {
+    name = "searxng-mcp";
+    runtimeInputs = [ pkgs.python3 ];
+    text = ''
+      exec python3 ${searxngMcpProgram}
+    '';
+  };
 
   mkCodexLauncher = name: model: reasoningEffort: instructions:
     pkgs.writeShellApplication {
@@ -174,31 +261,34 @@ let
   # Medium reasoning keeps concurrent visible sessions responsive and economical.
   codexAgent = mkCodexLauncher "codex-agent" "gpt-5.6-terra" "medium" codexInstructions;
 
-  # Crabcode receives only the endpoint and model chosen in the mutable farm
-  # inventory. Model inventories remain host-specific and outside Nix/Git.
-  mkCrabcodeOllama =
+  # Each launcher creates isolated provider and MCP settings. Cline's shared
+  # session database remains untouched, so history survives profile changes.
+  mkClineOllama =
     {
-      extraRuntimeInputs ? [ ],
       instructions ? localWorkerInstructions,
       name,
       endpointVariable,
-      fallbackModel ? "qwen3:4b-instruct",
+      fallbackModel ? "qwen3.5:9b",
       modelVariable,
+      reasoningEffort ? "low",
     }:
     pkgs.writeShellApplication {
       inherit name;
       runtimeInputs = [
-        crabcodePackage
+        agentManager
+        clineCli
         pkgs.coreutils
-        pkgs.findutils
+        pkgs.git
         pkgs.jq
-      ] ++ extraRuntimeInputs;
+        pkgs.playwright-mcp
+        pkgs.ripgrep
+        searxngMcp
+      ];
       text = ''
         persistent_config_home="''${XDG_CONFIG_HOME:-$HOME/.config}"
         config_file="$persistent_config_home/ollama-router/hosts.env"
         if [[ -r "$config_file" ]]; then
-          # This mutable per-user file holds only LAN addresses and model names.
-          # It is deliberately outside Nix and Git because every host differs.
+          # Per-host inventory stays mutable and intentionally outside Git.
           # shellcheck disable=SC1090
           source "$config_file"
         fi
@@ -208,157 +298,131 @@ let
         declare -n model_ref="$model_variable"
         endpoint="''${endpoint_ref:-http://127.0.0.1:11434/v1}"
         model="''${model_ref:-${fallbackModel}}"
-
-        # Crabcode can change effort interactively, but the initial value must
-        # still match the selected GGUF. Unknown models deliberately receive no
-        # effort override instead of an unsupported provider parameter.
+        requested_reasoning=${lib.escapeShellArg reasoningEffort}
         model_key="$(printf '%s' "$model" | tr '[:upper:]' '[:lower:]')"
-        default_reasoning=""
-        reasoning_options='[]'
-        case "$model_key" in
-          *qwen3.8*)
-            default_reasoning='low'
-            reasoning_options='[{"type":"effort","values":["low","medium","xhigh"]}]'
+
+        case "$model_key:$requested_reasoning" in
+          *qwen3.8*:low|*qwen3.8*:medium|*qwen3.8*:xhigh|*qwen3.5*:low|*qwen3.5*:medium|*qwen3.5*:high)
             ;;
-          *qwen3.5*)
-            default_reasoning='low'
-            reasoning_options='[{"type":"effort","values":["low","medium","high"]}]'
-            ;;
-          *granite4.2*)
-            default_reasoning='low'
-            reasoning_options='[{"type":"effort","values":["low","high"]}]'
+          *)
+            printf 'Profil %s wymaga effort=%s, ale model %s go nie obsługuje.\n' \
+              ${lib.escapeShellArg name} "$requested_reasoning" "$model" >&2
+            exit 2
             ;;
         esac
 
-        # Agent Manager 0.33.0 has no native Crabcode registration style. It
-        # does generate a valid OpenCode-compatible MCP fragment, though.
-        # Merge that fragment into an isolated Crabcode config so concurrent
-        # host profiles never overwrite each other. Preserve the real config
-        # home for the nested `agent-manager mcp` process, which needs its own
-        # state database rather than this temporary Crabcode directory.
-        manager_config='{}'
-        if [[ -n "''${OPENCODE_CONFIG:-}" ]]; then
-          if [[ ! -r "$OPENCODE_CONFIG" ]]; then
-            printf 'Nie można odczytać konfiguracji MCP Agent Managera: %s\n' \
-              "$OPENCODE_CONFIG" >&2
-            exit 1
-          fi
-          manager_config="$(jq -c 'if type == "object" then . else error("expected an object") end' "$OPENCODE_CONFIG")"
-        fi
-
         runtime_parent="''${XDG_RUNTIME_DIR:-''${TMPDIR:-/tmp}}"
-        runtime_config_home="$(mktemp -d "$runtime_parent/crabcode-config.XXXXXX")"
-        trap 'rm -rf -- "$runtime_config_home"' EXIT HUP INT TERM
+        runtime_config_dir="$(mktemp -d "$runtime_parent/cline-profile.XXXXXX")"
+        provider_settings="$runtime_config_dir/providers.json"
+        mcp_settings="$runtime_config_dir/cline_mcp_settings.json"
+        trap 'rm -rf -- "$runtime_config_dir"' EXIT HUP INT TERM
 
-        # Keep the caller's other XDG configuration visible to tools started
-        # by Crabcode. Exclude both agent config directories: an old OpenCode
-        # provider could reintroduce the removed model, while Crabcode's main
-        # config is generated below. Preserve auxiliary Crabcode assets such as
-        # themes, commands and AGENTS.md.
-        if [[ -d "$persistent_config_home" ]]; then
-          while IFS= read -r -d "" config_entry; do
-            config_name="$(basename "$config_entry")"
-            ln -s "$config_entry" "$runtime_config_home/$config_name"
-          done < <(find "$persistent_config_home" -mindepth 1 -maxdepth 1 \
-            ! -name crabcode ! -name opencode -print0)
-        fi
-        mkdir -p "$runtime_config_home/crabcode"
-        if [[ -d "$persistent_config_home/crabcode" ]]; then
-          while IFS= read -r -d "" crabcode_entry; do
-            crabcode_name="$(basename "$crabcode_entry")"
-            ln -s "$crabcode_entry" \
-              "$runtime_config_home/crabcode/$crabcode_name"
-          done < <(find "$persistent_config_home/crabcode" \
-            -mindepth 1 -maxdepth 1 \
-            ! -name crabcode.json ! -name crabcode.jsonc -print0)
-        fi
-        runtime_config="$runtime_config_home/crabcode/crabcode.json"
-
-        jq -nc \
-          --arg baseURL "$endpoint" \
-          --arg instructions ${lib.escapeShellArg (toString instructions)} \
+        # Native Ollama uses the API root, not the OpenAI-compatible /v1 path.
+        endpoint="''${endpoint%/v1}"
+        jq -n \
+          --arg endpoint "$endpoint" \
           --arg model "$model" \
-          --arg persistentConfigHome "$persistent_config_home" \
-          --argjson managerConfig "$manager_config" \
-          --argjson reasoningOptions "$reasoning_options" \
-          '{
-            "$schema": "https://raw.githubusercontent.com/Blankeos/crabcode/main/crabcode.schema.json",
-            provider: {
-              "ollama-farm": {
-                npm: "@ai-sdk/openai-compatible",
-                name: "Ollama model farm",
-                options: {
-                  baseURL: $baseURL
-                },
-                models: {
-                  ($model): ({
-                    name: $model,
-                    tool_call: true
-                  } + (if ($reasoningOptions | length) > 0 then {
-                    reasoning: true,
-                    reasoning_options: $reasoningOptions
-                  } else {} end))
-                }
-              }
+          '{ollama: {provider: "ollama", baseUrl: $endpoint, model: $model,
+            apiProvider: "ollama", ollamaBaseUrl: $endpoint, ollamaModelId: $model}}' \
+          > "$provider_settings"
+
+        # Playwright is registered but disabled until enabled in Cline's MCP
+        # screen. No source-control MCP is installed.
+        jq -n \
+          --arg agent_manager "${agentManager}/bin/agent-manager" \
+          --arg session_id "''${AGENT_MANAGER_SESSION_ID:-}" \
+          --arg tmux_tmpdir "''${TMUX_TMPDIR:-}" \
+          --arg runtime_dir "''${XDG_RUNTIME_DIR:-}" \
+          --arg searxng "${searxngMcp}/bin/searxng-mcp" \
+          --arg searxng_url "''${SEARXNG_URL:-http://127.0.0.1:8080}" \
+          --arg playwright "${pkgs.playwright-mcp}/bin/playwright-mcp" \
+          '{mcpServers: {
+            "agent-manager": {
+              command: $agent_manager, args: ["mcp"],
+              env: {AGENT_MANAGER_SESSION_ID: $session_id,
+                TMUX_TMPDIR: $tmux_tmpdir, XDG_RUNTIME_DIR: $runtime_dir},
+              disabled: false, autoApprove: []
             },
-            model: ("ollama-farm/" + $model),
-            default_agent: "build"
-          } + (if $instructions == "" then {} else {
-            instructions: [$instructions]
-          } end)
-          * $managerConfig
-          | if .mcp."agent-manager"? then
-              .mcp."agent-manager".environment =
-                ((.mcp."agent-manager".environment // {}) + {
-                  XDG_CONFIG_HOME: $persistentConfigHome
-                })
-            else . end' > "$runtime_config"
+            searxng: {
+              command: $searxng, env: {SEARXNG_URL: $searxng_url},
+              disabled: false, autoApprove: []
+            },
+            context7: {
+              type: "streamableHttp", url: "https://mcp.context7.com/mcp",
+              disabled: false, autoApprove: []
+            },
+            playwright: {
+              command: $playwright, args: ["--headless"],
+              disabled: true, autoApprove: []
+            }
+          }}' > "$mcp_settings"
 
-        crabcode_args=(--model "ollama-farm/$model")
-        if [[ -n "$default_reasoning" ]]; then
-          crabcode_args+=(--reasoning-effort "$default_reasoning")
-        fi
-
-        XDG_CONFIG_HOME="$runtime_config_home" \
-          crabcode "''${crabcode_args[@]}" "$@"
+        system_prompt="$(<${instructions})"
+        export CLINE_PROVIDER_SETTINGS_PATH="$provider_settings"
+        export CLINE_MCP_SETTINGS_PATH="$mcp_settings"
+        exec ${clineCli}/bin/cline \
+          --provider ollama \
+          --model "$model" \
+          --thinking "$requested_reasoning" \
+          --system "$system_prompt" \
+          "$@"
       '';
     };
 
-  crabcodeLocal = mkCrabcodeOllama {
-    # On farm hosts the normal entry point shares the ROG profile. A host with
-    # ollamaFarm disabled deliberately binds it only to loopback Ollama.
-    # Its packaged binary is prepended to PATH, so the final invocation does
-    # not recurse into this Home Manager wrapper.
-    name = "crabcode";
+  clineLocalLow = mkClineOllama {
+    name = if localOnlyProfile then "cline-local-low" else "cline-rog-polamaniec-low";
     endpointVariable = if localOnlyProfile then "OLLAMA_LOCAL_URL" else "OLLAMA_ROG_URL";
     modelVariable = if localOnlyProfile then "OLLAMA_LOCAL_MODEL" else "OLLAMA_ROG_MODEL";
     fallbackModel = "qwen3.5:9b";
+    reasoningEffort = "low";
+    instructions = if localOnlyProfile then localOnlyManagerInstructions else localManagerInstructions;
   };
-  crabcodeOpenCodeCompat = mkCrabcodeOllama {
-    # Agent Manager 0.33 always restores a built-in entry named `opencode`.
-    # Give that unavoidable alias a distinct process command so it cannot be
-    # confused with the real `crabcode` profile during pane inspection.
-    name = "crabcode-opencode-compat";
+  # One direct command opens the same low-effort manager used by Agent Manager.
+  clineDefault = mkClineOllama {
+    name = "cline";
     endpointVariable = if localOnlyProfile then "OLLAMA_LOCAL_URL" else "OLLAMA_ROG_URL";
     modelVariable = if localOnlyProfile then "OLLAMA_LOCAL_MODEL" else "OLLAMA_ROG_MODEL";
     fallbackModel = "qwen3.5:9b";
+    reasoningEffort = "low";
+    instructions = if localOnlyProfile then localOnlyManagerInstructions else localManagerInstructions;
   };
-  crabcodeRog = mkCrabcodeOllama {
-    name = "crabcode-ollama-rog-polamaniec";
-    endpointVariable = "OLLAMA_ROG_URL";
-    modelVariable = "OLLAMA_ROG_MODEL";
+  clineLocalMedium = mkClineOllama {
+    name = if localOnlyProfile then "cline-local-medium" else "cline-rog-polamaniec-medium";
+    endpointVariable = if localOnlyProfile then "OLLAMA_LOCAL_URL" else "OLLAMA_ROG_URL";
+    modelVariable = if localOnlyProfile then "OLLAMA_LOCAL_MODEL" else "OLLAMA_ROG_MODEL";
     fallbackModel = "qwen3.5:9b";
+    reasoningEffort = "medium";
   };
-  crabcodeWhiteMonster = mkCrabcodeOllama {
-    name = "crabcode-ollama-white-monster";
+  clineLocalHigh = mkClineOllama {
+    name = if localOnlyProfile then "cline-local-high" else "cline-rog-polamaniec-high";
+    endpointVariable = if localOnlyProfile then "OLLAMA_LOCAL_URL" else "OLLAMA_ROG_URL";
+    modelVariable = if localOnlyProfile then "OLLAMA_LOCAL_MODEL" else "OLLAMA_ROG_MODEL";
+    fallbackModel = "qwen3.5:9b";
+    reasoningEffort = "high";
+  };
+  clineWhiteMonsterLow = mkClineOllama {
+    name = "cline-white-monster-low";
     endpointVariable = "OLLAMA_WHITE_MONSTER_URL";
     modelVariable = "OLLAMA_WHITE_MONSTER_MODEL";
+    fallbackModel = "qwen3.8:27b";
     instructions = whiteMonsterInstructions;
+    reasoningEffort = "low";
   };
-  crabcodeArmaniec = mkCrabcodeOllama {
-    name = "crabcode-ollama-armaniec";
-    endpointVariable = "OLLAMA_ARMANIEC_URL";
-    modelVariable = "OLLAMA_ARMANIEC_MODEL";
+  clineWhiteMonsterMedium = mkClineOllama {
+    name = "cline-white-monster-medium";
+    endpointVariable = "OLLAMA_WHITE_MONSTER_URL";
+    modelVariable = "OLLAMA_WHITE_MONSTER_MODEL";
+    fallbackModel = "qwen3.8:27b";
+    instructions = whiteMonsterInstructions;
+    reasoningEffort = "medium";
+  };
+  clineWhiteMonsterXhigh = mkClineOllama {
+    name = "cline-white-monster-xhigh";
+    endpointVariable = "OLLAMA_WHITE_MONSTER_URL";
+    modelVariable = "OLLAMA_WHITE_MONSTER_MODEL";
+    fallbackModel = "qwen3.8:27b";
+    instructions = whiteMonsterInstructions;
+    reasoningEffort = "xhigh";
   };
 
   ollamaFarmStatus = pkgs.writeShellApplication {
@@ -399,20 +463,8 @@ let
 
       jq -s '.' \
         <(check_host "rog-polamaniec" "''${OLLAMA_ROG_URL:-http://rog-polamaniec.local:11434/v1}" "''${OLLAMA_ROG_MODEL:-qwen3.5:9b}") \
-        <(check_host "white-monster" "''${OLLAMA_WHITE_MONSTER_URL:-http://white-monster.local:11434/v1}" "''${OLLAMA_WHITE_MONSTER_MODEL:-qwen3:30b}") \
-        <(check_host "armaniec" "''${OLLAMA_ARMANIEC_URL:-http://armaniec.local:11434/v1}" "''${OLLAMA_ARMANIEC_MODEL:-qwen3:4b-instruct}")
+        <(check_host "white-monster" "''${OLLAMA_WHITE_MONSTER_URL:-http://white-monster.local:11434/v1}" "''${OLLAMA_WHITE_MONSTER_MODEL:-qwen3.8:27b}")
     '';
-  };
-
-  crabcodeManager = mkCrabcodeOllama {
-    name = "crabcode-manager";
-    endpointVariable = if localOnlyProfile then "OLLAMA_LOCAL_URL" else "OLLAMA_ROUTER_URL";
-    modelVariable = if localOnlyProfile then "OLLAMA_LOCAL_MODEL" else "OLLAMA_ROUTER_MODEL";
-    # Qwen 3.5 9B keeps the router multilingual and tool-capable while low
-    # reasoning limits its latency. It needs roughly 6.6 GiB in Q4_K_M form.
-    fallbackModel = "qwen3.5:9b";
-    instructions = if localOnlyProfile then localOnlyManagerInstructions else localManagerInstructions;
-    extraRuntimeInputs = lib.optionals farmEnabled [ ollamaFarmStatus ];
   };
 
   updateAgentManager = pkgs.writeShellApplication {
@@ -485,21 +537,16 @@ let
     '';
   };
 
-  # Agent Manager sends the startup prompt only after it recognizes Crabcode's
-  # input boundary. Custom profiles do not inherit the built-in detector.
-  crabcodeToolBehavior = ''
+  # Agent Manager's OpenCode-compatible bootstrap is retained solely to export
+  # the session identifier; Cline reads its full MCP setup from the launcher.
+  clineToolBehavior = ''
     mcp = "opencode"
     prompt_mode = "send"
     default_status = "idle"
-    activity_cutoff = "(?m)^\\s*╹"
-    input_prefix = "(?m)^\\s*┃"
-    turn_end = "^\\s*▣ +.+· [\\dhms. ]+\\s*$"
-    chrome_line = "^\\s*(┃.*)?$"
     limit_line = "(?i)usage limit|rate limit|context length|context window"
     rules = [
       { state = "errored", pattern = "(?im)^\\s*error\\b" },
-      { state = "working", pattern = "(?m)^\\s*▣ +[^·\\n]+· [^·\\n]+$" },
-      { state = "working", pattern = "esc (?:to )?interrupt" },
+      { state = "working", pattern = "(?i)thinking|working|esc (?:to )?interrupt" },
     ]
   '';
 in
@@ -508,14 +555,15 @@ in
   home.packages = [
     agentManager
     codexAgent
-    crabcodeLocal
-    crabcodeOpenCodeCompat
-    crabcodeManager
+    clineDefault
+    clineLocalLow
+    clineLocalMedium
+    clineLocalHigh
     updateAgentManager
   ] ++ lib.optionals farmEnabled [
-    crabcodeRog
-    crabcodeWhiteMonster
-    crabcodeArmaniec
+    clineWhiteMonsterLow
+    clineWhiteMonsterMedium
+    clineWhiteMonsterXhigh
     ollamaFarmStatus
   ];
 
@@ -527,33 +575,37 @@ in
     [tools.codex]
     command = "codex-agent"
 
-    # Agent Manager 0.33.0 always backfills its built-in OpenCode entry. Point
-    # that compatibility slot at Crabcode too, so no selectable profile calls
-    # the removed OpenCode binary. New automation should use crabcode-* names.
+    # Agent Manager 0.33.0 always backfills this built-in compatibility entry.
+    # It cannot be removed declaratively; `s -> CLIs` hides it once in the TUI.
+    # Point it at the normal low-effort root so accidental use remains safe.
     [tools.opencode]
-    command = "crabcode-opencode-compat"
-    ${crabcodeToolBehavior}
+    command = "${if localOnlyProfile then "cline-local-low" else "cline-rog-polamaniec-low"}"
+    ${clineToolBehavior}
 
-    [tools.crabcode]
-    command = "crabcode"
-    ${crabcodeToolBehavior}
+    [tools.${if localOnlyProfile then "local-low" else "rog-polamaniec-low"}]
+    command = "${if localOnlyProfile then "cline-local-low" else "cline-rog-polamaniec-low"}"
+    ${clineToolBehavior}
+
+    [tools.${if localOnlyProfile then "local-medium" else "rog-polamaniec-medium"}]
+    command = "${if localOnlyProfile then "cline-local-medium" else "cline-rog-polamaniec-medium"}"
+    ${clineToolBehavior}
+
+    [tools.${if localOnlyProfile then "local-high" else "rog-polamaniec-high"}]
+    command = "${if localOnlyProfile then "cline-local-high" else "cline-rog-polamaniec-high"}"
+    ${clineToolBehavior}
 
     ${lib.optionalString farmEnabled ''
-    [tools.crabcode-rog-polamaniec]
-    command = "crabcode-ollama-rog-polamaniec"
-    ${crabcodeToolBehavior}
+    [tools.white-monster-low]
+    command = "cline-white-monster-low"
+    ${clineToolBehavior}
 
-    [tools.crabcode-white-monster]
-    command = "crabcode-ollama-white-monster"
-    ${crabcodeToolBehavior}
+    [tools.white-monster-medium]
+    command = "cline-white-monster-medium"
+    ${clineToolBehavior}
 
-    [tools.crabcode-armaniec]
-    command = "crabcode-ollama-armaniec"
-    ${crabcodeToolBehavior}
+    [tools.white-monster-xhigh]
+    command = "cline-white-monster-xhigh"
+    ${clineToolBehavior}
     ''}
-
-    [tools.crabcode-manager]
-    command = "crabcode-manager"
-    ${crabcodeToolBehavior}
   '';
 }

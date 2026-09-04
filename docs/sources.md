@@ -57,10 +57,15 @@ Preferowane są oficjalne repozytoria GitHub i dokumentacja pierwotna.
 - [tmux/tmux](https://github.com/tmux/tmux) — multiplekser i trwałe sesje terminalowe.
 - [YoanWai/agent-manager](https://github.com/YoanWai/agent-manager) — panel TUI
   zarządzający widocznymi sesjami agentów i jego serwer MCP.
-- [Blankeos/crabcode](https://github.com/Blankeos/crabcode) — agent kodujący TUI
-  w Rust używany przez lokalne profile Ollama.
-- [Crabcode: zgodność z OpenCode](https://crabcode.rs/config/opencode-compatibility/) —
-  obsługiwany format providerów, instrukcji, uprawnień i serwerów MCP.
+- [Cline](https://github.com/cline/cline) — agent kodujący z terminalowym UI,
+  trybami Plan/Act, natywną Ollamą, poziomami thinking i serwerami MCP.
+- [Cline CLI distribution](https://github.com/cline/cline/blob/main/apps/cli/DISTRIBUTION.md) —
+  oficjalny sposób dystrybucji samodzielnego binarium CLI dla Linuksa.
+- [SearXNG](https://docs.searxng.org/) — lokalny silnik metawyszukiwania dla MCP.
+- [Context7](https://github.com/upstash/context7) — aktualna, wersjonowana
+  dokumentacja bibliotek przez zdalny MCP.
+- [Playwright MCP](https://github.com/microsoft/playwright-mcp) — izolowana,
+  bezgłowa automatyzacja przeglądarki dla agentów.
 - [Pakiet Foot w nixpkgs](https://github.com/NixOS/nixpkgs/blob/master/pkgs/by-name/fo/foot/package.nix) — deklaratywny pakiet lekkiego terminala Wayland.
 - [Wiremix](https://github.com/tsowell/wiremix) — interfejs TUI do urządzeń i strumieni PipeWire.
 - [wlctl](https://github.com/aashish-thapa/wlctl) — lekki interfejs TUI w Rust

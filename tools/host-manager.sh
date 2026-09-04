@@ -83,7 +83,7 @@ feature_description() {
     bluetooth) printf 'Usługa BlueZ i integracja Bluetooth w panelu.' ;;
     docker) printf 'Silnik kontenerów i grupa docker dla wskazanego użytkownika.' ;;
     ollama) printf 'Lokalne modele AI w kontenerze; wymaga włączonego Dockera.' ;;
-    ollamaFarm) printf 'Zdalne profile Crabcode dla farmy modeli; wyłącz dla hosta wyłącznie lokalnego.' ;;
+    ollamaFarm) printf 'Zdalne profile Cline dla farmy modeli; wyłącz dla hosta wyłącznie lokalnego.' ;;
     gaming) printf 'Steam, GameMode i optymalizacja responsywności podczas gier.' ;;
     vr) printf 'ALVR, Steam i ADB do przewodowego zestawu VR Quest.' ;;
     screenRecording) printf 'GPU Screen Recorder i bufor powtórek dla sesji Hyprland.' ;;
