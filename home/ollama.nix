@@ -121,14 +121,11 @@ in
           ports:
             - "127.0.0.1:4000:4000"
           environment:
-            ${if ollamaFarmEnabled then ''
             LITELLM_ROG_MODEL: "ollama_chat/''${OLLAMA_ROG_MODEL:-qwen3.5:9b}"
             LITELLM_ROG_API_BASE: "''${OLLAMA_ROG_BASE_URL:-http://ollama:11434}"
-            LITELLM_WHITE_MODEL: "ollama_chat/''${OLLAMA_WHITE_MONSTER_MODEL:-qwen3.8:27b}"
+            LITELLM_WHITE_MODEL: "ollama_chat/''${OLLAMA_WHITE_MONSTER_MODEL:-Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp:latest}"
             LITELLM_WHITE_API_BASE: "''${OLLAMA_WHITE_MONSTER_BASE_URL:-http://white-monster.local:11434}"
-            '' else ''
             LITELLM_LOCAL_MODEL: "ollama_chat/''${OLLAMA_LOCAL_MODEL:-qwen3.5:9b}"
-            ''}
           volumes:
             - ./litellm-config.yaml:/app/config.yaml:ro
 
@@ -367,7 +364,7 @@ in
       OLLAMA_ROG_BASE_URL=http://192.168.1.10:11434
       OLLAMA_ROG_MODEL=qwen3.5:9b
       OLLAMA_WHITE_MONSTER_BASE_URL=http://192.168.1.20:11434
-      OLLAMA_WHITE_MONSTER_MODEL=qwen3.8:27b
+      OLLAMA_WHITE_MONSTER_MODEL=Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp:latest
       ```
 
       Cele startowe same tworzą brakujący plik i migrują starsze zmienne URL.
@@ -382,9 +379,10 @@ in
 
       Qwen 3.5 ma aliasy `off` i `thinking`, a Qwen3.8 `off`, `low`, `medium`
       i `xhigh`. Zwykłe `cline` uruchamia profil off. Poziom zmieniasz przez
-      `/model`, wybierając inny alias bez utraty kontekstu. Playwright jest zarejestrowany w
-      każdym profilu, ale domyślnie wyłączony, aby nie obciążać sesji Qwena
-      jego schematami narzędzi.
+      `/model`, wybierając inny alias bez utraty kontekstu. Wbudowany provider
+      Cline `litellm` pobiera tę listę bezpośrednio z `/v1/models`. Playwright
+      jest zarejestrowany w każdym profilu, ale domyślnie wyłączony, aby nie
+      obciążać sesji Qwena jego schematami narzędzi.
 
       Każdy wpis modelu musi istnieć na wskazanym hoście. Adresy odczytasz na
       nim przez `hostname -I`; użyj stałych adresów DHCP lub własnego DNS.
@@ -571,7 +569,14 @@ in
         fi
         ensure_setting OLLAMA_ROG_MODEL "''${OLLAMA_ROG_MODEL:-qwen3.5:9b}"
         ensure_setting OLLAMA_WHITE_MONSTER_BASE_URL "''${legacy_white%/v1}"
-        ensure_setting OLLAMA_WHITE_MONSTER_MODEL "''${OLLAMA_WHITE_MONSTER_MODEL:-qwen3.8:27b}"
+        ensure_setting OLLAMA_WHITE_MONSTER_MODEL "''${OLLAMA_WHITE_MONSTER_MODEL:-Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp:latest}"
+        if ${pkgs.gnugrep}/bin/grep -q \
+          '^OLLAMA_WHITE_MONSTER_MODEL=Qwen3.8-27B-GSQ-RCQ-IQ3_S-mtp:latest$' \
+          "$config_file"; then
+          ${pkgs.gnused}/bin/sed -i \
+            's/^OLLAMA_WHITE_MONSTER_MODEL=Qwen3.8-27B-GSQ-RCQ-IQ3_S-mtp:latest$/OLLAMA_WHITE_MONSTER_MODEL=Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp:latest/' \
+            "$config_file"
+        fi
         '' else ''
         ensure_setting OLLAMA_LOCAL_MODEL "''${OLLAMA_LOCAL_MODEL:-qwen3.5:9b}"
         ''}

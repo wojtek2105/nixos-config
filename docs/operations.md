@@ -193,7 +193,7 @@ pobranymi na każdym hoście:
 OLLAMA_ROG_BASE_URL=http://192.168.1.10:11434
 OLLAMA_ROG_MODEL=qwen3.5:9b
 OLLAMA_WHITE_MONSTER_BASE_URL=http://192.168.1.20:11434
-OLLAMA_WHITE_MONSTER_MODEL=qwen3.8:27b
+OLLAMA_WHITE_MONSTER_MODEL=Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp:latest
 ```
 
 Adres ROG-u jest interpretowany wewnątrz kontenera LiteLLM. Dla Ollamy z tego
@@ -222,7 +222,8 @@ działa, polecenie kończy się czytelnym błędem.
 LiteLLM wystawia Qwena 3.5 jako aliasy `off` / `thinking`, a Qwena 3.8 jako
 `off` / `low` / `medium` / `xhigh`. Każdy alias wymusza natywny parametr
 `think` Ollamy i odrzuca `reasoning_effort` przesłany przez klienta. Cline nie
-pokazuje więc drugiego, mylącego selektora Thinking: w samodzielnej sesji
+pokazuje więc drugiego, mylącego selektora Thinking. Launcher używa wbudowanego
+providera `litellm`, który pobiera aliasy z `/v1/models`; w samodzielnej sesji
 poziom zmienisz przez `/model`, bez utraty historii i kontekstu.
 
 ### MCP w Cline

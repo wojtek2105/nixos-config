@@ -261,47 +261,9 @@ let
   # Medium reasoning keeps concurrent visible sessions responsive and economical.
   codexAgent = mkCodexLauncher "codex-agent" "gpt-5.6-terra" "medium" codexInstructions;
 
-  clineAliases = if localOnlyProfile then [
-    "local-qwen35-off"
-    "local-qwen35-thinking"
-  ] else [
-    "rog-qwen35-off"
-    "rog-qwen35-thinking"
-    "white-qwen38-off"
-    "white-qwen38-low"
-    "white-qwen38-medium"
-    "white-qwen38-xhigh"
-  ];
-
-  clineModelsRegistry = pkgs.writeText "cline-litellm-models.json"
-    (builtins.toJSON {
-      version = 1;
-      providers.ollama-farm = {
-        provider = {
-          name = "Ollama farm through LiteLLM";
-          baseUrl = "http://127.0.0.1:4000/v1";
-          defaultModelId = builtins.head clineAliases;
-          protocol = "openai-chat";
-          client = "openai-compatible";
-          capabilities = [ "streaming" "tools" ];
-        };
-        models = builtins.listToAttrs (map (alias: {
-          name = alias;
-          value = {
-            id = alias;
-            name = alias;
-            contextWindow = 16384;
-            maxInputTokens = 16384;
-            maxTokens = 8192;
-            capabilities = [ "streaming" "tools" ];
-          };
-        }) clineAliases);
-      };
-    });
-
   # Each alias fixes Ollama's native `think` value in LiteLLM. Cline therefore
-  # changes reasoning by selecting another model alias and never sends its
-  # provider-generic reasoning_effort parameter.
+  # changes reasoning by selecting another model alias. Cline's built-in
+  # LiteLLM provider discovers the complete alias catalog from /v1/models.
   mkClineLiteLLM =
     {
       alias,
@@ -327,7 +289,6 @@ let
         runtime_settings_dir="$runtime_config_dir/settings"
         mkdir -p "$runtime_settings_dir"
         provider_settings="$runtime_settings_dir/providers.json"
-        models_registry="$runtime_settings_dir/models.json"
         mcp_settings="$runtime_settings_dir/cline_mcp_settings.json"
         trap 'rm -rf -- "$runtime_config_dir"' EXIT HUP INT TERM
 
@@ -347,15 +308,13 @@ let
 
         jq -n \
           --arg model ${lib.escapeShellArg alias} \
-          '{"ollama-farm": {
-            provider: "ollama-farm",
+          '{litellm: {
+            provider: "litellm",
             apiKey: "ollama",
             baseUrl: "http://127.0.0.1:4000/v1",
             model: $model
           }}' \
           > "$provider_settings"
-
-        cp ${clineModelsRegistry} "$models_registry"
 
         # Playwright is registered but disabled until enabled in Cline's MCP
         # screen. No source-control MCP is installed.
@@ -392,7 +351,7 @@ let
         export CLINE_PROVIDER_SETTINGS_PATH="$provider_settings"
         export CLINE_MCP_SETTINGS_PATH="$mcp_settings"
         ${clineCli}/bin/cline \
-          --provider ollama-farm \
+          --provider litellm \
           --model ${lib.escapeShellArg alias} \
           --system "$system_prompt" \
           "$@"
@@ -480,7 +439,7 @@ let
       fi
       jq -s '.' \
         <(check_host "rog-polamaniec" "''${rog_endpoint%/v1}" "''${OLLAMA_ROG_MODEL:-qwen3.5:9b}") \
-        <(check_host "white-monster" "''${white_endpoint%/v1}" "''${OLLAMA_WHITE_MONSTER_MODEL:-qwen3.8:27b}")
+        <(check_host "white-monster" "''${white_endpoint%/v1}" "''${OLLAMA_WHITE_MONSTER_MODEL:-Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp:latest}")
     '';
   };
 
