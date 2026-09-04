@@ -4,6 +4,59 @@ let
   ollamaEnabled = desktopFeatures.ollama or false;
   ollamaFarmEnabled = desktopFeatures.ollamaFarm or false;
   openWebUiSystemPrompt = ''Zawsze odpowiadaj w języku ostatniej wiadomości użytkownika, chyba że użytkownik wyraźnie poprosi o inny język. Na polskie wiadomości odpowiadaj po polsku. Kod, polecenia, logi, nazwy API i identyfikatory pozostawiaj w oryginalnej formie.'';
+  litellmModels = if ollamaFarmEnabled then ''
+    model_list:
+      - model_name: rog-qwen35-off
+        litellm_params:
+          model: os.environ/LITELLM_ROG_MODEL
+          api_base: os.environ/LITELLM_ROG_API_BASE
+          think: false
+          additional_drop_params: [reasoning_effort]
+      - model_name: rog-qwen35-thinking
+        litellm_params:
+          model: os.environ/LITELLM_ROG_MODEL
+          api_base: os.environ/LITELLM_ROG_API_BASE
+          think: true
+          additional_drop_params: [reasoning_effort]
+      - model_name: white-qwen38-off
+        litellm_params:
+          model: os.environ/LITELLM_WHITE_MODEL
+          api_base: os.environ/LITELLM_WHITE_API_BASE
+          think: false
+          additional_drop_params: [reasoning_effort]
+      - model_name: white-qwen38-low
+        litellm_params:
+          model: os.environ/LITELLM_WHITE_MODEL
+          api_base: os.environ/LITELLM_WHITE_API_BASE
+          think: low
+          additional_drop_params: [reasoning_effort]
+      - model_name: white-qwen38-medium
+        litellm_params:
+          model: os.environ/LITELLM_WHITE_MODEL
+          api_base: os.environ/LITELLM_WHITE_API_BASE
+          think: medium
+          additional_drop_params: [reasoning_effort]
+      - model_name: white-qwen38-xhigh
+        litellm_params:
+          model: os.environ/LITELLM_WHITE_MODEL
+          api_base: os.environ/LITELLM_WHITE_API_BASE
+          think: xhigh
+          additional_drop_params: [reasoning_effort]
+  '' else ''
+    model_list:
+      - model_name: local-qwen35-off
+        litellm_params:
+          model: os.environ/LITELLM_LOCAL_MODEL
+          api_base: http://ollama:11434
+          think: false
+          additional_drop_params: [reasoning_effort]
+      - model_name: local-qwen35-thinking
+        litellm_params:
+          model: os.environ/LITELLM_LOCAL_MODEL
+          api_base: http://ollama:11434
+          think: true
+          additional_drop_params: [reasoning_effort]
+  '';
 in
 {
   # Home Manager owns the stack definition and helper scripts. Runtime data and
@@ -19,6 +72,11 @@ in
             - "0.0.0.0:3000:8080"
           environment:
             OLLAMA_BASE_URL: http://ollama:11434
+            ENABLE_OPENAI_API: "True"
+            OPENAI_API_BASE_URL: http://litellm:4000/v1
+            OPENAI_API_KEY: ollama
+            OPENAI_API_BASE_URLS: http://litellm:4000/v1
+            OPENAI_API_KEYS: ollama
             # Built-in search_web is available to Native function-calling
             # models; these limits keep fetched pages within a 16k context.
             ENABLE_WEB_SEARCH: "True"
@@ -52,6 +110,27 @@ in
             # The reconciler changes only declared global ConfigVars in SQLite;
             # user accounts, chats, models and provider connections stay mutable.
             - ./apply-webui-defaults.py:/opt/ollama-stack/apply-webui-defaults.py:ro
+          depends_on:
+            - litellm
+
+        litellm:
+          image: docker.litellm.ai/berriai/litellm:main-stable
+          container_name: litellm
+          restart: unless-stopped
+          command: ["--config", "/app/config.yaml", "--port", "4000"]
+          ports:
+            - "127.0.0.1:4000:4000"
+          environment:
+            ${if ollamaFarmEnabled then ''
+            LITELLM_ROG_MODEL: "ollama_chat/''${OLLAMA_ROG_MODEL:-qwen3.5:9b}"
+            LITELLM_ROG_API_BASE: "''${OLLAMA_ROG_BASE_URL:-http://ollama:11434}"
+            LITELLM_WHITE_MODEL: "ollama_chat/''${OLLAMA_WHITE_MONSTER_MODEL:-qwen3.8:27b}"
+            LITELLM_WHITE_API_BASE: "''${OLLAMA_WHITE_MONSTER_BASE_URL:-http://white-monster.local:11434}"
+            '' else ''
+            LITELLM_LOCAL_MODEL: "ollama_chat/''${OLLAMA_LOCAL_MODEL:-qwen3.5:9b}"
+            ''}
+          volumes:
+            - ./litellm-config.yaml:/app/config.yaml:ro
 
         searxng:
           image: searxng/searxng:latest
@@ -133,6 +212,8 @@ in
             - ./data/ollama-cpu:/root/.ollama
     '';
 
+    "Dev/Ollama/litellm-config.yaml".text = litellmModels;
+
     "Dev/Ollama/README.md".text = ''
       # Ollama + Open WebUI
 
@@ -144,7 +225,8 @@ in
       ```
 
       Open WebUI działa pod `http://ADRES-LAN:3000`, SearXNG pod
-      `http://ADRES-LAN:8080`, a API GPU pod `http://ADRES-LAN:11434`.
+      `http://ADRES-LAN:8080`, API GPU pod `http://ADRES-LAN:11434`, a
+      lokalny gateway LiteLLM pod `http://127.0.0.1:4000/v1`.
       Aktualny adres komputera pokaże `hostname -I`.
 
       Te porty są otwarte dla całej sieci lokalnej. Ollama i SearXNG nie mają
@@ -166,6 +248,12 @@ in
       Odpowiedzi są domyślnie strumieniowane token po tokenie, a Web Search jest
       włączony w każdym nowym czacie. Możesz je wyłączyć tylko dla konkretnego
       czatu lub modelu w jego Advanced Params.
+
+      Open WebUI używa aliasów LiteLLM jako głównego katalogu modeli, ale
+      zachowuje natywną Ollamę jako połączenie awaryjne. SearXNG nadal obsługuje
+      Open WebUI bezpośrednio. Aliasy wymuszają `think` w gatewayu i ignorują
+      przesłany `reasoning_effort`, dlatego nie przypinaj do nich Function
+      `Reasoning Effort Selector`.
 
       Globalne parametry celowo nie zawierają `max_tokens`. Brak tego opcjonalnego
       pola pozwala każdemu modelowi zakończyć odpowiedź samodzielnie; rzeczywistą
@@ -194,9 +282,9 @@ in
 
       ## Qwen3.8: poziom reasoning w Open WebUI
 
-      Natywne połączenie Ollama pokazuje w modelu wyłącznie `Reasoning Tags`.
+      Awaryjne natywne połączenie Ollama pokazuje w modelu wyłącznie `Reasoning Tags`.
       Służą one do zwijania `<think>...</think>` i **nie** ustawiają poziomu
-      reasoning. Do Qwen3.8 używamy ręcznie zainstalowanej Function
+      reasoning. Dla tego połączenia używamy ręcznie zainstalowanej Function
       [Reasoning Effort Selector](https://openwebui.com/posts/reasoning_effort_selector_ee572967).
       Function jest zewnętrznym kodem Python, więc przed aktualizacją należy
       przeczytać jego źródło w GUI.
@@ -221,17 +309,19 @@ in
       ${if !ollamaFarmEnabled then ''
       ## Lokalny Cline w Agent Managerze
 
-      Profile `local-low`, `local-medium` i `local-high` używają wyłącznie
-      lokalnej Ollamy pod `http://127.0.0.1:11434/v1`. `local-low` jest
-      kierownikiem; domyślnym modelem jest `qwen3.5:9b`. Nadpisanie przechowuj poza Git w pliku
+      Profile `local-off` i `local-thinking` używają wyłącznie lokalnej Ollamy
+      przez LiteLLM. `local-off` jest kierownikiem; domyślnym modelem jest
+      `qwen3.5:9b`. Nadpisanie przechowuj poza Git w pliku
       `~/.config/ollama-router/hosts.env`:
 
       ```bash
-      OLLAMA_LOCAL_URL=http://127.0.0.1:11434/v1
       OLLAMA_LOCAL_MODEL=qwen3.5:9b
       ```
 
-      `local-low` może przez MCP utworzyć lokalnego workera albo, tylko dla
+      Po zmianie modelu wykonaj `make restart-litellm`, aby odtworzyć gateway
+      z nową wartością zmiennej.
+
+      `local-off` może przez MCP utworzyć lokalnego workera albo, tylko dla
       naprawdę trudnego zadania, workera `codex`. Profile ROG, White Monster i
       `ollama-farm-status` nie są na tym hoście
       instalowane ani pokazywane w selektorze Agent Managera.
@@ -242,8 +332,8 @@ in
       docker compose --profile rocm exec ollama-rocm ollama pull qwen3.5:9b
       ```
 
-      Profile wymuszają odpowiednio `low`, `medium` oraz `high` dla Qwena 3.5.
-      Zwykłe `cline` uruchamia profil low. Playwright jest dostępny w ekranie
+      Profile wymuszają odpowiednio `think=false` i `think=true` dla Qwena 3.5.
+      Zwykłe `cline` uruchamia profil off. Playwright jest dostępny w ekranie
       MCP tego samego TUI, ale pozostaje domyślnie wyłączony.
 
       Agent Manager 0.33 zawsze dodaje wbudowany wpis `opencode`. Jest to tylko
@@ -252,15 +342,15 @@ in
       '' else ''
       ## Local workers in Agent Manager
 
-      Profile `rog-polamaniec-low`, `rog-polamaniec-medium` i
-      `rog-polamaniec-high` uruchamiają Qwena 3.5 9B. `rog-polamaniec-low` jest
-      kierownikiem; model wszystkich trzech zmieniasz w `OLLAMA_ROG_MODEL`.
+      Profile `rog-polamaniec-off` i `rog-polamaniec-thinking` uruchamiają
+      Qwena 3.5 9B. `rog-polamaniec-off` jest kierownikiem; model obu zmieniasz
+      w `OLLAMA_ROG_MODEL`.
 
       ## Lokalny manager całej farmy modeli
 
-      Agent Manager udostępnia trzy profile ROG i po skonfigurowaniu White
-      Monstera trzy profile Qwena 3.8. `rog-polamaniec-low` działa domyślnie
-      na Qwenie 3.5 9B z lekkim rozumowaniem,
+      Agent Manager udostępnia dwa profile ROG i po skonfigurowaniu White
+      Monstera cztery profile Qwena 3.8. `rog-polamaniec-off` działa domyślnie
+      na Qwenie 3.5 9B bez thinking,
       może wykonywać zadania samodzielnie i przez MCP domyślnie tworzy workery
       Cline/Ollama. Naprawdę trudną architekturę, diagnozę, integrację lub
       przegląd wysokiego ryzyka przekazuje najpierw do większego Qwena na
@@ -274,11 +364,15 @@ in
       i domyślnym modelem każdego hosta:
 
       ```bash
-      OLLAMA_ROG_URL=http://192.168.1.10:11434/v1
+      OLLAMA_ROG_BASE_URL=http://192.168.1.10:11434
       OLLAMA_ROG_MODEL=qwen3.5:9b
-      OLLAMA_WHITE_MONSTER_URL=http://192.168.1.20:11434/v1
+      OLLAMA_WHITE_MONSTER_BASE_URL=http://192.168.1.20:11434
       OLLAMA_WHITE_MONSTER_MODEL=qwen3.8:27b
       ```
+
+      Cele startowe same tworzą brakujący plik i migrują starsze zmienne URL.
+      Po ręcznej zmianie inventory wykonaj `make restart-litellm`, aby odtworzyć
+      kontener z nowym środowiskiem.
 
       Przed pierwszym uruchomieniem routera pobierz jego model na ROG-u:
 
@@ -286,9 +380,9 @@ in
       docker compose --profile vulkan exec ollama-vulkan ollama pull qwen3.5:9b
       ```
 
-      Qwen 3.5 ma profile `low`, `medium` i `high`, a Qwen3.8 `low`, `medium`
-      i `xhigh`. Nieobsługiwany effort kończy launcher czytelnym błędem.
-      Zwykłe `cline` uruchamia profil low. Playwright jest zarejestrowany w
+      Qwen 3.5 ma aliasy `off` i `thinking`, a Qwen3.8 `off`, `low`, `medium`
+      i `xhigh`. Zwykłe `cline` uruchamia profil off. Poziom zmieniasz przez
+      `/model`, wybierając inny alias bez utraty kontekstu. Playwright jest zarejestrowany w
       każdym profilu, ale domyślnie wyłączony, aby nie obciążać sesji Qwena
       jego schematami narzędzi.
 
@@ -297,14 +391,14 @@ in
       Farmę można uruchamiać etapami: nieskonfigurowany host będzie oznaczony
       jako `unavailable` i manager go nie wybierze, więc początkowo może działać
       wyłącznie ROG.
-      Następnie uruchom `agent-manager` i utwórz sesję `rog-polamaniec-low`.
+      Następnie uruchom `agent-manager` i utwórz sesję `rog-polamaniec-off`.
       Polecenie `ollama-farm-status` pokazuje ręcznie ten sam status, którego
       manager używa przed wyborem workera. Aby pracować po wyczerpaniu limitu,
       poleć managerowi działać wyłącznie lokalnie; po błędzie limitu sam nie
       ponowi Codexa. Kontekst nie jest przenoszony automatycznie pomiędzy CLI.
 
       Agent Manager 0.33 zawsze dodaje wbudowany wpis `opencode`. Jest to tylko
-      zgodnościowy alias przekierowany tutaj do profilu low; OpenCode nie jest
+      zgodnościowy alias przekierowany tutaj do profilu off; OpenCode nie jest
       instalowany. Możesz ukryć go raz przez `s -> CLIs`, odznaczając
       `opencode`. Cline zachowuje historię w `~/.cline/`; zamknięcie samego
       panelu pozostawia działające sesje tmux bez zmian.
@@ -427,6 +521,66 @@ in
       '';
     };
 
+    "Dev/Ollama/init-litellm-env" = {
+      executable = true;
+      text = ''
+        #!${pkgs.runtimeShell}
+        set -euo pipefail
+
+        config_dir="''${XDG_CONFIG_HOME:-$HOME/.config}/ollama-router"
+        config_file="$config_dir/hosts.env"
+        ${pkgs.coreutils}/bin/mkdir -p "$config_dir"
+
+        if [[ -r "$config_file" ]]; then
+          # Preserve the user's existing inventory and migrate the older /v1
+          # endpoint names only when the new LiteLLM base variables are absent.
+          # shellcheck disable=SC1090
+          source "$config_file"
+        else
+          printf '%s\n' '# Local Ollama farm inventory; never commit this file.' \
+            > "$config_file"
+        fi
+
+        ensure_setting() {
+          local key="$1" value="$2"
+          if ! ${pkgs.gnugrep}/bin/grep -q "^$key=" "$config_file"; then
+            printf '%s=%s\n' "$key" "$value" >> "$config_file"
+          fi
+        }
+
+        ${if ollamaFarmEnabled then ''
+        legacy_rog="''${OLLAMA_ROG_URL:-http://ollama:11434}"
+        legacy_white="''${OLLAMA_WHITE_MONSTER_URL:-http://white-monster.local:11434}"
+        case "''${legacy_rog%/v1}" in
+          http://127.0.0.1:*|http://localhost:*)
+            # LiteLLM runs in Compose, where loopback points at LiteLLM itself.
+            # The Ollama service is reachable through its network alias.
+            legacy_rog_base=http://ollama:11434
+            ;;
+          *)
+            legacy_rog_base="''${legacy_rog%/v1}"
+            ;;
+        esac
+        ensure_setting OLLAMA_ROG_BASE_URL "$legacy_rog_base"
+        if ${pkgs.gnugrep}/bin/grep -Eq \
+          '^OLLAMA_ROG_BASE_URL=http://(127\.0\.0\.1|localhost):11434(/v1)?$' \
+          "$config_file"; then
+          ${pkgs.gnused}/bin/sed -E -i \
+            's#^OLLAMA_ROG_BASE_URL=http://(127\.0\.0\.1|localhost):11434(/v1)?$#OLLAMA_ROG_BASE_URL=http://ollama:11434#' \
+            "$config_file"
+        fi
+        ensure_setting OLLAMA_ROG_MODEL "''${OLLAMA_ROG_MODEL:-qwen3.5:9b}"
+        ensure_setting OLLAMA_WHITE_MONSTER_BASE_URL "''${legacy_white%/v1}"
+        ensure_setting OLLAMA_WHITE_MONSTER_MODEL "''${OLLAMA_WHITE_MONSTER_MODEL:-qwen3.8:27b}"
+        '' else ''
+        ensure_setting OLLAMA_LOCAL_MODEL "''${OLLAMA_LOCAL_MODEL:-qwen3.5:9b}"
+        ''}
+
+        ${pkgs.coreutils}/bin/chmod 600 "$config_file"
+        printf 'LiteLLM inventory ready: %s\n' "$config_file"
+      '';
+    };
+
     "Dev/Ollama/apply-webui-defaults.py".text = ''
       #!/usr/bin/env python3
       """Reconcile only stack-owned Open WebUI ConfigVars without clearing data."""
@@ -452,6 +606,10 @@ in
           # Omitting max_tokens removes the global response cap; inserting a
           # large number would consume the same 16k window used by chat context.
           "models.default_params": {"function_calling": "native", "stream": True},
+          "openai.enable": True,
+          "openai.api_base_urls": ["http://litellm:4000/v1"],
+          "openai.api_keys": ["ollama"],
+          "openai.api_configs": {"0": {"enable": True}},
           "task.model.params": {"temperature": 0.2, "max_tokens": 1200},
           "ui.default_interface_settings": {
               "webSearch": "always",
@@ -516,74 +674,90 @@ in
 
     "Dev/Ollama/Makefile".text = ''
       .DEFAULT_GOAL := help
+      .RECIPEPREFIX := >
 
       OLLAMA_UID := $(shell id -u)
       OLLAMA_GID := $(shell id -g)
       export OLLAMA_UID OLLAMA_GID
 
+      STACK_CONFIG_HOME := $(if $(XDG_CONFIG_HOME),$(XDG_CONFIG_HOME),$(HOME)/.config)
+      HOSTS_ENV := $(STACK_CONFIG_HOME)/ollama-router/hosts.env
+      COMPOSE := docker-compose --env-file $(HOSTS_ENV)
+
       MODEL ?=
 
-      .PHONY: help fix-searxng-permissions init-searxng-config vulkan rocm cpu vulkan-cpu rocm-cpu down apply-webui-defaults pull pull-vulkan pull-rocm pull-cpu pull-searxng restart-searxng logs
+      .PHONY: help fix-searxng-permissions init-searxng-config init-litellm-env init-stack-config vulkan rocm cpu vulkan-cpu rocm-cpu down apply-webui-defaults pull pull-vulkan pull-rocm pull-cpu pull-searxng pull-litellm restart-litellm restart-searxng logs
 
       help: ## 📖 Pokaż dostępne polecenia
-      	@awk 'BEGIN { FS = ":.*## " } /^[a-zA-Z0-9][a-zA-Z0-9_.-]*:.*## / && $$1 != "help" { printf "\033[36m%-20s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
+      >@awk 'BEGIN { FS = ":.*## " } /^[a-zA-Z0-9][a-zA-Z0-9_.-]*:.*## / && $$1 != "help" { printf "\033[36m%-20s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
       fix-searxng-permissions: ## 🔧 Oddaj katalogi SearXNG bieżącemu użytkownikowi
-      	sudo chown -R $(OLLAMA_UID):$(OLLAMA_GID) data/searxng
+      >sudo chown -R $(OLLAMA_UID):$(OLLAMA_GID) data/searxng
 
       init-searxng-config: ## 🔐 Utwórz lokalną konfigurację i sekret SearXNG, jeśli ich brakuje
-      	./init-searxng-config
+      >./init-searxng-config
 
-      vulkan: init-searxng-config ## ⚡ Uruchom Ollama z backendem Vulkan
-      	docker-compose --profile vulkan up -d
+      init-litellm-env: ## 🧭 Utwórz lub uzupełnij prywatny inventory LiteLLM
+      >./init-litellm-env
 
-      rocm: init-searxng-config ## 🔴 Uruchom Ollama z backendem ROCm
-      	docker-compose --profile rocm up -d
+      init-stack-config: init-searxng-config init-litellm-env ## ⚙️ Przygotuj lokalne pliki stosu
 
-      cpu: init-searxng-config ## 🖥️ Uruchom Ollama tylko na CPU
-      	docker-compose --profile cpu up -d
+      vulkan: init-stack-config ## ⚡ Uruchom Ollama z backendem Vulkan
+      >$(COMPOSE) --profile vulkan up -d
 
-      vulkan-cpu: init-searxng-config ## ⚡🖥️ Uruchom backend Vulkan oraz dodatkowy serwer CPU
-      	docker-compose --profile vulkan --profile cpu up -d
+      rocm: init-stack-config ## 🔴 Uruchom Ollama z backendem ROCm
+      >$(COMPOSE) --profile rocm up -d
 
-      rocm-cpu: init-searxng-config ## 🔴🖥️ Uruchom backend ROCm oraz dodatkowy serwer CPU
-      	docker-compose --profile rocm --profile cpu up -d
+      cpu: init-stack-config ## 🖥️ Uruchom Ollama tylko na CPU
+      >$(COMPOSE) --profile cpu up -d
 
-      down: ## 🛑 Zatrzymaj stos wraz ze wszystkimi profilami Ollamy
-      	docker-compose --profile vulkan --profile rocm --profile cpu down
+      vulkan-cpu: init-stack-config ## ⚡🖥️ Uruchom backend Vulkan oraz dodatkowy serwer CPU
+      >$(COMPOSE) --profile vulkan --profile cpu up -d
 
-      apply-webui-defaults: ## ⚙️ Zsynchronizuj globalne ustawienia Open WebUI bez kasowania danych
-      	docker-compose exec -T open-webui python /opt/ollama-stack/apply-webui-defaults.py
-      	docker-compose restart open-webui
+      rocm-cpu: init-stack-config ## 🔴🖥️ Uruchom backend ROCm oraz dodatkowy serwer CPU
+      >$(COMPOSE) --profile rocm --profile cpu up -d
 
-      pull-vulkan: ## ⬇️ Pobierz obrazy wariantu Vulkan
-      	docker-compose --profile vulkan pull
+      down: init-litellm-env ## 🛑 Zatrzymaj stos wraz ze wszystkimi profilami Ollamy
+      >$(COMPOSE) --profile vulkan --profile rocm --profile cpu down
 
-      pull-rocm: ## ⬇️ Pobierz obrazy wariantu ROCm
-      	docker-compose --profile rocm pull
+      apply-webui-defaults: init-litellm-env ## ⚙️ Zsynchronizuj globalne ustawienia Open WebUI bez kasowania danych
+      >$(COMPOSE) exec -T open-webui python /opt/ollama-stack/apply-webui-defaults.py
+      >$(COMPOSE) restart open-webui
 
-      pull-cpu: ## ⬇️ Pobierz obrazy wariantu CPU
-      	docker-compose --profile cpu pull
+      pull-vulkan: init-litellm-env ## ⬇️ Pobierz obrazy wariantu Vulkan
+      >$(COMPOSE) --profile vulkan pull
 
-      pull-searxng: ## ⬇️ Pobierz obraz SearXNG
-      	docker-compose pull searxng
+      pull-rocm: init-litellm-env ## ⬇️ Pobierz obrazy wariantu ROCm
+      >$(COMPOSE) --profile rocm pull
 
-      pull: ## 🤖 Pobierz model do uruchomionej Ollamy: make pull MODEL=qwen3.5:9b
-      	@test -n "$(MODEL)" || { echo "Podaj MODEL=nazwa:model" >&2; exit 2; }
-      	@for service in ollama-vulkan ollama-rocm ollama-cpu; do \
-      	  if docker-compose ps -q "$$service" | grep -q .; then \
-      	    docker-compose exec "$$service" ollama pull "$(MODEL)"; \
-      	    exit $$?; \
-      	  fi; \
-      	done; \
-      	echo "Nie działa żaden kontener Ollamy — uruchom najpierw make vulkan, make rocm albo make cpu" >&2; \
-      	exit 1
+      pull-cpu: init-litellm-env ## ⬇️ Pobierz obrazy wariantu CPU
+      >$(COMPOSE) --profile cpu pull
 
-      restart-searxng: init-searxng-config ## 🔄 Zrestartuj SearXNG
-      	docker-compose restart searxng
+      pull-searxng: init-litellm-env ## ⬇️ Pobierz obraz SearXNG
+      >$(COMPOSE) pull searxng
 
-      logs: ## 📜 Śledź logi wszystkich kontenerów
-      	docker-compose logs --follow
+      pull-litellm: init-litellm-env ## ⬇️ Pobierz stabilny obraz LiteLLM
+      >$(COMPOSE) pull litellm
+
+      restart-litellm: init-litellm-env ## 🔄 Odtwórz LiteLLM po zmianie inventory
+      >$(COMPOSE) up -d --force-recreate litellm
+
+      pull: init-litellm-env ## 🤖 Pobierz model do uruchomionej Ollamy: make pull MODEL=qwen3.5:9b
+      >@test -n "$(MODEL)" || { echo "Podaj MODEL=nazwa:model" >&2; exit 2; }
+      >@for service in ollama-vulkan ollama-rocm ollama-cpu; do \
+      >  if $(COMPOSE) ps -q "$$service" | grep -q .; then \
+      >    $(COMPOSE) exec "$$service" ollama pull "$(MODEL)"; \
+      >    exit $$?; \
+      >  fi; \
+      >done; \
+      >echo "Nie działa żaden kontener Ollamy — uruchom najpierw make vulkan, make rocm albo make cpu" >&2; \
+      >exit 1
+
+      restart-searxng: init-stack-config ## 🔄 Zrestartuj SearXNG
+      >$(COMPOSE) restart searxng
+
+      logs: init-litellm-env ## 📜 Śledź logi wszystkich kontenerów
+      >$(COMPOSE) logs --follow
     '';
   };
 }

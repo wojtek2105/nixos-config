@@ -102,11 +102,11 @@ let
     bounded work, stay within that scope and return concrete evidence and a
     concise handoff. Delegate independent work through Agent Manager MCP and
     ${if localOnlyProfile then ''
-      On this local-only host, choose only tool="codex", "local-low",
-      "local-medium", or "local-high" for every child;
+      On this local-only host, choose only tool="codex", "local-off", or
+      "local-thinking" for every child;
       no remote Ollama farm profiles are installed on this host.
     '' else ''
-      Choose tool="codex" or an explicit ROG/White Monster effort profile for
+      Choose tool="codex" or an explicit ROG/White Monster alias profile for
       every child. Do not use the hidden OpenCode compatibility alias.
     ''}
     State its backend, objective, authority, expected handoff, and exact file
@@ -261,16 +261,52 @@ let
   # Medium reasoning keeps concurrent visible sessions responsive and economical.
   codexAgent = mkCodexLauncher "codex-agent" "gpt-5.6-terra" "medium" codexInstructions;
 
-  # Each launcher creates isolated provider and MCP settings. Cline's shared
-  # session database remains untouched, so history survives profile changes.
-  mkClineOllama =
+  clineAliases = if localOnlyProfile then [
+    "local-qwen35-off"
+    "local-qwen35-thinking"
+  ] else [
+    "rog-qwen35-off"
+    "rog-qwen35-thinking"
+    "white-qwen38-off"
+    "white-qwen38-low"
+    "white-qwen38-medium"
+    "white-qwen38-xhigh"
+  ];
+
+  clineModelsRegistry = pkgs.writeText "cline-litellm-models.json"
+    (builtins.toJSON {
+      version = 1;
+      providers.ollama-farm = {
+        provider = {
+          name = "Ollama farm through LiteLLM";
+          baseUrl = "http://127.0.0.1:4000/v1";
+          defaultModelId = builtins.head clineAliases;
+          protocol = "openai-chat";
+          client = "openai-compatible";
+          capabilities = [ "streaming" "tools" ];
+        };
+        models = builtins.listToAttrs (map (alias: {
+          name = alias;
+          value = {
+            id = alias;
+            name = alias;
+            contextWindow = 16384;
+            maxInputTokens = 16384;
+            maxTokens = 8192;
+            capabilities = [ "streaming" "tools" ];
+          };
+        }) clineAliases);
+      };
+    });
+
+  # Each alias fixes Ollama's native `think` value in LiteLLM. Cline therefore
+  # changes reasoning by selecting another model alias and never sends its
+  # provider-generic reasoning_effort parameter.
+  mkClineLiteLLM =
     {
+      alias,
       instructions ? localWorkerInstructions,
       name,
-      endpointVariable,
-      fallbackModel ? "qwen3.5:9b",
-      modelVariable,
-      reasoningEffort ? "low",
     }:
     pkgs.writeShellApplication {
       inherit name;
@@ -286,32 +322,6 @@ let
         searxngMcp
       ];
       text = ''
-        persistent_config_home="''${XDG_CONFIG_HOME:-$HOME/.config}"
-        config_file="$persistent_config_home/ollama-router/hosts.env"
-        if [[ -r "$config_file" ]]; then
-          # Per-host inventory stays mutable and intentionally outside Git.
-          # shellcheck disable=SC1090
-          source "$config_file"
-        fi
-        endpoint_variable=${lib.escapeShellArg endpointVariable}
-        model_variable=${lib.escapeShellArg modelVariable}
-        declare -n endpoint_ref="$endpoint_variable"
-        declare -n model_ref="$model_variable"
-        endpoint="''${endpoint_ref:-http://127.0.0.1:11434/v1}"
-        model="''${model_ref:-${fallbackModel}}"
-        requested_reasoning=${lib.escapeShellArg reasoningEffort}
-        model_key="$(printf '%s' "$model" | tr '[:upper:]' '[:lower:]')"
-
-        case "$model_key:$requested_reasoning" in
-          *qwen3.8*:low|*qwen3.8*:medium|*qwen3.8*:xhigh|*qwen3.5*:low|*qwen3.5*:medium|*qwen3.5*:high)
-            ;;
-          *)
-            printf 'Profil %s wymaga effort=%s, ale model %s go nie obsługuje.\n' \
-              ${lib.escapeShellArg name} "$requested_reasoning" "$model" >&2
-            exit 2
-            ;;
-        esac
-
         runtime_parent="''${XDG_RUNTIME_DIR:-''${TMPDIR:-/tmp}}"
         runtime_config_dir="$(mktemp -d "$runtime_parent/cline-profile.XXXXXX")"
         runtime_settings_dir="$runtime_config_dir/settings"
@@ -335,53 +345,17 @@ let
           export AGENT_MANAGER_SESSION_ID="$session_id"
         fi
 
-        # Cline's native Ollama adapter reduces every non-zero effort to the
-        # boolean `think=true`. Use Ollama's OpenAI-compatible endpoint and
-        # declare the local model capability so Cline exposes the effort picker
-        # and forwards low/medium/high/xhigh instead.
-        endpoint="''${endpoint%/}"
-        endpoint="''${endpoint%/v1}/v1"
         jq -n \
-          --arg endpoint "$endpoint" \
-          --arg model "$model" \
+          --arg model ${lib.escapeShellArg alias} \
           '{"ollama-farm": {
             provider: "ollama-farm",
             apiKey: "ollama",
-            baseUrl: $endpoint,
+            baseUrl: "http://127.0.0.1:4000/v1",
             model: $model
           }}' \
           > "$provider_settings"
 
-        # Cline stores custom model metadata in models.json next to
-        # providers.json. A named provider avoids the built-in generic
-        # provider's manual model-id screen.
-        jq -n \
-          --arg endpoint "$endpoint" \
-          --arg model "$model" \
-          '{version: 1, providers: {
-            "ollama-farm": {
-              provider: {
-                name: "Ollama farm",
-                baseUrl: $endpoint,
-                defaultModelId: $model,
-                protocol: "openai-chat",
-                client: "openai-compatible",
-                capabilities: ["streaming", "tools", "reasoning"]
-              },
-              models: {
-                ($model): {
-                  id: $model,
-                  name: $model,
-                  contextWindow: 16384,
-                  maxInputTokens: 16384,
-                  maxTokens: 8192,
-                  capabilities: ["streaming", "tools", "reasoning"],
-                  supportsReasoning: true
-                }
-              }
-            }
-          }}' \
-          > "$models_registry"
+        cp ${clineModelsRegistry} "$models_registry"
 
         # Playwright is registered but disabled until enabled in Cline's MCP
         # screen. No source-control MCP is installed.
@@ -419,67 +393,46 @@ let
         export CLINE_MCP_SETTINGS_PATH="$mcp_settings"
         ${clineCli}/bin/cline \
           --provider ollama-farm \
-          --model "$model" \
-          --thinking "$requested_reasoning" \
+          --model ${lib.escapeShellArg alias} \
           --system "$system_prompt" \
           "$@"
       '';
     };
 
-  clineLocalLow = mkClineOllama {
-    name = if localOnlyProfile then "cline-local-low" else "cline-rog-polamaniec-low";
-    endpointVariable = if localOnlyProfile then "OLLAMA_LOCAL_URL" else "OLLAMA_ROG_URL";
-    modelVariable = if localOnlyProfile then "OLLAMA_LOCAL_MODEL" else "OLLAMA_ROG_MODEL";
-    fallbackModel = "qwen3.5:9b";
-    reasoningEffort = "low";
+  clineLocalOff = mkClineLiteLLM {
+    name = if localOnlyProfile then "cline-local-off" else "cline-rog-polamaniec-off";
+    alias = if localOnlyProfile then "local-qwen35-off" else "rog-qwen35-off";
     instructions = if localOnlyProfile then localOnlyManagerInstructions else localManagerInstructions;
   };
-  # One direct command opens the same low-effort manager used by Agent Manager.
-  clineDefault = mkClineOllama {
+  # One direct command opens the same economical manager used by Agent Manager.
+  clineDefault = mkClineLiteLLM {
     name = "cline";
-    endpointVariable = if localOnlyProfile then "OLLAMA_LOCAL_URL" else "OLLAMA_ROG_URL";
-    modelVariable = if localOnlyProfile then "OLLAMA_LOCAL_MODEL" else "OLLAMA_ROG_MODEL";
-    fallbackModel = "qwen3.5:9b";
-    reasoningEffort = "low";
+    alias = if localOnlyProfile then "local-qwen35-off" else "rog-qwen35-off";
     instructions = if localOnlyProfile then localOnlyManagerInstructions else localManagerInstructions;
   };
-  clineLocalMedium = mkClineOllama {
-    name = if localOnlyProfile then "cline-local-medium" else "cline-rog-polamaniec-medium";
-    endpointVariable = if localOnlyProfile then "OLLAMA_LOCAL_URL" else "OLLAMA_ROG_URL";
-    modelVariable = if localOnlyProfile then "OLLAMA_LOCAL_MODEL" else "OLLAMA_ROG_MODEL";
-    fallbackModel = "qwen3.5:9b";
-    reasoningEffort = "medium";
+  clineLocalThinking = mkClineLiteLLM {
+    name = if localOnlyProfile then "cline-local-thinking" else "cline-rog-polamaniec-thinking";
+    alias = if localOnlyProfile then "local-qwen35-thinking" else "rog-qwen35-thinking";
   };
-  clineLocalHigh = mkClineOllama {
-    name = if localOnlyProfile then "cline-local-high" else "cline-rog-polamaniec-high";
-    endpointVariable = if localOnlyProfile then "OLLAMA_LOCAL_URL" else "OLLAMA_ROG_URL";
-    modelVariable = if localOnlyProfile then "OLLAMA_LOCAL_MODEL" else "OLLAMA_ROG_MODEL";
-    fallbackModel = "qwen3.5:9b";
-    reasoningEffort = "high";
+  clineWhiteMonsterOff = mkClineLiteLLM {
+    name = "cline-white-monster-off";
+    alias = "white-qwen38-off";
+    instructions = whiteMonsterInstructions;
   };
-  clineWhiteMonsterLow = mkClineOllama {
+  clineWhiteMonsterLow = mkClineLiteLLM {
     name = "cline-white-monster-low";
-    endpointVariable = "OLLAMA_WHITE_MONSTER_URL";
-    modelVariable = "OLLAMA_WHITE_MONSTER_MODEL";
-    fallbackModel = "qwen3.8:27b";
+    alias = "white-qwen38-low";
     instructions = whiteMonsterInstructions;
-    reasoningEffort = "low";
   };
-  clineWhiteMonsterMedium = mkClineOllama {
+  clineWhiteMonsterMedium = mkClineLiteLLM {
     name = "cline-white-monster-medium";
-    endpointVariable = "OLLAMA_WHITE_MONSTER_URL";
-    modelVariable = "OLLAMA_WHITE_MONSTER_MODEL";
-    fallbackModel = "qwen3.8:27b";
+    alias = "white-qwen38-medium";
     instructions = whiteMonsterInstructions;
-    reasoningEffort = "medium";
   };
-  clineWhiteMonsterXhigh = mkClineOllama {
+  clineWhiteMonsterXhigh = mkClineLiteLLM {
     name = "cline-white-monster-xhigh";
-    endpointVariable = "OLLAMA_WHITE_MONSTER_URL";
-    modelVariable = "OLLAMA_WHITE_MONSTER_MODEL";
-    fallbackModel = "qwen3.8:27b";
+    alias = "white-qwen38-xhigh";
     instructions = whiteMonsterInstructions;
-    reasoningEffort = "xhigh";
   };
 
   ollamaFarmStatus = pkgs.writeShellApplication {
@@ -518,9 +471,16 @@ let
         fi
       }
 
+      rog_endpoint="''${OLLAMA_ROG_BASE_URL:-''${OLLAMA_ROG_URL:-http://rog-polamaniec.local:11434}}"
+      white_endpoint="''${OLLAMA_WHITE_MONSTER_BASE_URL:-''${OLLAMA_WHITE_MONSTER_URL:-http://white-monster.local:11434}}"
+      if [[ "''${rog_endpoint%/v1}" == "http://ollama:11434" ]]; then
+        # `ollama` is the Compose-network name used by LiteLLM. This status
+        # helper runs on the host, where the same service is published locally.
+        rog_endpoint=http://127.0.0.1:11434
+      fi
       jq -s '.' \
-        <(check_host "rog-polamaniec" "''${OLLAMA_ROG_URL:-http://rog-polamaniec.local:11434/v1}" "''${OLLAMA_ROG_MODEL:-qwen3.5:9b}") \
-        <(check_host "white-monster" "''${OLLAMA_WHITE_MONSTER_URL:-http://white-monster.local:11434/v1}" "''${OLLAMA_WHITE_MONSTER_MODEL:-qwen3.8:27b}")
+        <(check_host "rog-polamaniec" "''${rog_endpoint%/v1}" "''${OLLAMA_ROG_MODEL:-qwen3.5:9b}") \
+        <(check_host "white-monster" "''${white_endpoint%/v1}" "''${OLLAMA_WHITE_MONSTER_MODEL:-qwen3.8:27b}")
     '';
   };
 
@@ -613,11 +573,11 @@ in
     agentManager
     codexAgent
     clineDefault
-    clineLocalLow
-    clineLocalMedium
-    clineLocalHigh
+    clineLocalOff
+    clineLocalThinking
     updateAgentManager
   ] ++ lib.optionals farmEnabled [
+    clineWhiteMonsterOff
     clineWhiteMonsterLow
     clineWhiteMonsterMedium
     clineWhiteMonsterXhigh
@@ -634,24 +594,24 @@ in
 
     # Agent Manager 0.33.0 always backfills this built-in compatibility entry.
     # It cannot be removed declaratively; `s -> CLIs` hides it once in the TUI.
-    # Point it at the normal low-effort root so accidental use remains safe.
+    # Point it at the economical non-thinking root so accidental use remains safe.
     [tools.opencode]
-    command = "${if localOnlyProfile then "cline-local-low" else "cline-rog-polamaniec-low"}"
+    command = "${if localOnlyProfile then "cline-local-off" else "cline-rog-polamaniec-off"}"
     ${clineToolBehavior}
 
-    [tools.${if localOnlyProfile then "local-low" else "rog-polamaniec-low"}]
-    command = "${if localOnlyProfile then "cline-local-low" else "cline-rog-polamaniec-low"}"
+    [tools.${if localOnlyProfile then "local-off" else "rog-polamaniec-off"}]
+    command = "${if localOnlyProfile then "cline-local-off" else "cline-rog-polamaniec-off"}"
     ${clineToolBehavior}
 
-    [tools.${if localOnlyProfile then "local-medium" else "rog-polamaniec-medium"}]
-    command = "${if localOnlyProfile then "cline-local-medium" else "cline-rog-polamaniec-medium"}"
-    ${clineToolBehavior}
-
-    [tools.${if localOnlyProfile then "local-high" else "rog-polamaniec-high"}]
-    command = "${if localOnlyProfile then "cline-local-high" else "cline-rog-polamaniec-high"}"
+    [tools.${if localOnlyProfile then "local-thinking" else "rog-polamaniec-thinking"}]
+    command = "${if localOnlyProfile then "cline-local-thinking" else "cline-rog-polamaniec-thinking"}"
     ${clineToolBehavior}
 
     ${lib.optionalString farmEnabled ''
+    [tools.white-monster-off]
+    command = "cline-white-monster-off"
+    ${clineToolBehavior}
+
     [tools.white-monster-low]
     command = "cline-white-monster-low"
     ${clineToolBehavior}

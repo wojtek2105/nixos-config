@@ -44,8 +44,8 @@ wersjonowane. Sekrety, hasła, profile Wi-Fi i klucze SSH pozostają poza repo.
 
 Host `izakomp` używa własnego profilu i nakładki użytkownika, ale współdzieli
 bazową konfigurację Cline. Ma włączony lokalny stos Ollamy. Agent Manager
-pokazuje na nim `local-low`, `local-medium`, `local-high` oraz `codex`; nie
-instaluje profili zdalnej farmy. `local-low` jest kierownikiem i może przez MCP
+pokazuje na nim `local-off`, `local-thinking` oraz `codex`; nie instaluje
+profili zdalnej farmy. `local-off` jest kierownikiem i może przez MCP
 eskalować naprawdę trudne zadanie bezpośrednio do Codexa.
 
 ## ASUS Vivobook S 15 ze Snapdragonem

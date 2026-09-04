@@ -61,6 +61,8 @@ Preferowane są oficjalne repozytoria GitHub i dokumentacja pierwotna.
   trybami Plan/Act, natywną Ollamą, poziomami thinking i serwerami MCP.
 - [Cline CLI distribution](https://github.com/cline/cline/blob/main/apps/cli/DISTRIBUTION.md) —
   oficjalny sposób dystrybucji samodzielnego binarium CLI dla Linuksa.
+- [LiteLLM](https://docs.litellm.ai/) — lokalny gateway zgodny z API OpenAI,
+  wystawiający stabilne aliasy modeli Ollamy dla Cline i Open WebUI.
 - [SearXNG](https://docs.searxng.org/) — lokalny silnik metawyszukiwania dla MCP.
 - [Context7](https://github.com/upstash/context7) — aktualna, wersjonowana
   dokumentacja bibliotek przez zdalny MCP.

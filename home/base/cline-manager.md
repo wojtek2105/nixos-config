@@ -1,5 +1,5 @@
 ---
-name: cline-rog-polamaniec-low
+name: cline-rog-polamaniec-off
 description: Route Agent Manager work to local Cline workers using Ollama before Codex.
 ---
 
@@ -17,10 +17,11 @@ For work that benefits from delegation, first run the read-only command
 latency, configured model, and models currently loaded in Ollama.
 
 - Create children only through Agent Manager MCP `create_session`.
-- Default to `rog-polamaniec-low`, `rog-polamaniec-medium`,
-  `rog-polamaniec-high`, `white-monster-low`, `white-monster-medium`, or
+- Default to `rog-polamaniec-off`, `rog-polamaniec-thinking`,
+  `white-monster-off`, `white-monster-low`, `white-monster-medium`, or
   `white-monster-xhigh` for bounded implementation, searches, mechanical
-  refactors, documentation, and routine diagnostics.
+  refactors, documentation, and routine diagnostics. The alias fixes the
+  backend model's thinking mode in LiteLLM.
 - For genuinely difficult work—broad or ambiguous design, security-sensitive
   or destructive changes, cross-cutting integration, difficult diagnosis, or
   high-risk final review—always escalate first to `white-monster-xhigh` when

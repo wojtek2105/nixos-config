@@ -16,14 +16,14 @@ Domyślny `devShell` zapewnia Codex, Git i Neovim do pracy nad konfiguracją.
 
 Profil Home Managera instaluje Agent Manager jako warstwę operacyjną nad
 trwałymi sesjami CLI w tmux. Codex używa `gpt-5.6-terra` z rozumowaniem
-`medium`. Lokalny kierownik to profil `rog-polamaniec-low` (na hostach
-lokalnych `local-low`): przez MCP tworzy widoczne workery i używa Codexa tylko
-po nieudanej eskalacji do White Monstera. ROG udostępnia `low` / `medium` /
-`high`, a White Monster z Qwenem 3.8 `low` / `medium` / `xhigh`; każdy profil
-wysyła wyłącznie prawidłowy dla modelu effort. Sesje pozostają widoczne w TUI;
+`medium`. Lokalny kierownik to profil `rog-polamaniec-off` (na hostach
+lokalnych `local-off`): przez MCP tworzy widoczne workery i używa Codexa tylko
+po nieudanej eskalacji do White Monstera. LiteLLM wystawia Qwena 3.5 jako
+aliasy `off` / `thinking`, a Qwena 3.8 jako `off` / `low` / `medium` / `xhigh`;
+każdy alias wymusza prawidłowy parametr `think`. Sesje pozostają widoczne w TUI;
 natywne subagenty Codexa są wyłączone, aby nie tworzyć drugiego ukrytego drzewa.
 `features.ollamaFarm` rozdziela profile zdalnej farmy od lokalnego Cline.
-Wyłączenie pozostawia lokalne trzy profile i opcjonalną eskalację do Codexa,
+Wyłączenie pozostawia dwa lokalne profile i opcjonalną eskalację do Codexa,
 a włączenie dodaje White Monstera oraz sondę `ollama-farm-status`.
 
 Pulpit korzysta wyłącznie z Ironbara. Kod Waybara, Noctalii i narzędzia do ich

@@ -151,21 +151,20 @@ Uruchom panel z terminala:
 agent-manager
 ```
 
-Na farmie wybierz jako sesję główną `rog-polamaniec-low`; na hoście lokalnym
-jest to `local-low`. To kierownik na Qwenie 3.5 9B, który sprawdza
+Na farmie wybierz jako sesję główną `rog-polamaniec-off`; na hoście lokalnym
+jest to `local-off`. To kierownik na Qwenie 3.5 9B bez thinking, który sprawdza
 `ollama-farm-status` i tworzy przez MCP widoczne workery. ROG oferuje profile
-`low`, `medium` i `high`; po skonfigurowaniu White Monstera z Qwenem 3.8 27B
-dostępne będą `white-monster-low`, `white-monster-medium` i
-`white-monster-xhigh`. Trudne zadanie trafia najpierw do White Monstera, a
+`off` i `thinking`; po skonfigurowaniu White Monstera z Qwenem 3.8 27B
+dostępne będą `white-monster-off`, `white-monster-low`,
+`white-monster-medium` i `white-monster-xhigh`. Trudne zadanie trafia najpierw do White Monstera, a
 Codex jest używany dopiero, gdy większy model lokalny nie wystarczy lub jest
 niedostępny. Routowanie i podsumowania nie zużywają tokenów Codexa.
 
 Zwykłe polecenie `cline` pozostaje skrótem terminalowym do lokalnego profilu
-`low`, ale celowo nie pojawia się jako kolejna pozycja w Agent Managerze.
+`off`, ale celowo nie pojawia się jako kolejna pozycja w Agent Managerze.
 
-Na `izakomp` panel pokazuje wyłącznie `local-low`, `local-medium`,
-`local-high` i `codex`; nie instaluje zdalnej farmy. Endpoint i model zmienisz
-przez `OLLAMA_LOCAL_URL` i `OLLAMA_LOCAL_MODEL` w
+Na `izakomp` panel pokazuje wyłącznie `local-off`, `local-thinking` i `codex`;
+nie instaluje zdalnej farmy. Model zmienisz przez `OLLAMA_LOCAL_MODEL` w
 `~/.config/ollama-router/hosts.env`.
 
 Wszystkie profile Cline/Ollama i Codex odpowiadają w języku ostatniego
@@ -191,11 +190,23 @@ Przed uruchomieniem panelu skonfiguruj na swoim koncie
 pobranymi na każdym hoście:
 
 ```bash
-OLLAMA_ROG_URL=http://192.168.1.10:11434/v1
+OLLAMA_ROG_BASE_URL=http://192.168.1.10:11434
 OLLAMA_ROG_MODEL=qwen3.5:9b
-OLLAMA_WHITE_MONSTER_URL=http://192.168.1.20:11434/v1
+OLLAMA_WHITE_MONSTER_BASE_URL=http://192.168.1.20:11434
 OLLAMA_WHITE_MONSTER_MODEL=qwen3.8:27b
 ```
+
+Adres ROG-u jest interpretowany wewnątrz kontenera LiteLLM. Dla Ollamy z tego
+samego pliku Compose użyj `OLLAMA_ROG_BASE_URL=http://ollama:11434`; skrypt
+migracyjny zamienia na tę wartość starszy lokalny adres `127.0.0.1`.
+
+`make vulkan`, `make rocm` i `make cpu` uruchamiają także lokalny LiteLLM na
+`http://127.0.0.1:4000/v1`. Target `init-litellm-env` tworzy prywatny plik, jeśli
+go brakuje, oraz migruje starsze zmienne `OLLAMA_*_URL` kończące się `/v1` do
+wartości `OLLAMA_*_BASE_URL` wymaganych przez natywne API Ollamy. Lista aliasów
+jest dostępna pod `/v1/models`; port 4000 nie jest wystawiony do sieci LAN.
+Po zmianie modelu lub adresu wykonaj `make restart-litellm`, ponieważ zwykły
+restart kontenera nie wczytuje ponownie jego zmiennych środowiskowych.
 
 Pobierz model do aktualnie uruchomionego kontenera Ollamy:
 
@@ -208,14 +219,11 @@ Target wybiera działającą usługę w kolejności Vulkan, ROCm, CPU. Gdy uruch
 są równocześnie GPU i CPU, model trafia do wariantu GPU; gdy żadna Ollama nie
 działa, polecenie kończy się czytelnym błędem.
 
-Profile ustalają effort przy starcie: Qwen 3.5 ma `low` / `medium` / `high`, a
-Qwen 3.8 `low` / `medium` / `xhigh`. Launcher odmawia uruchomienia profilu,
-gdy model z `hosts.env` nie obsługuje jego poziomu — nie wysyła pozornie
-działającego, lecz nieprawidłowego parametru do Ollamy.
-Cline pokazuje aktywny model oraz thinking w TUI. Profile Agent Managera
-ustalają obie wartości przy starcie: `low`, `medium`, `high` dla Qwena 3.5 i
-`low`, `medium`, `xhigh` dla Qwena 3.8. W samodzielnym Cline można przełączać
-Plan/Act i zmieniać model lub thinking bez utraty zapisanej historii.
+LiteLLM wystawia Qwena 3.5 jako aliasy `off` / `thinking`, a Qwena 3.8 jako
+`off` / `low` / `medium` / `xhigh`. Każdy alias wymusza natywny parametr
+`think` Ollamy i odrzuca `reasoning_effort` przesłany przez klienta. Cline nie
+pokazuje więc drugiego, mylącego selektora Thinking: w samodzielnej sesji
+poziom zmienisz przez `/model`, bez utraty historii i kontekstu.
 
 ### MCP w Cline
 
@@ -232,6 +240,10 @@ ustawiają intensywności reasoning. Zainstalowana ręcznie Function
 [Reasoning Effort Selector](https://openwebui.com/posts/reasoning_effort_selector_ee572967)
 zapewnia właściwy parametr Qwen3.8. To zewnętrzny kod Python wykonywany przez
 Open WebUI, dlatego przed aktualizacją należy przeczytać jego źródło w GUI.
+
+Function jest potrzebna tylko przy awaryjnym, bezpośrednim połączeniu z Ollamą.
+Dla modeli z LiteLLM wybierz alias `white-qwen38-off`, `-low`, `-medium` albo
+`-xhigh` i nie przypinaj Function do modelu: alias jest źródłem prawdy.
 
 Ustaw ją raz jako filtr domyślny, aby nie wybierać jej przy każdej wiadomości:
 
@@ -258,14 +270,14 @@ profilem ani kandydatem do delegowania.
 
 Najważniejsze operacje w panelu:
 
-- `n` tworzy sesję; jako korzeń wybierz `rog-polamaniec-low` lub `local-low`,
+- `n` tworzy sesję; jako korzeń wybierz `rog-polamaniec-off` lub `local-off`,
 - `Enter` otwiera zaznaczoną sesję, a `Ctrl+Q` wraca do panelu,
 - `Space` wysyła wiadomość bez przełączania sesji,
 - `Ctrl+R` otwiera przegląd zmian workera,
 - `x` zatrzymuje sesję z zachowaniem rekordu, a `v` ją wznawia,
 - `q` zamyka tylko panel; sesje nadal działają w prywatnym serwerze tmux.
 
-Po aktywacji sprawdź ręcznie, że `rog-polamaniec-low` widzi serwery MCP,
+Po aktywacji sprawdź ręcznie, że `rog-polamaniec-off` widzi serwery MCP,
 domyślnie tworzy lokalne workery, a trudne zadanie najpierw przekazuje do
 `white-monster-xhigh`. White Monster powinien móc utworzyć `codex`; po jego
 wyłączeniu kierownik powinien dla trudnego zadania móc utworzyć Codexa
@@ -274,9 +286,9 @@ Logowanie Codexa i limity konta są współdzielone z normalnym CLI, ale nie maj
 wpływu na sesje Cline/Ollama. Konfiguracja nie zapisuje tokenów ani danych
 uwierzytelniających w repozytorium.
 
-Gdy `features.ollamaFarm = true`, selektor zawiera trzy profile ROG i trzy
-profile White Monstera. Każdy pobiera adres i model z `hosts.env`; wybór
-narzędzia przy tworzeniu sesji określa backend i effort. Cline udostępnia
+Gdy `features.ollamaFarm = true`, selektor zawiera dwa profile ROG i cztery
+profile White Monstera. LiteLLM pobiera adresy i modele z `hosts.env`; wybór
+narzędzia przy tworzeniu sesji określa backend i stały tryb thinking. Cline udostępnia
 Agent Managera bezpośrednio jako własny MCP, więc
 kierownik może tworzyć workery na farmie, a White Monster może oszczędnie
 delegować nierozwiązane trudne zadanie do Codexa. Open WebUI można podłączyć ręcznie przez jego
@@ -284,9 +296,9 @@ API zgodne z OpenAI pod `http://ADRES-LAN:3000/api` i osobny klucz API
 użytkownika; nie zapisuj klucza w Nix ani Git.
 
 Agent Manager 0.33 zawsze dodaje wbudowany wpis `opencode`. Konfiguracja
-przekierowuje go bezpiecznie do `rog-polamaniec-low` (lub `local-low`), lecz
+przekierowuje go bezpiecznie do `rog-polamaniec-off` (lub `local-off`), lecz
 nie instaluje OpenCode. Alias ukryj raz przez `s -> CLIs`, odznaczając
-`opencode`; do nowych sesji używaj wyłącznie profili host-effort.
+`opencode`; do nowych sesji używaj wyłącznie profili aliasów LiteLLM.
 Cline przechowuje historię we własnym katalogu `~/.cline/`; launchery izolują
 tylko bieżące ustawienia providera i MCP, nie bazę sesji.
 Samo `q` lub `Ctrl+Q` nie zatrzymuje sesji tmux i nie powoduje utraty kontekstu.
