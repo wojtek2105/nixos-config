@@ -22,9 +22,9 @@ MCP dla SearXNG i Agent Managera. Codex jest tylko jawną eskalacją.
 Ollama używa kontekstu 65 536 tokenów, pojedynczego żądania równoległego i KV
 cache `q8_0`. White Monster z RX 9070 XT używa profilu `qwen38-mtp2`, który
 ustawia `draft_num_predict=2` dla Qwen3.8 27B MTP.
-Pi ma limit odpowiedzi 4096 tokenów oraz compaction `reserveTokens=8192`,
-`keepRecentTokens=6000`.
-Kompaktowanie zaczyna się około 32k tokenów, aby streszczenie i ponowiona
+Pi ma limit odpowiedzi 4096 tokenów oraz compaction `reserveTokens=12288`,
+`keepRecentTokens=8000`.
+Kompaktowanie zaczyna się około 53k tokenów, aby streszczenie i ponowiona
 odpowiedź miały bezpieczny zapas.
 
 ## Zasada zmian

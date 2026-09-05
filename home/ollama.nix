@@ -620,10 +620,10 @@ in
           OLLAMA_WHITE_MONSTER_MODEL=qwen38-mtp2
         fi
         if ${pkgs.gnugrep}/bin/grep -q \
-          '^OLLAMA_WHITE_MONSTER_MODEL=Qwen3.8-27B-GSQ-RCQ-IQ3_S-mtp:latest$' \
+          '^OLLAMA_WHITE_MONSTER_MODEL=Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp:latest$' \
           "$config_file"; then
           ${pkgs.gnused}/bin/sed -i \
-            's/^OLLAMA_WHITE_MONSTER_MODEL=Qwen3.8-27B-GSQ-RCQ-IQ3_S-mtp:latest$/OLLAMA_WHITE_MONSTER_MODEL=qwen38-mtp2/' \
+            's/^OLLAMA_WHITE_MONSTER_MODEL=Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp:latest$/OLLAMA_WHITE_MONSTER_MODEL=qwen38-mtp2/' \
             "$config_file"
           OLLAMA_WHITE_MONSTER_MODEL=qwen38-mtp2
         fi
@@ -631,6 +631,14 @@ in
         ensure_setting OLLAMA_CODER_MODEL "''${OLLAMA_CODER_MODEL:-''${OLLAMA_WHITE_MONSTER_MODEL:-qwen38-mtp2}}"
         if ${pkgs.gnugrep}/bin/grep -q '^OLLAMA_CODER_MODEL=qwen38-mtp3$' "$config_file"; then
           ${pkgs.gnused}/bin/sed -i 's/^OLLAMA_CODER_MODEL=qwen38-mtp3$/OLLAMA_CODER_MODEL=qwen38-mtp2/' "$config_file"
+          OLLAMA_CODER_MODEL=qwen38-mtp2
+        fi
+        if ${pkgs.gnugrep}/bin/grep -q \
+          '^OLLAMA_CODER_MODEL=Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp:latest$' \
+          "$config_file"; then
+          ${pkgs.gnused}/bin/sed -i \
+            's/^OLLAMA_CODER_MODEL=Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp:latest$/OLLAMA_CODER_MODEL=qwen38-mtp2/' \
+            "$config_file"
           OLLAMA_CODER_MODEL=qwen38-mtp2
         fi
         '' else ''
