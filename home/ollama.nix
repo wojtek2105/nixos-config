@@ -3,60 +3,55 @@
 let
   ollamaEnabled = desktopFeatures.ollama or false;
   ollamaFarmEnabled = desktopFeatures.ollamaFarm or false;
+  autoAiRouterEnabled = desktopFeatures.autoAiRouter or false;
   openWebUiSystemPrompt = ''Zawsze odpowiadaj w języku ostatniej wiadomości użytkownika, chyba że użytkownik wyraźnie poprosi o inny język. Na polskie wiadomości odpowiadaj po polsku. Kod, polecenia, logi, nazwy API i identyfikatory pozostawiaj w oryginalnej formie.'';
-  litellmModels = if ollamaFarmEnabled then ''
-    model_list:
-      - model_name: rog-qwen35-off
-        litellm_params:
-          model: os.environ/LITELLM_ROG_MODEL
-          api_base: os.environ/LITELLM_ROG_API_BASE
-          think: false
-          additional_drop_params: [reasoning_effort]
-      - model_name: rog-qwen35-thinking
-        litellm_params:
-          model: os.environ/LITELLM_ROG_MODEL
-          api_base: os.environ/LITELLM_ROG_API_BASE
-          think: true
-          additional_drop_params: [reasoning_effort]
-      - model_name: white-qwen38-off
-        litellm_params:
-          model: os.environ/LITELLM_WHITE_MODEL
-          api_base: os.environ/LITELLM_WHITE_API_BASE
-          think: false
-          additional_drop_params: [reasoning_effort]
-      - model_name: white-qwen38-low
-        litellm_params:
-          model: os.environ/LITELLM_WHITE_MODEL
-          api_base: os.environ/LITELLM_WHITE_API_BASE
-          think: low
-          additional_drop_params: [reasoning_effort]
-      - model_name: white-qwen38-medium
-        litellm_params:
-          model: os.environ/LITELLM_WHITE_MODEL
-          api_base: os.environ/LITELLM_WHITE_API_BASE
-          think: medium
-          additional_drop_params: [reasoning_effort]
-      - model_name: white-qwen38-xhigh
-        litellm_params:
-          model: os.environ/LITELLM_WHITE_MODEL
-          api_base: os.environ/LITELLM_WHITE_API_BASE
-          think: xhigh
-          additional_drop_params: [reasoning_effort]
-  '' else ''
-    model_list:
-      - model_name: local-qwen35-off
-        litellm_params:
-          model: os.environ/LITELLM_LOCAL_MODEL
-          api_base: http://ollama:11434
-          think: false
-          additional_drop_params: [reasoning_effort]
-      - model_name: local-qwen35-thinking
-        litellm_params:
-          model: os.environ/LITELLM_LOCAL_MODEL
-          api_base: http://ollama:11434
-          think: true
-          additional_drop_params: [reasoning_effort]
-  '';
+  mkOllamaAlias = model_name: model: api_base: think: {
+    inherit model_name;
+    litellm_params = {
+      inherit api_base model;
+      # Pi sends OpenAI's persistence hint; Ollama rejects it.
+      additional_drop_params = [ "reasoning_effort" "store" ];
+    } // lib.optionalAttrs (think != null) { inherit think; };
+  };
+  logicalAliases = lib.optionals autoAiRouterEnabled [
+    {
+      model_name = "auto";
+      # AUTO calls only router/vision/reasoning/coder through this gateway.
+      # None of those aliases can point back here, preventing recursion.
+      litellm_params = {
+        model = "openai/auto";
+        api_base = "http://host.docker.internal:4100/v1";
+        api_key = "auto-internal";
+      };
+    }
+    (mkOllamaAlias "router" "os.environ/LITELLM_ROUTER_MODEL" "os.environ/LITELLM_ROG_API_BASE" false)
+    (mkOllamaAlias "vision" "os.environ/LITELLM_ROUTER_MODEL" "os.environ/LITELLM_ROG_API_BASE" false)
+    # Ollama maps every explicit `think` level to reasoning_effort and cannot
+    # carry xhigh. Omitting it preserves Qwen3.8's documented template default.
+    (mkOllamaAlias "reasoning" "os.environ/LITELLM_WHITE_MODEL" "os.environ/LITELLM_WHITE_API_BASE" null)
+    (mkOllamaAlias "coder" "os.environ/LITELLM_CODER_MODEL" "os.environ/LITELLM_CODER_API_BASE" "low")
+  ];
+  farmCompatibilityAliases = [
+    (mkOllamaAlias "rog-qwen35-off" "os.environ/LITELLM_ROG_MODEL" "os.environ/LITELLM_ROG_API_BASE" false)
+    (mkOllamaAlias "rog-qwen35-thinking" "os.environ/LITELLM_ROG_MODEL" "os.environ/LITELLM_ROG_API_BASE" true)
+    (mkOllamaAlias "white-qwen38-off" "os.environ/LITELLM_WHITE_MODEL" "os.environ/LITELLM_WHITE_API_BASE" false)
+    (mkOllamaAlias "white-qwen38-low" "os.environ/LITELLM_WHITE_MODEL" "os.environ/LITELLM_WHITE_API_BASE" "low")
+    (mkOllamaAlias "white-qwen38-medium" "os.environ/LITELLM_WHITE_MODEL" "os.environ/LITELLM_WHITE_API_BASE" "medium")
+    (mkOllamaAlias "white-qwen38-xhigh" "os.environ/LITELLM_WHITE_MODEL" "os.environ/LITELLM_WHITE_API_BASE" null)
+  ];
+  localAliases = [
+    (mkOllamaAlias "local-qwen35-off" "os.environ/LITELLM_LOCAL_MODEL" "http://ollama:11434" false)
+    (mkOllamaAlias "local-qwen35-thinking" "os.environ/LITELLM_LOCAL_MODEL" "http://ollama:11434" true)
+  ];
+  # JSON is valid YAML and avoids indentation-sensitive generated fragments.
+  litellmModels = builtins.toJSON {
+    model_list = if ollamaFarmEnabled
+      then logicalAliases ++ farmCompatibilityAliases
+      else localAliases;
+    # Keep the gateway key outside Git/Nix store and inject it from hosts.env;
+    # inference and both model catalogs remain authenticated.
+    general_settings.master_key = "os.environ/LITELLM_MASTER_KEY";
+  };
 in
 {
   # Home Manager owns the stack definition and helper scripts. Runtime data and
@@ -72,13 +67,16 @@ in
             - "0.0.0.0:3000:8080"
           environment:
             OLLAMA_BASE_URL: http://ollama:11434
+            ENABLE_OLLAMA_API: "${if autoAiRouterEnabled then "False" else "True"}"
             ENABLE_OPENAI_API: "True"
             OPENAI_API_BASE_URL: http://litellm:4000/v1
-            OPENAI_API_KEY: ollama
+            LITELLM_MASTER_KEY: "''${LITELLM_MASTER_KEY:?Run ./init-litellm-env first}"
+            OPENAI_API_KEY: "''${LITELLM_MASTER_KEY:?Run ./init-litellm-env first}"
             OPENAI_API_BASE_URLS: http://litellm:4000/v1
-            OPENAI_API_KEYS: ollama
+            OPENAI_API_KEYS: "''${LITELLM_MASTER_KEY:?Run ./init-litellm-env first}"
             # Built-in search_web is available to Native function-calling
-            # models; these limits keep fetched pages within a 16k context.
+            # models; these limits keep fetched pages bounded within the 64k
+            # shared context window.
             ENABLE_WEB_SEARCH: "True"
             WEB_SEARCH_ENGINE: searxng
             SEARXNG_QUERY_URL: http://searxng:8080/search?q=<query>&format=json
@@ -96,13 +94,13 @@ in
             }}'
             # Native tool calling and streaming are the safe global baseline.
             # Deliberately omit max_tokens: Ollama then lets each model stop
-            # naturally, bounded only by its shared 16k context window.
+            # naturally, bounded only by its shared 64k context window.
             DEFAULT_MODEL_PARAMS: '{"function_calling":"native","stream":true}'
-            # Summarize older chat turns before the 16k Ollama window is full.
+            # Summarize older chat turns before the 64k Ollama window is full.
             # Keep recent turns verbatim for tool state and immediate continuity.
             ENABLE_CONTEXT_COMPACTION: "True"
-            CONTEXT_COMPACTION_TOKEN_THRESHOLD: "11000"
-            CONTEXT_COMPACTION_TOKEN_CAP: "12000"
+            CONTEXT_COMPACTION_TOKEN_THRESHOLD: "48000"
+            CONTEXT_COMPACTION_TOKEN_CAP: "52000"
             CONTEXT_COMPACTION_RETENTION_PERCENTAGE: "40"
             TASK_MODEL_PARAMS: '{"temperature":0.2,"max_tokens":1200}'
           volumes:
@@ -119,15 +117,21 @@ in
           restart: unless-stopped
           command: ["--config", "/app/config.yaml", "--port", "4000"]
           ports:
-            - "127.0.0.1:4000:4000"
+            - "${if autoAiRouterEnabled then "0.0.0.0" else "127.0.0.1"}:4000:4000"
           environment:
+            LITELLM_MASTER_KEY: "''${LITELLM_MASTER_KEY:?Run ./init-litellm-env first}"
             LITELLM_ROG_MODEL: "ollama_chat/''${OLLAMA_ROG_MODEL:-qwen3.5:9b}"
+            LITELLM_ROUTER_MODEL: "ollama_chat/''${OLLAMA_ROUTER_MODEL:-qwen3.5:4b}"
             LITELLM_ROG_API_BASE: "''${OLLAMA_ROG_BASE_URL:-http://ollama:11434}"
-            LITELLM_WHITE_MODEL: "ollama_chat/''${OLLAMA_WHITE_MONSTER_MODEL:-Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp:latest}"
+            LITELLM_WHITE_MODEL: "ollama_chat/''${OLLAMA_WHITE_MONSTER_MODEL:-qwen38-mtp2}"
             LITELLM_WHITE_API_BASE: "''${OLLAMA_WHITE_MONSTER_BASE_URL:-http://white-monster.local:11434}"
+            LITELLM_CODER_MODEL: "ollama_chat/''${OLLAMA_CODER_MODEL:-qwen38-mtp2}"
+            LITELLM_CODER_API_BASE: "''${OLLAMA_CODER_BASE_URL:-http://white-monster.local:11434}"
             LITELLM_LOCAL_MODEL: "ollama_chat/''${OLLAMA_LOCAL_MODEL:-qwen3.5:9b}"
           volumes:
             - ./litellm-config.yaml:/app/config.yaml:ro
+          extra_hosts:
+            - "host.docker.internal:host-gateway"
 
         searxng:
           image: searxng/searxng:latest
@@ -163,11 +167,14 @@ in
             - /dev/dri
           environment:
             OLLAMA_VULKAN: "1"
-            # 16k is a practical shared default for chat and web search. Flash
-            # Attention plus an 8-bit KV cache keeps its VRAM cost manageable.
-            OLLAMA_CONTEXT_LENGTH: "16384"
+            # 64k is the shared limit for Pi and Open WebUI. Flash Attention
+            # enables q8 KV cache with negligible quality loss at long context.
+            OLLAMA_CONTEXT_LENGTH: "65536"
             OLLAMA_FLASH_ATTENTION: "1"
             OLLAMA_KV_CACHE_TYPE: q8_0
+            # One 64k context is the safe VRAM budget for the large MTP model;
+            # higher values multiply its cache allocation instead of speeding it up.
+            OLLAMA_NUM_PARALLEL: "1"
           volumes:
             - ./data/ollama-vulkan:/root/.ollama
           networks:
@@ -185,9 +192,10 @@ in
             - /dev/kfd
             - /dev/dri
           environment:
-            OLLAMA_CONTEXT_LENGTH: "16384"
+            OLLAMA_CONTEXT_LENGTH: "65536"
             OLLAMA_FLASH_ATTENTION: "1"
             OLLAMA_KV_CACHE_TYPE: q8_0
+            OLLAMA_NUM_PARALLEL: "1"
           volumes:
             - ./data/ollama-rocm:/root/.ollama
           networks:
@@ -202,14 +210,30 @@ in
           ports:
             - "0.0.0.0:11435:11434"
           environment:
-            OLLAMA_CONTEXT_LENGTH: "16384"
+            OLLAMA_CONTEXT_LENGTH: "65536"
             OLLAMA_FLASH_ATTENTION: "1"
             OLLAMA_KV_CACHE_TYPE: q8_0
+            OLLAMA_NUM_PARALLEL: "1"
           volumes:
             - ./data/ollama-cpu:/root/.ollama
+
+      networks:
+        default:
+          name: ollama-ai-internal
+          driver: bridge
+          driver_opts:
+            com.docker.network.bridge.name: ai-gateway0
     '';
 
     "Dev/Ollama/litellm-config.yaml".text = litellmModels;
+
+    # The model has the MTP head; this alias selects the best measured draft
+    # depth for it. It is mutable Ollama state and must be created after the
+    # ROCm container and source model exist.
+    "Dev/Ollama/Modelfile.qwen38-mtp2".text = ''
+      FROM Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp:latest
+      PARAMETER draft_num_predict 2
+    '';
 
     "Dev/Ollama/README.md".text = ''
       # Ollama + Open WebUI
@@ -223,7 +247,8 @@ in
 
       Open WebUI działa pod `http://ADRES-LAN:3000`, SearXNG pod
       `http://ADRES-LAN:8080`, API GPU pod `http://ADRES-LAN:11434`, a
-      lokalny gateway LiteLLM pod `http://127.0.0.1:4000/v1`.
+      gateway LiteLLM pod
+      `${if autoAiRouterEnabled then "http://ADRES-LAN:4000/v1" else "http://127.0.0.1:4000/v1"}`.
       Aktualny adres komputera pokaże `hostname -I`.
 
       Te porty są otwarte dla całej sieci lokalnej. Ollama i SearXNG nie mają
@@ -231,7 +256,7 @@ in
       konto administratora przed dopuszczeniem innych użytkowników.
 
       Open WebUI ma już włączone web search przez SearXNG oraz kontekst Ollamy
-      16k. Wyszukiwanie jest natywnym narzędziem modelu (Native function
+      64k. Wyszukiwanie jest natywnym narzędziem modelu (Native function
       calling), a nie promptowym trybem Legacy. Przed uruchomieniem stosu cele
       `make vulkan`, `make rocm` i `make cpu` tworzą, jeśli go brakuje,
       `data/searxng/config/settings.yml`. Plik zawiera format JSON wymagany przez
@@ -246,15 +271,17 @@ in
       włączony w każdym nowym czacie. Możesz je wyłączyć tylko dla konkretnego
       czatu lub modelu w jego Advanced Params.
 
-      Open WebUI używa aliasów LiteLLM jako głównego katalogu modeli, ale
-      zachowuje natywną Ollamę jako połączenie awaryjne. SearXNG nadal obsługuje
-      Open WebUI bezpośrednio. Aliasy wymuszają `think` w gatewayu i ignorują
-      przesłany `reasoning_effort`, dlatego nie przypinaj do nich Function
-      `Reasoning Effort Selector`.
+      Open WebUI używa aliasów LiteLLM jako głównego katalogu modeli.
+      ${if autoAiRouterEnabled then "Na centralnym ROG-u bezpośredni provider Ollamy jest wyłączony, aby żaden czat nie omijał AUTO." else "Na tym hoście zachowuje natywną Ollamę jako połączenie awaryjne."}
+      SearXNG nadal obsługuje Open WebUI bezpośrednio. Aliasy `off`, `low` i
+      `medium` wymuszają `think` w gatewayu; `xhigh` nie wysyła żadnego poziomu,
+      aby zachować domyślny `reasoning_effort=xhigh` szablonu Qwen3.8. Nie
+      przypinaj do nich Function `Reasoning Effort Selector`, bo poziom określa
+      wybrany alias.
 
       Globalne parametry celowo nie zawierają `max_tokens`. Brak tego opcjonalnego
       pola pozwala każdemu modelowi zakończyć odpowiedź samodzielnie; rzeczywistą
-      granicą pozostaje wspólne okno kontekstu 16k, obejmujące prompt, historię,
+      granicą pozostaje wspólne okno kontekstu 64k, obejmujące prompt, historię,
       wyniki narzędzi i odpowiedź. Limit `1200` dotyczy tylko krótkich zadań
       pomocniczych Open WebUI, a nie normalnych odpowiedzi czatu.
 
@@ -265,12 +292,12 @@ in
       domyślne parametry), pokazuje diff zmienionych kluczy i restartuje sam
       panel. Nie usuwa modeli, kont, rozmów, ręcznych modeli ani endpointów API.
 
-      Limit trzech wyników po maksymalnie 12 000 znaków chroni 16k kontekstu
+      Limit trzech wyników po maksymalnie 12 000 znaków chroni 64k kontekstu
       przed przepełnieniem stronami WWW. Model musi faktycznie obsługiwać native
       tool calling; dla małych modeli może być ono mniej niezawodne niż dla
       większych modeli na White Monsterze.
 
-      Context Compaction działa automatycznie od około 11k tokenów: starsza
+      Context Compaction działa automatycznie od około 30k tokenów: starsza
       część rozmowy jest streszczana, a ostatnie 40% wiadomości zostaje bez
       zmian. Pełna historia czatu nadal jest widoczna w GUI; skrót wpływa tylko
       na to, co jest wysyłane do modelu. Streszczenie używa aktualnego modelu
@@ -297,18 +324,20 @@ in
          czat. Funkcja jest wtedy aktywna automatycznie dla tego modelu.
       4. W ustawieniach/Valve Function wybierz `low` jako wartość domyślną.
 
-      Dla Qwen3.8 poprawne poziomy to `low`, `medium` i `xhigh` — nie `high`.
+      Najmocniejszy profil Qwen3.8 na White Monsterze pomija `think` oraz
+      `reasoning_effort`. Każde jawne `think` Ollama mapuje na własny poziom
+      reasoning, natomiast brak parametru zachowuje domyślny `xhigh` szablonu.
       Zmiana dotyczy następnej wiadomości; nie zmienia odpowiedzi, które już
       powstały. Gdy plugin nie zapamięta wartości Valve po nowym czacie, nie
       wybieraj go ręcznie przy każdej wiadomości: zostaw filtr jako domyślny i
       ustaw wartość globalną w jego konfiguracji.
 
       ${if !ollamaFarmEnabled then ''
-      ## Lokalny Cline w Agent Managerze
+      ## Lokalny Pi w Agent Managerze
 
-      Profile `local-off` i `local-thinking` używają wyłącznie lokalnej Ollamy
-      przez LiteLLM. `local-off` jest kierownikiem; domyślnym modelem jest
-      `qwen3.5:9b`. Nadpisanie przechowuj poza Git w pliku
+      Pi używa wyłącznie lokalnej Ollamy przez LiteLLM. Domyślnym modelem jest
+      `auto`; gdy AUTO nie jest włączony, wybór aliasu pozostaje po stronie
+      LiteLLM. Nadpisanie przechowuj poza Git w pliku
       `~/.config/ollama-router/hosts.env`:
 
       ```bash
@@ -318,10 +347,9 @@ in
       Po zmianie modelu wykonaj `make restart-litellm`, aby odtworzyć gateway
       z nową wartością zmiennej.
 
-      `local-off` może przez MCP utworzyć lokalnego workera albo, tylko dla
-      naprawdę trudnego zadania, workera `codex`. Profile ROG, White Monster i
-      `ollama-farm-status` nie są na tym hoście
-      instalowane ani pokazywane w selektorze Agent Managera.
+      Pi może przez lazy MCP utworzyć lokalnego workera albo, tylko dla naprawdę
+      trudnego zadania, workera `codex`. Profile ROG, White Monster i
+      `ollama-farm-status` nie są na tym hoście pokazywane w Agent Managerze.
 
       Przed pierwszym uruchomieniem pobierz model do lokalnego kontenera:
 
@@ -329,32 +357,22 @@ in
       docker compose --profile rocm exec ollama-rocm ollama pull qwen3.5:9b
       ```
 
-      Profile wymuszają odpowiednio `think=false` i `think=true` dla Qwena 3.5.
-      Zwykłe `cline` uruchamia profil off. Playwright jest dostępny w ekranie
-      MCP tego samego TUI, ale pozostaje domyślnie wyłączony.
-
-      Agent Manager 0.33 zawsze dodaje wbudowany wpis `opencode`. Jest to tylko
-      alias zgodnościowy uruchamiający Cline; możesz ukryć go raz przez
-      `s -> CLIs`, odznaczając `opencode`.
+      Pi ma cztery narzędzia bazowe oraz jeden lazy proxy MCP dla SearXNG i
+      Agent Managera; dodatkowe serwery nie są ładowane do kontekstu.
       '' else ''
       ## Local workers in Agent Manager
 
       Profile `rog-polamaniec-off` i `rog-polamaniec-thinking` uruchamiają
-      Qwena 3.5 9B. `rog-polamaniec-off` jest kierownikiem; model obu zmieniasz
-      w `OLLAMA_ROG_MODEL`.
+      Qwena 3.5 9B. Są bezpośrednimi profilami diagnostycznymi; model obu
+      zmieniasz w `OLLAMA_ROG_MODEL`.
 
       ## Lokalny manager całej farmy modeli
 
-      Agent Manager udostępnia dwa profile ROG i po skonfigurowaniu White
-      Monstera cztery profile Qwena 3.8. `rog-polamaniec-off` działa domyślnie
-      na Qwenie 3.5 9B bez thinking,
-      może wykonywać zadania samodzielnie i przez MCP domyślnie tworzy workery
-      Cline/Ollama. Naprawdę trudną architekturę, diagnozę, integrację lub
-      przegląd wysokiego ryzyka przekazuje najpierw do większego Qwena na
-      `white-monster`. Ten worker może przez MCP uruchomić Codexa, jeśli lokalne
-      rozumowanie nie wystarczy. Gdy White Monster jest niedostępny, manager może
-      uruchomić Codexa bezpośrednio. Sonda sprawdza dostępność i czas odpowiedzi
-      API oraz wykrywa już załadowany model, ale nie mierzy kolejki generowania.
+      Agent Manager udostępnia Pi jako jedyny lokalny profil agentowy. `auto`
+      jest domyślnym modelem LiteLLM, który kieruje pracę kodową do Qwena 3.8.
+      Worker Pi może przez lazy MCP uruchomić kolejnego, krótko żyjącego workera
+      Pi lub — wyłącznie dla wyraźnej eskalacji — Codexa. Sonda nadal sprawdza
+      dostępność hostów i modeli, ale nie mierzy kolejki generowania.
 
       Na każdym koncie używającym panelu utwórz prywatny plik
       `~/.config/ollama-router/hosts.env` (nie zapisuj go w Git) z adresami LAN
@@ -363,43 +381,58 @@ in
       ```bash
       OLLAMA_ROG_BASE_URL=http://192.168.1.10:11434
       OLLAMA_ROG_MODEL=qwen3.5:9b
+      OLLAMA_ROUTER_MODEL=qwen3.5:4b
       OLLAMA_WHITE_MONSTER_BASE_URL=http://192.168.1.20:11434
-      OLLAMA_WHITE_MONSTER_MODEL=Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp:latest
+      OLLAMA_WHITE_MONSTER_MODEL=qwen38-mtp2
+      OLLAMA_CODER_BASE_URL=http://192.168.1.20:11434
+      OLLAMA_CODER_MODEL=qwen38-mtp2
       ```
 
       Cele startowe same tworzą brakujący plik i migrują starsze zmienne URL.
       Po ręcznej zmianie inventory wykonaj `make restart-litellm`, aby odtworzyć
       kontener z nowym środowiskiem.
 
+      Na White Monsterze profil `qwen38-mtp2` ustawia `draft_num_predict 2` dla
+      dołączonej głowicy MTP — jest to liczba propozycji na krok, nie limit
+      długości odpowiedzi. Po aktywacji, uruchomionym profilu ROCm i pobraniu
+      modelu źródłowego utwórz go raz poleceniem `make mtp2`.
+
       Przed pierwszym uruchomieniem routera pobierz jego model na ROG-u:
 
       ```bash
-      docker compose --profile vulkan exec ollama-vulkan ollama pull qwen3.5:9b
+      make pull MODEL=qwen3.5:4b
       ```
 
+      ${lib.optionalString autoAiRouterEnabled ''
+      Pi oraz jego profil w Agent Managerze korzystają z `model=auto`.
+      LiteLLM jest jedynym publicznym endpointem modeli pod
+      `http://ADRES-ROG:4000/v1`; systemdowy `auto-ai-router` używa portu 4100
+      dostępnego wyłącznie z nazwanej sieci Compose. Opis przepływu, health
+      checków, curl i przyszłego Codera znajduje się w repozytorium w
+      `docs/auto-ai-router.md`.
+      ''}
+
       Qwen 3.5 ma aliasy `off` i `thinking`, a Qwen3.8 `off`, `low`, `medium`
-      i `xhigh`. Zwykłe `cline` uruchamia profil off. Poziom zmieniasz przez
-      `/model`, wybierając inny alias bez utraty kontekstu. Wbudowany provider
-      Cline `litellm` pobiera tę listę bezpośrednio z `/v1/models`. Playwright
-      jest zarejestrowany w każdym profilu, ale domyślnie wyłączony, aby nie
-      obciążać sesji Qwena jego schematami narzędzi.
+      i `xhigh`, realizowany przez brak jawnego poziomu i domyślny
+      `reasoning_effort=xhigh` szablonu Qwen3.8. Na centralnym
+      ROG-u Pi uruchamia `auto`. Pi ma lokalny provider LiteLLM dla Chat
+      Completions i przekazuje klucz automatycznie. SearXNG oraz Agent Manager
+      są dostępne tylko przez lazy proxy MCP, aby nie obciążać sesji Qwena
+      zestawem pełnych schemas.
 
       Każdy wpis modelu musi istnieć na wskazanym hoście. Adresy odczytasz na
       nim przez `hostname -I`; użyj stałych adresów DHCP lub własnego DNS.
       Farmę można uruchamiać etapami: nieskonfigurowany host będzie oznaczony
       jako `unavailable` i manager go nie wybierze, więc początkowo może działać
       wyłącznie ROG.
-      Następnie uruchom `agent-manager` i utwórz sesję `rog-polamaniec-off`.
+      Następnie uruchom `agent-manager` i utwórz sesję `auto`.
       Polecenie `ollama-farm-status` pokazuje ręcznie ten sam status, którego
       manager używa przed wyborem workera. Aby pracować po wyczerpaniu limitu,
       poleć managerowi działać wyłącznie lokalnie; po błędzie limitu sam nie
       ponowi Codexa. Kontekst nie jest przenoszony automatycznie pomiędzy CLI.
 
-      Agent Manager 0.33 zawsze dodaje wbudowany wpis `opencode`. Jest to tylko
-      zgodnościowy alias przekierowany tutaj do profilu off; OpenCode nie jest
-      instalowany. Możesz ukryć go raz przez `s -> CLIs`, odznaczając
-      `opencode`. Cline zachowuje historię w `~/.cline/`; zamknięcie samego
-      panelu pozostawia działające sesje tmux bez zmian.
+      Pi zachowuje historię w `~/.pi/agent/sessions/`; zamknięcie samego panelu
+      pozostawia działające sesje tmux bez zmian.
       ''}
 
       Zmiana GPU wymaga najpierw zatrzymania poprzedniego wariantu:
@@ -546,6 +579,17 @@ in
           fi
         }
 
+        # LiteLLM protects /model/info and all inference endpoints with this
+        # local key. Generate it once; never print or replace an existing key.
+        if ${pkgs.gnugrep}/bin/grep -q '^LITELLM_MASTER_KEY=' "$config_file" \
+          && ! ${pkgs.gnugrep}/bin/grep -Eq '^LITELLM_MASTER_KEY=sk-.+' "$config_file"; then
+          printf 'LITELLM_MASTER_KEY in %s must be non-empty and start with sk-.\n' \
+            "$config_file" >&2
+          exit 2
+        fi
+        ensure_setting LITELLM_MASTER_KEY \
+          "''${LITELLM_MASTER_KEY:-sk-$(${pkgs.openssl}/bin/openssl rand -hex 32)}"
+
         ${if ollamaFarmEnabled then ''
         legacy_rog="''${OLLAMA_ROG_URL:-http://ollama:11434}"
         legacy_white="''${OLLAMA_WHITE_MONSTER_URL:-http://white-monster.local:11434}"
@@ -568,14 +612,26 @@ in
             "$config_file"
         fi
         ensure_setting OLLAMA_ROG_MODEL "''${OLLAMA_ROG_MODEL:-qwen3.5:9b}"
+        ensure_setting OLLAMA_ROUTER_MODEL "''${OLLAMA_ROUTER_MODEL:-qwen3.5:4b}"
         ensure_setting OLLAMA_WHITE_MONSTER_BASE_URL "''${legacy_white%/v1}"
-        ensure_setting OLLAMA_WHITE_MONSTER_MODEL "''${OLLAMA_WHITE_MONSTER_MODEL:-Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp:latest}"
+        ensure_setting OLLAMA_WHITE_MONSTER_MODEL "''${OLLAMA_WHITE_MONSTER_MODEL:-qwen38-mtp2}"
+        if ${pkgs.gnugrep}/bin/grep -q '^OLLAMA_WHITE_MONSTER_MODEL=qwen38-mtp3$' "$config_file"; then
+          ${pkgs.gnused}/bin/sed -i 's/^OLLAMA_WHITE_MONSTER_MODEL=qwen38-mtp3$/OLLAMA_WHITE_MONSTER_MODEL=qwen38-mtp2/' "$config_file"
+          OLLAMA_WHITE_MONSTER_MODEL=qwen38-mtp2
+        fi
         if ${pkgs.gnugrep}/bin/grep -q \
           '^OLLAMA_WHITE_MONSTER_MODEL=Qwen3.8-27B-GSQ-RCQ-IQ3_S-mtp:latest$' \
           "$config_file"; then
           ${pkgs.gnused}/bin/sed -i \
-            's/^OLLAMA_WHITE_MONSTER_MODEL=Qwen3.8-27B-GSQ-RCQ-IQ3_S-mtp:latest$/OLLAMA_WHITE_MONSTER_MODEL=Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp:latest/' \
+            's/^OLLAMA_WHITE_MONSTER_MODEL=Qwen3.8-27B-GSQ-RCQ-IQ3_S-mtp:latest$/OLLAMA_WHITE_MONSTER_MODEL=qwen38-mtp2/' \
             "$config_file"
+          OLLAMA_WHITE_MONSTER_MODEL=qwen38-mtp2
+        fi
+        ensure_setting OLLAMA_CODER_BASE_URL "''${OLLAMA_CODER_BASE_URL:-''${legacy_white%/v1}}"
+        ensure_setting OLLAMA_CODER_MODEL "''${OLLAMA_CODER_MODEL:-''${OLLAMA_WHITE_MONSTER_MODEL:-qwen38-mtp2}}"
+        if ${pkgs.gnugrep}/bin/grep -q '^OLLAMA_CODER_MODEL=qwen38-mtp3$' "$config_file"; then
+          ${pkgs.gnused}/bin/sed -i 's/^OLLAMA_CODER_MODEL=qwen38-mtp3$/OLLAMA_CODER_MODEL=qwen38-mtp2/' "$config_file"
+          OLLAMA_CODER_MODEL=qwen38-mtp2
         fi
         '' else ''
         ensure_setting OLLAMA_LOCAL_MODEL "''${OLLAMA_LOCAL_MODEL:-qwen3.5:9b}"
@@ -591,6 +647,7 @@ in
       """Reconcile only stack-owned Open WebUI ConfigVars without clearing data."""
 
       import json
+      import os
       import sqlite3
       import time
       from pathlib import Path
@@ -601,19 +658,20 @@ in
 
       desired = {
           "chat.context_compaction.enable": True,
-          "chat.context_compaction.token_threshold": 11000,
-          "chat.context_compaction.token_cap": 12000,
+          "chat.context_compaction.token_threshold": 48000,
+          "chat.context_compaction.token_cap": 52000,
           "chat.context_compaction.retention_percentage": 40,
           "models.default_metadata": {
               "capabilities": {"web_search": True},
               "defaultFeatureIds": ["web_search"],
           },
           # Omitting max_tokens removes the global response cap; inserting a
-          # large number would consume the same 16k window used by chat context.
+          # large number would consume the same 64k window used by chat context.
           "models.default_params": {"function_calling": "native", "stream": True},
+          "ollama.enable": ${if autoAiRouterEnabled then "False" else "True"},
           "openai.enable": True,
           "openai.api_base_urls": ["http://litellm:4000/v1"],
-          "openai.api_keys": ["ollama"],
+          "openai.api_keys": [os.environ["LITELLM_MASTER_KEY"]],
           "openai.api_configs": {"0": {"enable": True}},
           "task.model.params": {"temperature": 0.2, "max_tokens": 1200},
           "ui.default_interface_settings": {
@@ -691,7 +749,7 @@ in
 
       MODEL ?=
 
-      .PHONY: help fix-searxng-permissions init-searxng-config init-litellm-env init-stack-config vulkan rocm cpu vulkan-cpu rocm-cpu down apply-webui-defaults pull pull-vulkan pull-rocm pull-cpu pull-searxng pull-litellm restart-litellm restart-searxng logs
+      .PHONY: help fix-searxng-permissions init-searxng-config init-litellm-env init-stack-config vulkan rocm cpu vulkan-cpu rocm-cpu down apply-webui-defaults pull pull-vulkan pull-rocm pull-cpu pull-searxng pull-litellm restart-litellm restart-searxng mtp2 logs
 
       help: ## 📖 Pokaż dostępne polecenia
       >@awk 'BEGIN { FS = ":.*## " } /^[a-zA-Z0-9][a-zA-Z0-9_.-]*:.*## / && $$1 != "help" { printf "\033[36m%-20s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -746,6 +804,9 @@ in
 
       restart-litellm: init-litellm-env ## 🔄 Odtwórz LiteLLM po zmianie inventory
       >$(COMPOSE) up -d --force-recreate litellm
+
+      mtp2: ## ⚡ Utwórz profil Qwen3.8 MTP z dwiema propozycjami na krok (tylko White Monster/ROCm)
+      >$(COMPOSE) --profile rocm exec -T ollama-rocm ollama create qwen38-mtp2 -f /dev/stdin < Modelfile.qwen38-mtp2
 
       pull: init-litellm-env ## 🤖 Pobierz model do uruchomionej Ollamy: make pull MODEL=qwen3.5:9b
       >@test -n "$(MODEL)" || { echo "Podaj MODEL=nazwa:model" >&2; exit 2; }

@@ -29,3 +29,13 @@ There is no separate automated test suite or coverage target. Treat successful f
 ## Commit & Pull Request Guidelines
 
 Repository history is unavailable in this checkout. Use short, imperative commit subjects such as `Enable Bluetooth on ROG laptop` and keep unrelated changes separate. Pull requests should explain the motivation, identify affected hosts/modules, list validation commands and results, and note operational risks. Include screenshots only for visible desktop changes; never commit secrets or generated `result` links.
+
+## Lean Repository and Documentation
+
+Keep the repository and agent context small. Documentation is an **AS IS**
+reference: describe only active behavior, current paths, commands, and required
+decisions. Remove obsolete migrations, historical alternatives, duplicated
+explanations, and inactive configurations instead of appending more text.
+Preserve benchmarks and asset inventories only when they are intentionally used
+as historical data. Prefer a short source-of-truth file over repeating the same
+details in several Markdown files.

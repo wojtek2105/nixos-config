@@ -2,6 +2,7 @@
   "backlightDevice": "amdgpu_bl2",
   "features": {
     "amdGpuMetrics": true,
+    "autoAiRouter": true,
     "bluetooth": true,
     "docker": true,
     "gaming": true,

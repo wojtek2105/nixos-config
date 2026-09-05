@@ -1,10 +1,34 @@
 { desktopFeatures, lib, pkgs, ... }:
 
 let
-  version = "0.33.0";
-  agentManagerHash = "sha256-rne6ZzaPolj4JySB8Q2YohGcoIAy5BVFOF3EIToAWDw=";
+  version = "0.35.0";
+  agentManagerHash = "sha256-72+j6XTkdHJaIt0qoV3I/04vwKslY3WC4fBhhuDWVUU=";
   farmEnabled = desktopFeatures.ollamaFarm or false;
+  autoAiRouterEnabled = desktopFeatures.autoAiRouter or false;
   localOnlyProfile = !farmEnabled;
+
+  piModel = id: name: reasoning: {
+    inherit id name reasoning;
+    input = [ "text" ];
+    contextWindow = 65536;
+    maxTokens = 4096;
+    cost = { input = 0; output = 0; cacheRead = 0; cacheWrite = 0; };
+  };
+
+  # Keep every LiteLLM alias selectable in Pi; AUTO remains the default.
+  piModels = map (entry: piModel entry.id entry.name entry.reasoning) [
+    { id = "auto"; name = "LiteLLM AUTO (Qwen3.8)"; reasoning = false; }
+    { id = "router"; name = "LiteLLM Router (Qwen3.5)"; reasoning = false; }
+    { id = "vision"; name = "LiteLLM Vision (Qwen3.5)"; reasoning = false; }
+    { id = "reasoning"; name = "LiteLLM Reasoning (Qwen3.8)"; reasoning = true; }
+    { id = "coder"; name = "LiteLLM Coder (Qwen3.8)"; reasoning = true; }
+    { id = "rog-qwen35-off"; name = "ROG Qwen3.5 off"; reasoning = false; }
+    { id = "rog-qwen35-thinking"; name = "ROG Qwen3.5 thinking"; reasoning = true; }
+    { id = "white-qwen38-off"; name = "White Monster Qwen3.8 off"; reasoning = false; }
+    { id = "white-qwen38-low"; name = "White Monster Qwen3.8 low"; reasoning = true; }
+    { id = "white-qwen38-medium"; name = "White Monster Qwen3.8 medium"; reasoning = true; }
+    { id = "white-qwen38-xhigh"; name = "White Monster Qwen3.8 xhigh"; reasoning = true; }
+  ];
 
   languagePolicy = ''
     Always answer in the language of the most recent end-user request unless
@@ -58,14 +82,16 @@ let
     };
   };
 
-  clineVersion = "3.0.61";
-  clineCli = pkgs.stdenvNoCC.mkDerivation {
-    pname = "cline-cli";
-    version = clineVersion;
+  piVersion = "0.85.0";
+  # Official standalone Pi release. Pinning the binary keeps the installed
+  # agent independent from a mutable global npm prefix.
+  piCore = pkgs.stdenvNoCC.mkDerivation {
+    pname = "pi-coding-agent";
+    version = piVersion;
 
     src = pkgs.fetchurl {
-      url = "https://registry.npmjs.org/@cline/cli-linux-x64/-/cli-linux-x64-${clineVersion}.tgz";
-      hash = "sha256-4PFWZ6XObZAuYVRmBbQPMsJCrAXz9M6N+OC6yWsJctA=";
+      url = "https://github.com/earendil-works/pi/releases/download/v${piVersion}/pi-linux-x64.tar.gz";
+      hash = "sha256-p+fGXx3FKNLhfn2UatK2HfDisPmVL67neAfCSEtGTW4=";
     };
 
     nativeBuildInputs = [ pkgs.autoPatchelfHook ];
@@ -80,17 +106,19 @@ let
 
     installPhase = ''
       runHook preInstall
-      mkdir -p "$out/bin" "$out/lib/cline"
-      cp -R package/. "$out/lib/cline/"
-      ln -s ../lib/cline/bin/cline "$out/bin/cline"
+      # Keep the official archive layout: the executable resolves built-in
+      # themes and other assets relative to its sibling files under bin/.
+      mkdir -p "$out/bin"
+      cp -r pi/. "$out/bin/"
+      chmod 0755 "$out/bin/pi"
       runHook postInstall
     '';
 
     meta = {
-      description = "Terminal coding agent with Plan and Act modes";
-      homepage = "https://github.com/cline/cline";
-      license = lib.licenses.asl20;
-      mainProgram = "cline";
+      description = "Minimal terminal coding agent";
+      homepage = "https://pi.dev";
+      license = lib.licenses.mit;
+      mainProgram = "pi";
       platforms = [ "x86_64-linux" ];
     };
   };
@@ -102,12 +130,12 @@ let
     bounded work, stay within that scope and return concrete evidence and a
     concise handoff. Delegate independent work through Agent Manager MCP and
     ${if localOnlyProfile then ''
-      On this local-only host, choose only tool="codex", "local-off", or
-      "local-thinking" for every child;
-      no remote Ollama farm profiles are installed on this host.
+      On this local-only host, choose only tool="codex" or tool="pi" for
+      every child; no remote Ollama farm profiles are installed on this host.
     '' else ''
-      Choose tool="codex" or an explicit ROG/White Monster alias profile for
-      every child. Do not use the hidden OpenCode compatibility alias.
+      Choose tool="codex" or tool="pi" for every child. Pi always uses the
+      configured LiteLLM alias and must not be replaced with a compatibility
+      CLI profile.
     ''}
     State its backend, objective, authority, expected handoff, and exact file
     scope.
@@ -116,17 +144,8 @@ let
     visible and controllable in Agent Manager.
   '';
 
-  localWorkerInstructions = pkgs.writeText "cline-language-instructions.md"
-    languagePolicy;
-  localManagerInstructions = pkgs.writeText "cline-manager-instructions.md"
-    (builtins.readFile ./cline-manager.md + "\n" + languagePolicy);
-  localOnlyManagerInstructions = pkgs.writeText "cline-local-manager-instructions.md"
-    (builtins.readFile ./cline-local-manager.md + "\n" + languagePolicy);
-  whiteMonsterInstructions = pkgs.writeText "cline-white-monster-instructions.md"
-    (builtins.readFile ./cline-white-monster.md + "\n" + languagePolicy);
-
   # Keep the local SearXNG integration dependency-free. It speaks the small
-  # stdio subset of MCP needed by Cline and caps results before they reach a
+  # stdio subset of MCP needed by Pi and caps results before they reach a
   # model's context window.
   searxngMcpProgram = pkgs.writeText "searxng-mcp.py" ''
     import json
@@ -261,137 +280,37 @@ let
   # Medium reasoning keeps concurrent visible sessions responsive and economical.
   codexAgent = mkCodexLauncher "codex-agent" "gpt-5.6-terra" "medium" codexInstructions;
 
-  # Each alias fixes Ollama's native `think` value in LiteLLM. Cline therefore
-  # changes reasoning by selecting another model alias. Cline's built-in
-  # LiteLLM provider discovers the complete alias catalog from /v1/models.
-  mkClineLiteLLM =
-    {
-      alias,
-      instructions ? localWorkerInstructions,
-      name,
-    }:
-    pkgs.writeShellApplication {
-      inherit name;
-      runtimeInputs = [
-        agentManager
-        clineCli
-        pkgs.coreutils
-        pkgs.git
-        pkgs.jq
-        pkgs.playwright-mcp
-        pkgs.ripgrep
-        pkgs.tmux
-        searxngMcp
-      ];
-      text = ''
-        runtime_parent="''${XDG_RUNTIME_DIR:-''${TMPDIR:-/tmp}}"
-        runtime_config_dir="$(mktemp -d "$runtime_parent/cline-profile.XXXXXX")"
-        runtime_settings_dir="$runtime_config_dir/settings"
-        mkdir -p "$runtime_settings_dir"
-        provider_settings="$runtime_settings_dir/providers.json"
-        mcp_settings="$runtime_settings_dir/cline_mcp_settings.json"
-        trap 'rm -rf -- "$runtime_config_dir"' EXIT HUP INT TERM
+  # Pi stays on LiteLLM's logical `auto` model and lets AUTO select the final
+  # Qwen worker. The wrapper keeps the secret out of persisted Pi JSON.
+  piLauncher = pkgs.writeShellApplication {
+    name = "pi";
+    runtimeInputs = [ agentManager pkgs.tmux ];
+    text = ''
+      inventory="''${XDG_CONFIG_HOME:-$HOME/.config}/ollama-router/hosts.env"
+      if [[ ! -r "$inventory" ]]; then
+        printf 'Missing LiteLLM inventory: %s\nRun ~/Dev/Ollama/init-litellm-env first.\n' "$inventory" >&2
+        exit 1
+      fi
+      # shellcheck disable=SC1090
+      source "$inventory"
+      if [[ -z "''${LITELLM_MASTER_KEY:-}" ]]; then
+        printf 'LITELLM_MASTER_KEY is missing in %s\n' "$inventory" >&2
+        exit 1
+      fi
 
-        # Agent Manager 0.33 does not export its id for every custom MCP style.
-        # A managed pane is always named am_<session-id>, so recover the exact
-        # id from tmux. A standalone `cline` intentionally has no manager MCP.
-        session_id="''${AGENT_MANAGER_SESSION_ID:-}"
-        if [[ -z "$session_id" && -n "''${TMUX_PANE:-}" ]]; then
-          manager_session="$(tmux display-message -p -t "$TMUX_PANE" '#S' 2>/dev/null || true)"
-          if [[ "$manager_session" == am_* ]]; then
-            session_id="''${manager_session#am_}"
-          fi
+      session_id="''${AGENT_MANAGER_SESSION_ID:-}"
+      if [[ -z "$session_id" && -n "''${TMUX_PANE:-}" ]]; then
+        manager_session="$(tmux display-message -p -t "$TMUX_PANE" '#S' 2>/dev/null || true)"
+        if [[ "$manager_session" == am_* ]]; then
+          session_id="''${manager_session#am_}"
         fi
-        if [[ -n "$session_id" ]]; then
-          export AGENT_MANAGER_SESSION_ID="$session_id"
-        fi
+      fi
+      if [[ -n "$session_id" ]]; then
+        export AGENT_MANAGER_SESSION_ID="$session_id"
+      fi
 
-        jq -n \
-          --arg model ${lib.escapeShellArg alias} \
-          '{litellm: {
-            provider: "litellm",
-            apiKey: "ollama",
-            baseUrl: "http://127.0.0.1:4000/v1",
-            model: $model
-          }}' \
-          > "$provider_settings"
-
-        # Playwright is registered but disabled until enabled in Cline's MCP
-        # screen. No source-control MCP is installed.
-        jq -n \
-          --arg agent_manager "${agentManager}/bin/agent-manager" \
-          --arg session_id "$session_id" \
-          --arg tmux_tmpdir "''${TMUX_TMPDIR:-}" \
-          --arg runtime_dir "''${XDG_RUNTIME_DIR:-}" \
-          --arg searxng "${searxngMcp}/bin/searxng-mcp" \
-          --arg searxng_url "''${SEARXNG_URL:-http://127.0.0.1:8080}" \
-          --arg playwright "${pkgs.playwright-mcp}/bin/playwright-mcp" \
-          '{mcpServers: {
-            "agent-manager": {
-              command: $agent_manager, args: ["mcp"],
-              env: {AGENT_MANAGER_SESSION_ID: $session_id,
-                TMUX_TMPDIR: $tmux_tmpdir, XDG_RUNTIME_DIR: $runtime_dir},
-              disabled: ($session_id == ""), autoApprove: []
-            },
-            searxng: {
-              command: $searxng, env: {SEARXNG_URL: $searxng_url},
-              disabled: false, autoApprove: []
-            },
-            context7: {
-              type: "streamableHttp", url: "https://mcp.context7.com/mcp",
-              disabled: false, autoApprove: []
-            },
-            playwright: {
-              command: $playwright, args: ["--headless"],
-              disabled: true, autoApprove: []
-            }
-          }}' > "$mcp_settings"
-
-        system_prompt="$(<${instructions})"
-        export CLINE_PROVIDER_SETTINGS_PATH="$provider_settings"
-        export CLINE_MCP_SETTINGS_PATH="$mcp_settings"
-        ${clineCli}/bin/cline \
-          --provider litellm \
-          --model ${lib.escapeShellArg alias} \
-          --system "$system_prompt" \
-          "$@"
-      '';
-    };
-
-  clineLocalOff = mkClineLiteLLM {
-    name = if localOnlyProfile then "cline-local-off" else "cline-rog-polamaniec-off";
-    alias = if localOnlyProfile then "local-qwen35-off" else "rog-qwen35-off";
-    instructions = if localOnlyProfile then localOnlyManagerInstructions else localManagerInstructions;
-  };
-  # One direct command opens the same economical manager used by Agent Manager.
-  clineDefault = mkClineLiteLLM {
-    name = "cline";
-    alias = if localOnlyProfile then "local-qwen35-off" else "rog-qwen35-off";
-    instructions = if localOnlyProfile then localOnlyManagerInstructions else localManagerInstructions;
-  };
-  clineLocalThinking = mkClineLiteLLM {
-    name = if localOnlyProfile then "cline-local-thinking" else "cline-rog-polamaniec-thinking";
-    alias = if localOnlyProfile then "local-qwen35-thinking" else "rog-qwen35-thinking";
-  };
-  clineWhiteMonsterOff = mkClineLiteLLM {
-    name = "cline-white-monster-off";
-    alias = "white-qwen38-off";
-    instructions = whiteMonsterInstructions;
-  };
-  clineWhiteMonsterLow = mkClineLiteLLM {
-    name = "cline-white-monster-low";
-    alias = "white-qwen38-low";
-    instructions = whiteMonsterInstructions;
-  };
-  clineWhiteMonsterMedium = mkClineLiteLLM {
-    name = "cline-white-monster-medium";
-    alias = "white-qwen38-medium";
-    instructions = whiteMonsterInstructions;
-  };
-  clineWhiteMonsterXhigh = mkClineLiteLLM {
-    name = "cline-white-monster-xhigh";
-    alias = "white-qwen38-xhigh";
-    instructions = whiteMonsterInstructions;
+      exec ${piCore}/bin/pi "$@"
+    '';
   };
 
   ollamaFarmStatus = pkgs.writeShellApplication {
@@ -439,7 +358,7 @@ let
       fi
       jq -s '.' \
         <(check_host "rog-polamaniec" "''${rog_endpoint%/v1}" "''${OLLAMA_ROG_MODEL:-qwen3.5:9b}") \
-        <(check_host "white-monster" "''${white_endpoint%/v1}" "''${OLLAMA_WHITE_MONSTER_MODEL:-Qwen3.8-27B-GSQ-RCO-IQ3_S-mtp:latest}")
+        <(check_host "white-monster" "''${white_endpoint%/v1}" "''${OLLAMA_WHITE_MONSTER_MODEL:-qwen38-mtp2}")
     '';
   };
 
@@ -513,75 +432,132 @@ let
     '';
   };
 
-  # Agent Manager's OpenCode-compatible bootstrap is retained solely to export
-  # the session identifier; Cline reads its full MCP setup from the launcher.
-  clineToolBehavior = ''
-    mcp = "opencode"
-    prompt_mode = "send"
-    default_status = "idle"
-    limit_line = "(?i)usage limit|rate limit|context length|context window"
-    rules = [
-      { state = "errored", pattern = "(?im)^\\s*error\\b" },
-      { state = "working", pattern = "(?i)thinking|working|esc (?:to )?interrupt" },
-    ]
-  '';
 in
 
 {
   home.packages = [
     agentManager
     codexAgent
-    clineDefault
-    clineLocalOff
-    clineLocalThinking
+    # Pi installs the lazy MCP adapter through npm during Home Manager activation.
+    pkgs.nodejs
+    piLauncher
     updateAgentManager
   ] ++ lib.optionals farmEnabled [
-    clineWhiteMonsterOff
-    clineWhiteMonsterLow
-    clineWhiteMonsterMedium
-    clineWhiteMonsterXhigh
     ollamaFarmStatus
   ];
 
-  # One Codex tool handles both root and delegated sessions. Missing fields in
-  # the built-in block come from Agent Manager v0.33.0 defaults.
+  home.file = {
+    ".pi/agent/settings.json".text = builtins.toJSON {
+      defaultProvider = "litellm";
+      defaultModel = "auto";
+      defaultThinkingLevel = "off";
+      defaultTools = [ "read" "write" "edit" "bash" ];
+      quietStartup = true;
+      enableInstallTelemetry = false;
+      # Show compaction diagnostics in the transcript, so an incomplete local
+      # model response is distinguishable from an Agent Manager display issue.
+      showCacheMissNotices = true;
+      compaction = {
+        enabled = true;
+        # A 64k local context needs room for the summary, tool-call retries,
+        # and a 4096-token reply. Compact at ~53k and retain only the active
+        # task tail; this avoids summaries themselves reaching the token cap.
+        reserveTokens = 12288;
+        keepRecentTokens = 8000;
+      };
+      packages = [ "npm:pi-mcp-adapter@2.31.0" ];
+    };
+
+    ".pi/agent/models.json".text = builtins.toJSON {
+      providers.litellm = {
+        baseUrl = "http://127.0.0.1:4000/v1";
+        api = "openai-completions";
+        apiKey = "$LITELLM_MASTER_KEY";
+        authHeader = true;
+        compat = {
+          supportsDeveloperRole = false;
+          supportsReasoningEffort = false;
+        };
+        models = piModels;
+      };
+    };
+
+    ".pi/agent/SYSTEM.md".text = ''
+      Read only the files needed for the task and make small local changes.
+      Do not paste large files or logs when a focused read, rg search, or a
+      short summary is enough. Keep tool output and each agent turn bounded;
+      finish one coherent task before starting another. Run relevant tests after
+      changes. Use MCP only when it is needed: SearXNG for current facts, Agent
+      Manager for short, bounded delegation. Give each worker only its task,
+      required files, and necessary decisions; do not forward chat history.
+      Treat SPEC.md, PLAN.md, STATUS.md, and ARCHITECTURE.md as durable project
+      memory. For large work, update PLAN.md and STATUS.md instead of relying on
+      chat history.
+    '';
+  };
+
+  xdg.configFile."mcp/mcp.json".text = builtins.toJSON {
+    settings = {
+      idleTimeout = 10;
+      directTools = false;
+      outputGuard = {
+        maxBytes = 12000;
+        maxLines = 300;
+        detailsMaxBytes = 4000;
+      };
+    };
+    mcpServers = {
+      searxng = {
+        command = "${searxngMcp}/bin/searxng-mcp";
+        # pi-mcp-adapter passes env values literally; use the local published
+        # SearXNG endpoint instead of an unexpanded shell placeholder.
+        env.SEARXNG_URL = "http://127.0.0.1:8080";
+        lifecycle = "lazy";
+        idleTimeout = 5;
+      };
+      "agent-manager" = {
+        command = "${agentManager}/bin/agent-manager";
+        args = [ "mcp" ];
+        env = {
+          AGENT_MANAGER_SESSION_ID = "$AGENT_MANAGER_SESSION_ID";
+          TMUX_TMPDIR = "$TMUX_TMPDIR";
+          XDG_RUNTIME_DIR = "$XDG_RUNTIME_DIR";
+        };
+        lifecycle = "lazy";
+        idleTimeout = 5;
+      };
+    };
+  };
+
+  # Pi packages are mutable runtime state below ~/.pi/agent/npm; the version
+  # is pinned here and installed during the user-owned Home Manager activation.
+  home.activation.installPiMcpAdapter = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    $DRY_RUN_CMD env PATH="${pkgs.nodejs}/bin:$PATH" ${piCore}/bin/pi install npm:pi-mcp-adapter@2.31.0
+  '';
+
+  # Cline was installed only through this Home Manager profile. Remove all of
+  # its user-only state after the new Pi configuration has been written.
+  home.activation.removeClineData = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    $DRY_RUN_CMD rm -rf "$HOME/.cline"
+  '';
+
+  # One Codex tool handles explicit Codex sessions. Pi is the sole local
+  # coding-agent profile and receives its session identity from its launcher.
   xdg.configFile."agent-manager/config.toml".text = ''
     poll_interval = "2s"
 
     [tools.codex]
     command = "codex-agent"
 
-    # Agent Manager 0.33.0 always backfills this built-in compatibility entry.
-    # It cannot be removed declaratively; `s -> CLIs` hides it once in the TUI.
-    # Point it at the economical non-thinking root so accidental use remains safe.
-    [tools.opencode]
-    command = "${if localOnlyProfile then "cline-local-off" else "cline-rog-polamaniec-off"}"
-    ${clineToolBehavior}
-
-    [tools.${if localOnlyProfile then "local-off" else "rog-polamaniec-off"}]
-    command = "${if localOnlyProfile then "cline-local-off" else "cline-rog-polamaniec-off"}"
-    ${clineToolBehavior}
-
-    [tools.${if localOnlyProfile then "local-thinking" else "rog-polamaniec-thinking"}]
-    command = "${if localOnlyProfile then "cline-local-thinking" else "cline-rog-polamaniec-thinking"}"
-    ${clineToolBehavior}
-
-    ${lib.optionalString farmEnabled ''
-    [tools.white-monster-off]
-    command = "cline-white-monster-off"
-    ${clineToolBehavior}
-
-    [tools.white-monster-low]
-    command = "cline-white-monster-low"
-    ${clineToolBehavior}
-
-    [tools.white-monster-medium]
-    command = "cline-white-monster-medium"
-    ${clineToolBehavior}
-
-    [tools.white-monster-xhigh]
-    command = "cline-white-monster-xhigh"
-    ${clineToolBehavior}
-    ''}
+    [tools.pi]
+    command = "pi"
+    default_status = "idle"
+    session_id_flag = "--session-id"
+    resume_by_id_command = "pi --session {id}"
+    fork_command = "pi --session {id} --fork --session-id {new_id}"
+    rules = [
+      { state = "errored", pattern = "(?im)^\\s*error\\b" },
+      { state = "working", pattern = "(?i)working|thinking|esc to interrupt" },
+    ]
   '';
 }

@@ -27,7 +27,7 @@ done
 host_pattern='^[a-z0-9][a-z0-9-]*$'
 name_pattern='^[a-z_][a-z0-9_-]*$'
 module_keys=(common bootSplash desktop developmentCore hardwareAmdGpu hardwareAsusLaptop lanMouse x1e)
-feature_keys=(amdGpuMetrics bluetooth docker ollama ollamaFarm gaming vr screenRecording hardwareDiagnostics schedulerBenchmark laptop voxtype)
+feature_keys=(amdGpuMetrics bluetooth docker ollama ollamaFarm autoAiRouter gaming vr screenRecording hardwareDiagnostics schedulerBenchmark laptop voxtype)
 personal_app_keys=(discord easyeffects plexamp)
 menu_separator=$'\037'
 
@@ -67,6 +67,7 @@ feature_label() {
     docker) printf 'Docker' ;;
     ollama) printf 'Ollama' ;;
     ollamaFarm) printf 'Farma agentów Ollama' ;;
+    autoAiRouter) printf 'Centralny gateway AUTO AI' ;;
     gaming) printf 'Granie' ;;
     vr) printf 'VR / ALVR' ;;
     screenRecording) printf 'Nagrywanie ekranu' ;;
@@ -83,7 +84,8 @@ feature_description() {
     bluetooth) printf 'Usługa BlueZ i integracja Bluetooth w panelu.' ;;
     docker) printf 'Silnik kontenerów i grupa docker dla wskazanego użytkownika.' ;;
     ollama) printf 'Lokalne modele AI w kontenerze; wymaga włączonego Dockera.' ;;
-    ollamaFarm) printf 'Zdalne profile Cline dla farmy modeli; wyłącz dla hosta wyłącznie lokalnego.' ;;
+    ollamaFarm) printf 'Zdalna farma modeli LiteLLM dla Pi; wyłącz dla hosta wyłącznie lokalnego.' ;;
+    autoAiRouter) printf 'LiteLLM w LAN i wewnętrzny router AUTO; tylko na centralnym hoście farmy.' ;;
     gaming) printf 'Steam, GameMode i optymalizacja responsywności podczas gier.' ;;
     vr) printf 'ALVR, Steam i ADB do przewodowego zestawu VR Quest.' ;;
     screenRecording) printf 'GPU Screen Recorder i bufor powtórek dla sesji Hyprland.' ;;
@@ -205,6 +207,9 @@ validate_json() {
     (.features.ollamaFarm | not) or .features.ollama
   ' "$json" >/dev/null || die "Farma agentów Ollama wymaga włączonej Ollamy."
   jq -e '
+    (.features.autoAiRouter | not) or .features.ollamaFarm
+  ' "$json" >/dev/null || die "AUTO AI router wymaga włączonej farmy Ollama."
+  jq -e '
     (.modules.hardwareAsusLaptop | not) or .modules.hardwareAmdGpu
   ' "$json" >/dev/null || die "Moduł ASUS wymaga modułu AMD GPU."
   jq -e '
@@ -268,6 +273,7 @@ new_host_json() {
           docker: false,
           ollama: false,
           ollamaFarm: false,
+          autoAiRouter: false,
           gaming: false,
           vr: false,
           screenRecording: false,

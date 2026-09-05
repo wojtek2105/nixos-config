@@ -79,6 +79,7 @@
       };
       defaultFeatures = {
         amdGpuMetrics = false;
+        autoAiRouter = false;
         bluetooth = false;
         docker = false;
         gaming = false;
@@ -158,6 +159,7 @@
           };
           booleanFeatureNames = [
             "amdGpuMetrics"
+            "autoAiRouter"
             "bluetooth"
             "docker"
             "gaming"
@@ -178,6 +180,7 @@
             (builtins.attrNames defaultFeatures.personalApps);
           desktopFeatures = {
             amdGpu = resolvedFeatures.amdGpuMetrics;
+            autoAiRouter = resolvedFeatures.autoAiRouter;
             bluetooth = resolvedFeatures.bluetooth;
             docker = resolvedFeatures.docker;
             laptop = resolvedFeatures.laptop;
@@ -216,6 +219,8 @@
           throw "Host '${flakeHostName}' wymaga features.docker = true dla features.ollama"
         else if resolvedFeatures.ollamaFarm && !resolvedFeatures.ollama then
           throw "Host '${flakeHostName}' wymaga features.ollama = true dla features.ollamaFarm"
+        else if resolvedFeatures.autoAiRouter && !resolvedFeatures.ollamaFarm then
+          throw "Host '${flakeHostName}' wymaga features.ollamaFarm = true dla features.autoAiRouter"
         else if resolvedHostModules.hardwareAsusLaptop && !resolvedHostModules.hardwareAmdGpu then
           throw "Host '${flakeHostName}' wymaga modules.hardwareAmdGpu = true dla modules.hardwareAsusLaptop"
         else if resolvedHostModules.x1e && system != "aarch64-linux" then
@@ -253,6 +258,10 @@
               ++ nixpkgs.lib.optionals resolvedFeatures.screenRecording [ ./modules/screen-recording.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.hardwareDiagnostics [ ./modules/hardware-diagnostics.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.ollama [ ./modules/ollama.nix ]
+              ++ nixpkgs.lib.optionals resolvedFeatures.autoAiRouter [
+                ./modules/auto-ai-router.nix
+                { services.autoAiRouter.enable = true; }
+              ]
               ++ nixpkgs.lib.optionals resolvedFeatures.vr [ ./modules/vr.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.bluetooth [ ./modules/bluetooth.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.voxtype [ ./modules/voxtype.nix ];

@@ -1,29 +1,16 @@
 # Dokumentacja konfiguracji
 
-Ten katalog opisuje stan konfiguracji, sposób jej obsługi oraz plan rozbudowy.
+- [Obsługa systemu](operations.md) — walidacja, aktywacja, Ollama, Pi i MCP.
+- [Architektura](architecture.md) — układ repozytorium i przepływ AI.
+- [Hosty](hosts.md) — bieżące hosty i zasady przenoszenia.
+- [Nowy host](new-host.md) — minimalna procedura dodania maszyny.
+- [AUTO AI router](auto-ai-router.md) — routing LiteLLM i diagnostyka.
+- [Pulpit](desktop.md) — bieżące komponenty desktopu.
+- [Skróty](keybindings.md) — skróty klawiaturowe.
+- [Gry](gaming.md) — konfiguracja gier.
+- [VR](vr.md) — konfiguracja VR.
+- [Replay](replay.md) — nagrywanie i odtwarzanie.
+- [Źródła](sources.md) — używane projekty upstream.
 
-## Spis treści
-
-- [Architektura](architecture.md) — struktura flake, moduły i przepływ opcji.
-- [Obsługa systemu](operations.md) — sprawdzanie, budowanie, aktywacja i diagnostyka.
-- [Pulpit](desktop.md) — Hyprland, aplikacje, dark mode i usługi sesji.
-- [Granie i GameMode](gaming.md) — ustawienie opcji uruchamiania Steam,
-  weryfikacja GameMode oraz wariant z Gamescope.
-- [Quest 2 i PCVR](vr.md) — ALVR, SteamVR i przewodowe połączenie przez USB-C.
-- [Benchmarki](benchmarks.md) — historyczne wyniki pulpitu oraz powtarzalne
-  porównanie EEVDF, bpfland, LAVD i Flash dla CPU, z opcjonalną diagnostyką GPU.
-- [Wyniki benchmarków](benchmark-results/README.md) — katalog raportów Markdown,
-  CSV, metadanych i pełnych logów z kolejnych sesji.
-- [Skróty klawiszowe](keybindings.md) — kompletna mapa skrótów.
-- [Lan Mouse](lan-mouse.md) — współdzielenie klawiatury i myszy z White Monster
-  bez przesyłania obrazu.
-- [Replay](replay.md) — konfiguracja bufora GPU Screen Recorder.
-- [Hosty](hosts.md) — aktywne i przygotowane konfiguracje komputerów.
-- [Nowy host i użytkownik](new-host.md) — generator manifestu, adaptacja
-  sprzętu, profil Home Managera i instalacja.
-- [Plan rozbudowy](roadmap.md) — kolejne etapy rozwoju konfiguracji.
-- [Źródła](sources.md) — upstreamy i dokumentacja techniczna.
-
-Dokumentacja opisuje konfigurację deklaratywną z plików Nix oraz śledzonego
-`home/base/hyprland.lua`. Ręczne zmiany w `~/.config` mogą zostać nadpisane
-przez Home Manager i nie powinny być traktowane jako źródło prawdy.
+`benchmarks.md`, `roadmap.md` i dokumenty tapet są odpowiednio danymi pomiarowymi,
+planem oraz inwentarzem assetów; nie są ładowane do kontekstu agenta rutynowo.
