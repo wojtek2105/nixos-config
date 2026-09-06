@@ -26,22 +26,21 @@ let
     }
     (mkOllamaAlias "router" "os.environ/LITELLM_ROUTER_MODEL" "os.environ/LITELLM_ROG_API_BASE" false)
     (mkOllamaAlias "vision" "os.environ/LITELLM_ROUTER_MODEL" "os.environ/LITELLM_ROG_API_BASE" false)
-    # Ollama maps every explicit `think` level to reasoning_effort and cannot
-    # carry xhigh. Omitting it preserves Qwen3.8's documented template default.
-    (mkOllamaAlias "reasoning" "os.environ/LITELLM_WHITE_MODEL" "os.environ/LITELLM_WHITE_API_BASE" null)
+    # Keep agentic turns bounded: Qwen3.8 always uses its low reasoning mode.
+    (mkOllamaAlias "reasoning" "os.environ/LITELLM_WHITE_MODEL" "os.environ/LITELLM_WHITE_API_BASE" "low")
     (mkOllamaAlias "coder" "os.environ/LITELLM_CODER_MODEL" "os.environ/LITELLM_CODER_API_BASE" "low")
   ];
   farmCompatibilityAliases = [
     (mkOllamaAlias "rog-qwen35-off" "os.environ/LITELLM_ROG_MODEL" "os.environ/LITELLM_ROG_API_BASE" false)
     (mkOllamaAlias "rog-qwen35-thinking" "os.environ/LITELLM_ROG_MODEL" "os.environ/LITELLM_ROG_API_BASE" true)
-    (mkOllamaAlias "white-qwen38-off" "os.environ/LITELLM_WHITE_MODEL" "os.environ/LITELLM_WHITE_API_BASE" false)
+    (mkOllamaAlias "white-qwen38-off" "os.environ/LITELLM_WHITE_MODEL" "os.environ/LITELLM_WHITE_API_BASE" "low")
     (mkOllamaAlias "white-qwen38-low" "os.environ/LITELLM_WHITE_MODEL" "os.environ/LITELLM_WHITE_API_BASE" "low")
-    (mkOllamaAlias "white-qwen38-medium" "os.environ/LITELLM_WHITE_MODEL" "os.environ/LITELLM_WHITE_API_BASE" "medium")
-    (mkOllamaAlias "white-qwen38-xhigh" "os.environ/LITELLM_WHITE_MODEL" "os.environ/LITELLM_WHITE_API_BASE" null)
+    (mkOllamaAlias "white-qwen38-medium" "os.environ/LITELLM_WHITE_MODEL" "os.environ/LITELLM_WHITE_API_BASE" "low")
+    (mkOllamaAlias "white-qwen38-xhigh" "os.environ/LITELLM_WHITE_MODEL" "os.environ/LITELLM_WHITE_API_BASE" "low")
   ];
   localAliases = [
-    (mkOllamaAlias "local-qwen35-off" "os.environ/LITELLM_LOCAL_MODEL" "http://ollama:11434" false)
-    (mkOllamaAlias "local-qwen35-thinking" "os.environ/LITELLM_LOCAL_MODEL" "http://ollama:11434" true)
+    (mkOllamaAlias "local-qwen38-off" "os.environ/LITELLM_LOCAL_MODEL" "http://ollama:11434" false)
+    (mkOllamaAlias "local-qwen38-thinking" "os.environ/LITELLM_LOCAL_MODEL" "http://ollama:11434" true)
   ];
   # JSON is valid YAML and avoids indentation-sensitive generated fragments.
   litellmModels = builtins.toJSON {
@@ -127,7 +126,7 @@ in
             LITELLM_WHITE_API_BASE: "''${OLLAMA_WHITE_MONSTER_BASE_URL:-http://white-monster.local:11434}"
             LITELLM_CODER_MODEL: "ollama_chat/''${OLLAMA_CODER_MODEL:-qwen38-mtp2}"
             LITELLM_CODER_API_BASE: "''${OLLAMA_CODER_BASE_URL:-http://white-monster.local:11434}"
-            LITELLM_LOCAL_MODEL: "ollama_chat/''${OLLAMA_LOCAL_MODEL:-qwen3.5:9b}"
+            LITELLM_LOCAL_MODEL: "ollama_chat/''${OLLAMA_LOCAL_MODEL:-qwen3.8}"
           volumes:
             - ./litellm-config.yaml:/app/config.yaml:ro
           extra_hosts:
@@ -273,11 +272,9 @@ in
 
       Open WebUI używa aliasów LiteLLM jako głównego katalogu modeli.
       ${if autoAiRouterEnabled then "Na centralnym ROG-u bezpośredni provider Ollamy jest wyłączony, aby żaden czat nie omijał AUTO." else "Na tym hoście zachowuje natywną Ollamę jako połączenie awaryjne."}
-      SearXNG nadal obsługuje Open WebUI bezpośrednio. Aliasy `off`, `low` i
-      `medium` wymuszają `think` w gatewayu; `xhigh` nie wysyła żadnego poziomu,
-      aby zachować domyślny `reasoning_effort=xhigh` szablonu Qwen3.8. Nie
-      przypinaj do nich Function `Reasoning Effort Selector`, bo poziom określa
-      wybrany alias.
+      SearXNG nadal obsługuje Open WebUI bezpośrednio. Każdy alias Qwen3.8
+      wymusza `think=low` w gatewayu; nie przypinaj do niego Function
+      `Reasoning Effort Selector`.
 
       Globalne parametry celowo nie zawierają `max_tokens`. Brak tego opcjonalnego
       pola pozwala każdemu modelowi zakończyć odpowiedź samodzielnie; rzeczywistą
@@ -304,44 +301,16 @@ in
       zadań Open WebUI, więc dla ważnych długich rozmów wybierz do niego model
       mocniejszy niż mały worker.
 
-      ## Qwen3.8: poziom reasoning w Open WebUI
-
-      Awaryjne natywne połączenie Ollama pokazuje w modelu wyłącznie `Reasoning Tags`.
-      Służą one do zwijania `<think>...</think>` i **nie** ustawiają poziomu
-      reasoning. Dla tego połączenia używamy ręcznie zainstalowanej Function
-      [Reasoning Effort Selector](https://openwebui.com/posts/reasoning_effort_selector_ee572967).
-      Function jest zewnętrznym kodem Python, więc przed aktualizacją należy
-      przeczytać jego źródło w GUI.
-
-      Aby wybór nie wymagał każdorazowego klikania ikonki rombów przy polu
-      wiadomości, administrator ustawia Function jako filtr domyślny:
-
-      1. `Workspace -> Functions`: włącz `Reasoning Effort`, a w menu `...`
-         zaznacz ikonę globu, aby filtr był globalny.
-      2. `Workspace -> Models -> <Qwen3.8> -> Filters`: zaznacz `Reasoning
-         Effort`.
-      3. W `Default Filters` wybierz `Reasoning Effort`, po czym otwórz nowy
-         czat. Funkcja jest wtedy aktywna automatycznie dla tego modelu.
-      4. W ustawieniach/Valve Function wybierz `low` jako wartość domyślną.
-
-      Najmocniejszy profil Qwen3.8 na White Monsterze pomija `think` oraz
-      `reasoning_effort`. Każde jawne `think` Ollama mapuje na własny poziom
-      reasoning, natomiast brak parametru zachowuje domyślny `xhigh` szablonu.
-      Zmiana dotyczy następnej wiadomości; nie zmienia odpowiedzi, które już
-      powstały. Gdy plugin nie zapamięta wartości Valve po nowym czacie, nie
-      wybieraj go ręcznie przy każdej wiadomości: zostaw filtr jako domyślny i
-      ustaw wartość globalną w jego konfiguracji.
-
       ${if !ollamaFarmEnabled then ''
       ## Lokalny Pi w Agent Managerze
 
       Pi używa wyłącznie lokalnej Ollamy przez LiteLLM. Domyślnym modelem jest
-      `auto`; gdy AUTO nie jest włączony, wybór aliasu pozostaje po stronie
-      LiteLLM. Nadpisanie przechowuj poza Git w pliku
+      `local-qwen38-off`; alias `local-qwen38-thinking` włącza tryb
+      rozumowania. Nadpisanie tagu modelu przechowuj poza Git w pliku
       `~/.config/ollama-router/hosts.env`:
 
       ```bash
-      OLLAMA_LOCAL_MODEL=qwen3.5:9b
+      OLLAMA_LOCAL_MODEL=qwen3.8
       ```
 
       Po zmianie modelu wykonaj `make restart-litellm`, aby odtworzyć gateway
@@ -354,7 +323,7 @@ in
       Przed pierwszym uruchomieniem pobierz model do lokalnego kontenera:
 
       ```bash
-      docker compose --profile rocm exec ollama-rocm ollama pull qwen3.5:9b
+      docker compose --profile rocm exec ollama-rocm ollama pull qwen3.8
       ```
 
       Pi ma cztery narzędzia bazowe oraz jeden lazy proxy MCP dla SearXNG i
@@ -412,9 +381,8 @@ in
       `docs/auto-ai-router.md`.
       ''}
 
-      Qwen 3.5 ma aliasy `off` i `thinking`, a Qwen3.8 `off`, `low`, `medium`
-      i `xhigh`, realizowany przez brak jawnego poziomu i domyślny
-      `reasoning_effort=xhigh` szablonu Qwen3.8. Na centralnym
+      Qwen 3.5 ma aliasy `off` i `thinking`, a każdy alias Qwen3.8 używa
+      `think=low`. Na centralnym
       ROG-u Pi uruchamia `auto`. Pi ma lokalny provider LiteLLM dla Chat
       Completions i przekazuje klucz automatycznie. SearXNG oraz Agent Manager
       są dostępne tylko przez lazy proxy MCP, aby nie obciążać sesji Qwena
@@ -642,7 +610,7 @@ in
           OLLAMA_CODER_MODEL=qwen38-mtp2
         fi
         '' else ''
-        ensure_setting OLLAMA_LOCAL_MODEL "''${OLLAMA_LOCAL_MODEL:-qwen3.5:9b}"
+        ensure_setting OLLAMA_LOCAL_MODEL "''${OLLAMA_LOCAL_MODEL:-qwen3.8}"
         ''}
 
         ${pkgs.coreutils}/bin/chmod 600 "$config_file"
@@ -816,7 +784,7 @@ in
       mtp2: ## ⚡ Utwórz profil Qwen3.8 MTP z dwiema propozycjami na krok (tylko White Monster/ROCm)
       >$(COMPOSE) --profile rocm exec -T ollama-rocm ollama create qwen38-mtp2 -f /dev/stdin < Modelfile.qwen38-mtp2
 
-      pull: init-litellm-env ## 🤖 Pobierz model do uruchomionej Ollamy: make pull MODEL=qwen3.5:9b
+      pull: init-litellm-env ## 🤖 Pobierz model do uruchomionej Ollamy: make pull MODEL=qwen3.8
       >@test -n "$(MODEL)" || { echo "Podaj MODEL=nazwa:model" >&2; exit 2; }
       >@for service in ollama-vulkan ollama-rocm ollama-cpu; do \
       >  if $(COMPOSE) ps -q "$$service" | grep -q .; then \

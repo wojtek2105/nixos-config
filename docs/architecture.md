@@ -18,13 +18,16 @@ w `modules/`; profil Home Managera w `home/`.
 Pi jest głównym agentem CLI. Używa LiteLLM `http://127.0.0.1:4000/v1`, modelu
 `auto` i Qwena 3.8. Pi ma `read`, `write`, `edit`, `bash` oraz jeden lazy proxy
 MCP dla SearXNG i Agent Managera. Codex jest tylko jawną eskalacją.
+Na hoście lokalnym bez farmy (izakomp) Pi używa pojedynczego aliasu
+`local-qwen38-off` prowadzącego do Qwena 3.8 bez MTP w lokalnej Ollamie;
+`local-qwen38-thinking` włącza tryb rozumowania.
 
 Ollama używa kontekstu 65 536 tokenów, pojedynczego żądania równoległego i KV
 cache `q8_0`. White Monster z RX 9070 XT używa profilu `qwen38-mtp2`, który
-ustawia `draft_num_predict=2` dla Qwen3.8 27B MTP.
-Pi ma limit odpowiedzi 4096 tokenów oraz compaction `reserveTokens=12288`,
-`keepRecentTokens=8000`.
-Kompaktowanie zaczyna się około 53k tokenów, aby streszczenie i ponowiona
+ustawia `draft_num_predict=2` i `think=low` dla Qwen3.8 27B MTP.
+Pi ma limit odpowiedzi 16 384 tokenów oraz compaction `reserveTokens=20480`,
+`keepRecentTokens=10000`.
+Kompaktowanie zaczyna się około 45k tokenów, aby streszczenie i ponowiona
 odpowiedź miały bezpieczny zapas.
 
 ## Zasada zmian

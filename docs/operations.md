@@ -33,7 +33,7 @@ w `~/.config/ollama-router/hosts.env`.
 
 Ollama: kontekst `65536`, Flash Attention, KV cache `q8_0` i jedno żądanie
 równoległe. White Monster (RX 9070 XT) kieruje Qwen3.8 27B MTP na profil
-`qwen38-mtp2` z `draft_num_predict=2`; po aktywacji utwórz go na tym hoście
+`qwen38-mtp2` z `draft_num_predict=2` i `think=low`; po aktywacji utwórz go na tym hoście
 przez `cd ~/Dev/Ollama && make mtp2`. Open WebUI używa LiteLLM i ma web search
 przez SearXNG. Nie wpisuj kluczy do Nixa ani Git.
 
@@ -52,11 +52,33 @@ MCP. SearXNG i Agent Manager są uruchamiane na żądanie. Konfiguracja:
 - `~/.pi/agent/SYSTEM.md` — krótka instrukcja agenta;
 - `~/.config/mcp/mcp.json` — adapter MCP.
 
-Pi: `contextWindow=65536`, `maxTokens=4096`, compaction
-`reserveTokens=12288`, `keepRecentTokens=8000`. Pi pokazuje w transkrypcie
+Na hoście lokalnym bez farmy (izakomp) domyślnym modelem jest
+`local-qwen38-off` (Qwen3.8 bez MTP); `local-qwen38-thinking` włącza tryb
+rozumowania.
+
+Pi: `contextWindow=65536`, `maxTokens=16384`, compaction
+`reserveTokens=20480`, `keepRecentTokens=10000`. Pi pokazuje w transkrypcie
 diagnostykę kompaktowania; przy długim zadaniu po zakończeniu etapu użyj
 `/compact`, zanim wkleisz duży log lub rozpoczniesz odrębny temat. Duże zadania
 zapisuj w `PLAN.md` i `STATUS.md`.
+
+## Autonomiczny Pi
+
+`auto-worker` wykonuje w bieżącym projekcie świeżą sesję Pi co pięć minut;
+każda iteracja czyta i aktualizuje `PLAN.md` oraz `STATUS.md`. Jedna blokada
+`flock` na katalog projektu uniemożliwia równoległe uruchomienie, `Ctrl+C`
+zatrzymuje pętlę po bieżącej iteracji, a sześć kolejnych nieudanych iteracji
+kończy ją automatycznie:
+
+```bash
+auto-worker --prompt "Ulepsz aplikację Laravel zgodnie z PLAN.md"
+```
+
+W Agent Managerze wybierz narzędzie `auto-worker` w formularzu nowej sesji i
+wpisz ten sam cel jako prompt. Manager pokaże nadrzędną pętlę i jej log; jej
+krótkie procesy Pi celowo nie są osobnymi wierszami, aby nie zaśmiecać panelu.
+Worker nie wykonuje deploya, pushowania, instalacji zależności ani zmian
+systemowych.
 
 ## Modele i routing
 

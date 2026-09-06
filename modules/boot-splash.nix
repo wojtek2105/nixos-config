@@ -113,7 +113,7 @@ let
     ImageDir=$theme_dir
     ScriptFile=$theme_dir/biscuit.script
     ConsoleLogBackgroundColor=0x${splashBackground}
-    EOF
+EOF
   '';
 in
 {

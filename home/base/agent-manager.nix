@@ -11,24 +11,29 @@ let
     inherit id name reasoning;
     input = [ "text" ];
     contextWindow = 65536;
-    maxTokens = 4096;
+    # Pi's max_tokens becomes Ollama's num_predict. 16k lets Qwen finish a
+    # large write/edit tool-call instead of truncating its JSON mid-argument.
+    maxTokens = 16384;
     cost = { input = 0; output = 0; cacheRead = 0; cacheWrite = 0; };
   };
 
-  # Keep every LiteLLM alias selectable in Pi; AUTO remains the default.
-  piModels = map (entry: piModel entry.id entry.name entry.reasoning) [
-    { id = "auto"; name = "LiteLLM AUTO (Qwen3.8)"; reasoning = false; }
-    { id = "router"; name = "LiteLLM Router (Qwen3.5)"; reasoning = false; }
-    { id = "vision"; name = "LiteLLM Vision (Qwen3.5)"; reasoning = false; }
-    { id = "reasoning"; name = "LiteLLM Reasoning (Qwen3.8)"; reasoning = true; }
-    { id = "coder"; name = "LiteLLM Coder (Qwen3.8)"; reasoning = true; }
-    { id = "rog-qwen35-off"; name = "ROG Qwen3.5 off"; reasoning = false; }
-    { id = "rog-qwen35-thinking"; name = "ROG Qwen3.5 thinking"; reasoning = true; }
-    { id = "white-qwen38-off"; name = "White Monster Qwen3.8 off"; reasoning = false; }
-    { id = "white-qwen38-low"; name = "White Monster Qwen3.8 low"; reasoning = true; }
-    { id = "white-qwen38-medium"; name = "White Monster Qwen3.8 medium"; reasoning = true; }
-    { id = "white-qwen38-xhigh"; name = "White Monster Qwen3.8 xhigh"; reasoning = true; }
-  ];
+  # Keep the LiteLLM aliases selectable in Pi. Farm hosts keep AUTO as the
+  # default; local-only hosts (izakomp) expose only their single local model.
+  piModels = map (entry: piModel entry.id entry.name entry.reasoning)
+    (lib.optionals farmEnabled [
+      { id = "auto"; name = "LiteLLM AUTO (Qwen3.8)"; reasoning = false; }
+      { id = "router"; name = "LiteLLM Router (Qwen3.5)"; reasoning = false; }
+      { id = "vision"; name = "LiteLLM Vision (Qwen3.5)"; reasoning = false; }
+      { id = "reasoning"; name = "LiteLLM Reasoning (Qwen3.8)"; reasoning = true; }
+      { id = "coder"; name = "LiteLLM Coder (Qwen3.8)"; reasoning = true; }
+      { id = "rog-qwen35-off"; name = "ROG Qwen3.5 off"; reasoning = false; }
+      { id = "rog-qwen35-thinking"; name = "ROG Qwen3.5 thinking"; reasoning = true; }
+      { id = "white-qwen38-low"; name = "White Monster Qwen3.8 low"; reasoning = true; }
+    ]
+    ++ lib.optionals localOnlyProfile [
+      { id = "local-qwen38-off"; name = "Local Qwen3.8 off"; reasoning = false; }
+      { id = "local-qwen38-thinking"; name = "Local Qwen3.8 thinking"; reasoning = true; }
+    ]);
 
   languagePolicy = ''
     Always answer in the language of the most recent end-user request unless
@@ -82,16 +87,18 @@ let
     };
   };
 
-  piVersion = "0.85.0";
+  piVersion = "0.85.1";
   # Official standalone Pi release. Pinning the binary keeps the installed
   # agent independent from a mutable global npm prefix.
+  # The v0.85.1 tarball was re-uploaded upstream after the original pin;
+  # the hash below matches the current release artifact (verified by download).
   piCore = pkgs.stdenvNoCC.mkDerivation {
     pname = "pi-coding-agent";
     version = piVersion;
 
     src = pkgs.fetchurl {
       url = "https://github.com/earendil-works/pi/releases/download/v${piVersion}/pi-linux-x64.tar.gz";
-      hash = "sha256-p+fGXx3FKNLhfn2UatK2HfDisPmVL67neAfCSEtGTW4=";
+      hash = "sha256-SU5Jj0fXTSH0CzOG9qXpIaPUlTGhacq1W72soOof4lo=";
     };
 
     nativeBuildInputs = [ pkgs.autoPatchelfHook ];
@@ -280,8 +287,9 @@ let
   # Medium reasoning keeps concurrent visible sessions responsive and economical.
   codexAgent = mkCodexLauncher "codex-agent" "gpt-5.6-terra" "medium" codexInstructions;
 
-  # Pi stays on LiteLLM's logical `auto` model and lets AUTO select the final
-  # Qwen worker. The wrapper keeps the secret out of persisted Pi JSON.
+  # On farm hosts Pi stays on LiteLLM's logical `auto` model and lets AUTO
+  # select the final Qwen worker; local-only hosts use their single local
+  # Qwen3.8 model directly. The wrapper keeps the secret out of Pi JSON.
   piLauncher = pkgs.writeShellApplication {
     name = "pi";
     runtimeInputs = [ agentManager pkgs.tmux ];
@@ -310,6 +318,154 @@ let
       fi
 
       exec ${piCore}/bin/pi "$@"
+    '';
+  };
+
+  # A foreground, project-agnostic loop for bounded autonomous work. Agent
+  # Manager owns the outer process; each inner Pi invocation gets a fresh
+  # context and persists only its handoff files in the target project.
+  autoWorker = pkgs.writeShellApplication {
+    name = "auto-worker";
+    runtimeInputs = [ piLauncher pkgs.coreutils pkgs.git pkgs.gnugrep pkgs.util-linux ];
+    text = ''
+      set -uo pipefail
+
+      interval=300
+      max_failures=6
+      manager_session_id=""
+      task_prompt=""
+
+      usage() {
+        cat <<'EOF'
+      Usage: auto-worker --prompt "cel pracy" [--interval SECONDS] [--max-failures N]
+
+      Runs one fresh Pi iteration at a time in the current project. Stop with Ctrl+C.
+EOF
+      }
+
+      while (($#)); do
+        case "$1" in
+          --prompt)
+            task_prompt="''${2:-}"
+            shift 2
+            ;;
+          --interval)
+            interval="''${2:-}"
+            shift 2
+            ;;
+          --max-failures)
+            max_failures="''${2:-}"
+            shift 2
+            ;;
+          --session-id)
+            manager_session_id="''${2:-}"
+            shift 2
+            ;;
+          --help|-h)
+            usage
+            exit 0
+            ;;
+          *)
+            printf 'AUTO_WORKER_FATAL: unknown argument: %s\n' "$1" >&2
+            usage >&2
+            exit 2
+            ;;
+        esac
+      done
+
+      if [[ -z "$task_prompt" ]]; then
+        printf 'AUTO_WORKER_FATAL: --prompt is required.\n' >&2
+        usage >&2
+        exit 2
+      fi
+      if ! [[ "$interval" =~ ^[1-9][0-9]*$ ]] || ! [[ "$max_failures" =~ ^[1-9][0-9]*$ ]]; then
+        printf 'AUTO_WORKER_FATAL: interval and max-failures must be positive integers.\n' >&2
+        exit 2
+      fi
+
+      if project_dir="$(git rev-parse --show-toplevel 2>/dev/null)"; then
+        cd "$project_dir"
+      else
+        project_dir="$PWD"
+      fi
+
+      project_key="$(printf '%s' "$project_dir" | sha256sum | cut -d ' ' -f 1)"
+      runtime_dir="''${XDG_RUNTIME_DIR:-/tmp}"
+      lock_file="$runtime_dir/auto-worker-$project_key.lock"
+      exec 9>"$lock_file"
+      if ! flock -n 9; then
+        printf 'AUTO_WORKER_FATAL: another auto-worker already owns %s\n' "$project_dir" >&2
+        exit 75
+      fi
+
+      if [[ ! -e PLAN.md ]]; then
+        printf '# PLAN\n\n- [ ] Define the first bounded improvement.\n' > PLAN.md
+      fi
+      if [[ ! -e STATUS.md ]]; then
+        printf '# STATUS\n\nNo iteration has completed yet.\n' > STATUS.md
+      fi
+
+      stopped=0
+      trap 'stopped=1; printf "[auto-worker] stop requested; no further iteration will start.\\n" >&2' INT TERM
+
+      failures=0
+      iteration=0
+      printf '[auto-worker] started: project=%s interval=%ss max_failures=%s manager_session=%s\n' \
+        "$project_dir" "$interval" "$max_failures" "''${manager_session_id:-none}"
+
+      while (( ! stopped )); do
+        iteration=$((iteration + 1))
+        child_session="auto-worker-$project_key-$iteration-$(date +%s)"
+        iteration_log="$(mktemp "$runtime_dir/auto-worker-$project_key.XXXXXX")"
+        iteration_prompt="
+You are iteration $iteration of a persistent autonomous coding worker.
+
+Primary goal:
+$task_prompt
+
+Before changing anything, read PLAN.md, STATUS.md and the current git diff.
+Perform exactly one small, coherent improvement. You may append and reprioritize
+concrete follow-up work in PLAN.md for later iterations, but never change the
+primary goal or operate outside this project. Run the narrowest relevant tests;
+do not deploy, push, install dependencies, alter system configuration, or use
+production credentials. Update STATUS.md with files changed, tests run, the
+next planned step, and any blocker. End your final response with exactly one:
+AUTO_WORKER_RESULT: success
+AUTO_WORKER_RESULT: failed
+Use failed only when the iteration cannot make safe progress.
+"
+
+        printf '[auto-worker] iteration %s started\n' "$iteration"
+        env -u AGENT_MANAGER_SESSION_ID -u TMUX_PANE pi --session-id "$child_session" -p "$iteration_prompt" \
+          2>&1 | tee "$iteration_log"
+        pi_status="''${PIPESTATUS[0]}"
+
+        if (( pi_status != 0 )) || grep -q '^AUTO_WORKER_RESULT: failed$' "$iteration_log"; then
+          failures=$((failures + 1))
+          printf '[auto-worker] iteration %s failed (%s/%s)\n' \
+            "$iteration" "$failures" "$max_failures" >&2
+        elif grep -q '^AUTO_WORKER_RESULT: success$' "$iteration_log"; then
+          failures=0
+          printf '[auto-worker] iteration %s completed\n' "$iteration"
+        else
+          failures=$((failures + 1))
+          printf '[auto-worker] iteration %s had no result marker (%s/%s)\n' \
+            "$iteration" "$failures" "$max_failures" >&2
+        fi
+        rm -f "$iteration_log"
+
+        if (( failures >= max_failures )); then
+          printf 'AUTO_WORKER_FATAL: stopped after %s consecutive failed iterations.\n' "$failures" >&2
+          exit 1
+        fi
+        if (( stopped )); then
+          break
+        fi
+        printf '[auto-worker] waiting %ss before the next iteration\n' "$interval"
+        sleep "$interval" || true
+      done
+
+      printf '[auto-worker] stopped cleanly after %s iteration(s).\n' "$iteration"
     '';
   };
 
@@ -441,6 +597,7 @@ in
     # Pi installs the lazy MCP adapter through npm during Home Manager activation.
     pkgs.nodejs
     piLauncher
+    autoWorker
     updateAgentManager
   ] ++ lib.optionals farmEnabled [
     ollamaFarmStatus
@@ -449,7 +606,7 @@ in
   home.file = {
     ".pi/agent/settings.json".text = builtins.toJSON {
       defaultProvider = "litellm";
-      defaultModel = "auto";
+      defaultModel = if localOnlyProfile then "local-qwen38-off" else "auto";
       defaultThinkingLevel = "off";
       defaultTools = [ "read" "write" "edit" "bash" ];
       quietStartup = true;
@@ -459,11 +616,10 @@ in
       showCacheMissNotices = true;
       compaction = {
         enabled = true;
-        # A 64k local context needs room for the summary, tool-call retries,
-        # and a 4096-token reply. Compact at ~53k and retain only the active
-        # task tail; this avoids summaries themselves reaching the token cap.
-        reserveTokens = 12288;
-        keepRecentTokens = 8000;
+        # Reserve a full 16k completion: Qwen must be able to finish a large
+        # tool-call JSON. Compact at ~45k and retain the active task tail.
+        reserveTokens = 20480;
+        keepRecentTokens = 10000;
       };
       packages = [ "npm:pi-mcp-adapter@2.31.0" ];
     };
@@ -558,6 +714,17 @@ in
     rules = [
       { state = "errored", pattern = "(?im)^\\s*error\\b" },
       { state = "working", pattern = "(?i)working|thinking|esc to interrupt" },
+    ]
+
+    [tools.auto-worker]
+    command = "auto-worker"
+    default_status = "working"
+    session_id_flag = "--session-id"
+    resume_by_id_command = "auto-worker --session-id {id} --prompt 'Continue the primary goal from PLAN.md and STATUS.md.'"
+    prompt_flag = "--prompt"
+    rules = [
+      { state = "errored", pattern = "(?m)^AUTO_WORKER_FATAL:" },
+      { state = "working", pattern = "(?m)^\\[auto-worker\\]" },
     ]
   '';
 }
