@@ -4,7 +4,8 @@
 
 Utwórz `hosts/<host>/default.nix`, `configuration.nix` i własny
 `hardware-configuration.nix`. Nie kopiuj pliku sprzętowego z innej maszyny.
-Wybierz istniejący profil Home Managera albo utwórz `home/<profil>/`.
+Dla GUI wybierz istniejący profil Home Managera albo utwórz `home/<profil>/`;
+dla serwera ustaw `homeProfile` i `homeOverlay` na `null`.
 
 ## 2. Wygeneruj sprzęt
 
@@ -20,7 +21,7 @@ w manifeście hosta, nie w module współdzielonym.
 ## 3. Dodaj hosta do flake
 
 Dodaj host do `flake.nix` oraz do allowlisty użytkowników, jeśli jest używana.
-Zachowaj poprawne `username`, `homeProfile` i funkcje sprzętowe.
+Zachowaj poprawne `username`, opcjonalny `homeProfile` i funkcje sprzętowe.
 
 ## 4. Sprawdź i aktywuj
 
@@ -36,16 +37,9 @@ sprawdzeniu właściwych urządzeń i partycji.
 
 ## 5. Po aktywacji
 
-Sprawdź logowanie, sieć, Wayland, dźwięk, GPU, podświetlenie, Docker i wybrane
-usługi użytkownika. Dla profilu AI utwórz poza Git:
-
-```bash
-mkdir -p ~/.config/ollama-router
-chmod 700 ~/.config/ollama-router
-```
-
-W `hosts.env` wpisz adresy endpointów i `LITELLM_MASTER_KEY`; nie commituj tego
-pliku. Sekrety, dane modeli i dane kontenerów pozostają poza repozytorium.
+Sprawdź logowanie, sieć oraz wybrane funkcje hosta. Dla serwera Docker sprawdź
+SSH, grupę `docker` i własny stos Compose. Sekrety, dane modeli i dane
+kontenerów pozostają poza repozytorium.
 
 ## Typowe błędy
 
@@ -53,4 +47,5 @@ pliku. Sekrety, dane modeli i dane kontenerów pozostają poza repozytorium.
 - Brak profilu: `homeProfile` musi wskazywać istniejący moduł.
 - Brak podświetlenia: ustaw właściwy `backlightDevice` dla danego laptopa.
 - Błąd GPU: sprawdź moduł GPU i urządzenia `/dev/dri` oraz `/dev/kfd`.
-- Błąd AI: sprawdź `hosts.env`, `make status` i logi LiteLLM/Ollamy.
+- Błąd AI: sprawdź logi własnego stosu Compose oraz adres i nazwę modelu
+  skonfigurowane dla klienta.

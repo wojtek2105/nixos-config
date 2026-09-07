@@ -96,6 +96,7 @@
         };
         screenRecording = false;
         voxtype = false;
+        piRemote = false;
       };
       hostDirectories =
         nixpkgs.lib.filterAttrs
@@ -115,7 +116,9 @@
           hostModules ? { },
           hostName ? flakeHostName,
           homeOverlay ? null,
-          homeProfile ? username,
+          homeProfile ? null,
+          piApiBaseUrl ? "http://127.0.0.1:4000/v1",
+          piModelName ? "auto",
           replayConfig ? { },
           system ? defaultSystem,
           systemSettings ? { },
@@ -125,7 +128,7 @@
           username,
         }:
         let
-          homeModule = ./home + "/${homeProfile}/default.nix";
+          homeModule = if homeProfile == null then null else ./home + "/${homeProfile}/default.nix";
           themeModule = ./home/base/theme.nix;
           overlayModule = ./home + "/individual/${homeOverlay}/override.nix";
           desktopTheme = import themeModule { inherit inputs; };
@@ -137,6 +140,7 @@
             hardwareAmdGpu = false;
             hardwareAsusLaptop = false;
             lanMouse = false;
+            ssh = false;
             x1e = false;
           };
           providedHostModules = hostModules;
@@ -171,6 +175,7 @@
             "screenRecording"
             "voxtype"
             "vr"
+            "piRemote"
           ];
           invalidBooleanFeatures = builtins.filter
             (name: !(builtins.isBool resolvedFeatures.${name}))
@@ -189,11 +194,12 @@
             personalApps = resolvedFeatures.personalApps;
             screenRecording = resolvedFeatures.screenRecording;
             voxtype = resolvedFeatures.voxtype;
+            piRemote = resolvedFeatures.piRemote;
           };
         in
-        if !builtins.pathExists homeModule then
+        if homeProfile != null && !builtins.pathExists homeModule then
           throw "Host '${flakeHostName}' wskazuje brakujący profil Home Managera: home/${homeProfile}"
-        else if !builtins.pathExists themeModule then
+        else if homeProfile != null && !builtins.pathExists themeModule then
           throw "Wspólny profil Home Managera nie zawiera wymaganego pliku home/base/theme.nix"
         else if homeOverlay != null && !builtins.pathExists overlayModule then
           throw "Host '${flakeHostName}' wskazuje brakującą nakładkę: home/individual/${homeOverlay}/override.nix"
@@ -234,6 +240,8 @@
             modules =
               [
                 configuration
+              ]
+              ++ nixpkgs.lib.optionals (homeProfile != null) [
                 home-manager.nixosModules.home-manager
                 {
                   home-manager = {
@@ -242,7 +250,7 @@
                     backupFileExtension = "hm-backup";
                     sharedModules = [ ./home/ollama.nix ];
                     extraSpecialArgs = {
-                      inherit backlightDevice desktopFeatures homeProfile inputs trackball uiScale username;
+                      inherit backlightDevice desktopFeatures homeProfile inputs piApiBaseUrl piModelName trackball uiScale username;
                       replayConfig = defaultReplayConfig // replayConfig;
                     };
                     users.${username} = {
@@ -264,7 +272,8 @@
               ]
               ++ nixpkgs.lib.optionals resolvedFeatures.vr [ ./modules/vr.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.bluetooth [ ./modules/bluetooth.nix ]
-              ++ nixpkgs.lib.optionals resolvedFeatures.voxtype [ ./modules/voxtype.nix ];
+              ++ nixpkgs.lib.optionals resolvedFeatures.voxtype [ ./modules/voxtype.nix ]
+              ++ nixpkgs.lib.optionals resolvedHostModules.ssh [ ./modules/ssh.nix ];
           };
     in
     {

@@ -1,11 +1,12 @@
-{ desktopFeatures, lib, pkgs, ... }:
+{ desktopFeatures, lib, piApiBaseUrl ? "http://127.0.0.1:4000/v1", piModelName ? "auto", pkgs, ... }:
 
 let
   version = "0.35.0";
   agentManagerHash = "sha256-72+j6XTkdHJaIt0qoV3I/04vwKslY3WC4fBhhuDWVUU=";
   farmEnabled = desktopFeatures.ollamaFarm or false;
   autoAiRouterEnabled = desktopFeatures.autoAiRouter or false;
-  localOnlyProfile = !farmEnabled;
+  remoteEnabled = desktopFeatures.piRemote or false;
+  localOnlyProfile = !farmEnabled && !remoteEnabled;
 
   piModel = id: name: reasoning: {
     inherit id name reasoning;
@@ -20,7 +21,9 @@ let
   # Keep the LiteLLM aliases selectable in Pi. Farm hosts keep AUTO as the
   # default; local-only hosts (izakomp) expose only their single local model.
   piModels = map (entry: piModel entry.id entry.name entry.reasoning)
-    (lib.optionals farmEnabled [
+    (lib.optionals remoteEnabled [
+      { id = piModelName; name = "White Monster vLLM"; reasoning = true; }
+    ] ++ lib.optionals farmEnabled [
       { id = "auto"; name = "LiteLLM AUTO (Qwen3.8)"; reasoning = false; }
       { id = "router"; name = "LiteLLM Router (Qwen3.5)"; reasoning = false; }
       { id = "vision"; name = "LiteLLM Vision (Qwen3.5)"; reasoning = false; }
@@ -606,7 +609,7 @@ in
   home.file = {
     ".pi/agent/settings.json".text = builtins.toJSON {
       defaultProvider = "litellm";
-      defaultModel = if localOnlyProfile then "local-qwen38-off" else "auto";
+      defaultModel = if remoteEnabled then piModelName else if localOnlyProfile then "local-qwen38-off" else "auto";
       defaultThinkingLevel = "off";
       defaultTools = [ "read" "write" "edit" "bash" ];
       quietStartup = true;
@@ -621,14 +624,18 @@ in
         reserveTokens = 20480;
         keepRecentTokens = 10000;
       };
-      packages = [ "npm:pi-mcp-adapter@2.31.0" ];
+      packages = [ "npm:pi-mcp-adapter@2.31.0" "npm:@kaiserlich-dev/pi-queue-picker@latest" ];
+    };
+
+    ".pi/agent/keybindings.json".text = builtins.toJSON {
+      "tui.input.newLine" = "shift+enter";
     };
 
     ".pi/agent/models.json".text = builtins.toJSON {
       providers.litellm = {
-        baseUrl = "http://127.0.0.1:4000/v1";
+        baseUrl = piApiBaseUrl;
         api = "openai-completions";
-        apiKey = "$LITELLM_MASTER_KEY";
+        apiKey = if remoteEnabled then "$VLLM_API_KEY" else "$LITELLM_MASTER_KEY";
         authHeader = true;
         compat = {
           supportsDeveloperRole = false;
@@ -643,8 +650,8 @@ in
       Do not paste large files or logs when a focused read, rg search, or a
       short summary is enough. Keep tool output and each agent turn bounded;
       finish one coherent task before starting another. Run relevant tests after
-      changes. Use MCP only when it is needed: SearXNG for current facts, Agent
-      Manager for short, bounded delegation. Give each worker only its task,
+      changes. Use MCP only when it is needed for short, bounded delegation.
+      Give each worker only its task,
       required files, and necessary decisions; do not forward chat history.
       Treat SPEC.md, PLAN.md, STATUS.md, and ARCHITECTURE.md as durable project
       memory. For large work, update PLAN.md and STATUS.md instead of relying on
@@ -662,27 +669,30 @@ in
         detailsMaxBytes = 4000;
       };
     };
-    mcpServers = {
-      searxng = {
-        command = "${searxngMcp}/bin/searxng-mcp";
-        # pi-mcp-adapter passes env values literally; use the local published
-        # SearXNG endpoint instead of an unexpanded shell placeholder.
-        env.SEARXNG_URL = "http://127.0.0.1:8080";
-        lifecycle = "lazy";
-        idleTimeout = 5;
-      };
-      "agent-manager" = {
-        command = "${agentManager}/bin/agent-manager";
-        args = [ "mcp" ];
-        env = {
-          AGENT_MANAGER_SESSION_ID = "$AGENT_MANAGER_SESSION_ID";
-          TMUX_TMPDIR = "$TMUX_TMPDIR";
-          XDG_RUNTIME_DIR = "$XDG_RUNTIME_DIR";
+    mcpServers =
+      lib.optionalAttrs (!remoteEnabled) {
+        searxng = {
+          command = "${searxngMcp}/bin/searxng-mcp";
+          # pi-mcp-adapter passes env values literally; use the local published
+          # SearXNG endpoint instead of an unexpanded shell placeholder.
+          env.SEARXNG_URL = "http://127.0.0.1:8080";
+          lifecycle = "lazy";
+          idleTimeout = 5;
         };
-        lifecycle = "lazy";
-        idleTimeout = 5;
+      }
+      // {
+        "agent-manager" = {
+          command = "${agentManager}/bin/agent-manager";
+          args = [ "mcp" ];
+          env = {
+            AGENT_MANAGER_SESSION_ID = "$AGENT_MANAGER_SESSION_ID";
+            TMUX_TMPDIR = "$TMUX_TMPDIR";
+            XDG_RUNTIME_DIR = "$XDG_RUNTIME_DIR";
+          };
+          lifecycle = "lazy";
+          idleTimeout = 5;
+        };
       };
-    };
   };
 
   # Pi packages are mutable runtime state below ~/.pi/agent/npm; the version

@@ -2,14 +2,14 @@
   "backlightDevice": "amdgpu_bl2",
   "features": {
     "amdGpuMetrics": true,
-    "autoAiRouter": true,
+    "autoAiRouter": false,
     "bluetooth": true,
-    "docker": true,
+    "docker": false,
     "gaming": true,
     "hardwareDiagnostics": false,
     "laptop": true,
-    "ollama": true,
-    "ollamaFarm": true,
+    "ollama": false,
+    "ollamaFarm": false,
     "personalApps": {
       "discord": true,
       "easyeffects": true,
@@ -17,11 +17,14 @@
     },
     "schedulerBenchmark": false,
     "screenRecording": true,
+    "piRemote": true,
     "voxtype": true,
     "vr": true
   },
   "homeOverlay": "wojtek",
   "homeProfile": "wojtek",
+  "piApiBaseUrl": "http://white-monster:8000/v1",
+  "piModelName": "Qwen/Qwen3-8B",
   "hostName": "rog-polamaniec",
   "modules": {
     "bootSplash": true,
@@ -30,7 +33,7 @@
     "developmentCore": true,
     "hardwareAmdGpu": true,
     "hardwareAsusLaptop": true,
-    "lanMouse": true,
+    "lanMouse": false,
     "x1e": false
   },
   "replayConfig": {
@@ -40,7 +43,7 @@
   "systemSettings": {
     "bootTimeout": 1,
     "ignoreLidSwitch": true,
-    "lanMousePeerHost": "white-monster",
+    "lanMousePeerHost": null,
     "stateVersion": "26.05"
   },
   "trackball": {

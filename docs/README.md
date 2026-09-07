@@ -1,10 +1,10 @@
 # Dokumentacja konfiguracji
 
-- [Obsługa systemu](operations.md) — walidacja, aktywacja, Ollama, Pi i MCP.
+- [Obsługa systemu](operations.md) — walidacja, aktywacja, White Monster, Pi i MCP.
 - [Architektura](architecture.md) — układ repozytorium i przepływ AI.
 - [Hosty](hosts.md) — bieżące hosty i zasady przenoszenia.
 - [Nowy host](new-host.md) — minimalna procedura dodania maszyny.
-- [AUTO AI router](auto-ai-router.md) — routing LiteLLM i diagnostyka.
+- [AUTO AI router](auto-ai-router.md) — routing LiteLLM i diagnostyka dla starszych hostów.
 - [Pulpit](desktop.md) — bieżące komponenty desktopu.
 - [Skróty](keybindings.md) — skróty klawiaturowe.
 - [Gry](gaming.md) — konfiguracja gier.

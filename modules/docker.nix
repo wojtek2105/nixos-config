@@ -13,9 +13,7 @@
 
   users.users.${username}.extraGroups = [ "docker" ];
 
-  environment.systemPackages = with pkgs; [
-    docker-compose
-    lazydocker
-    lazyssh
-  ];
+  # Compose is needed to install and operate the user's container stack;
+  # interactive desktop helpers do not belong on a headless server.
+  environment.systemPackages = [ pkgs.docker-compose ];
 }

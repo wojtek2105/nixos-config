@@ -14,28 +14,21 @@ sudo nixos-rebuild switch --flake path:.#rog-polamaniec
 Po zmianach Home Managera aktywacja aktualizuje także pliki `~/.pi/agent/` i
 `~/.config/mcp/`. Repozytorium nie uruchamia tych poleceń automatycznie.
 
-## Ollama, LiteLLM i Open WebUI
+## White Monster: Docker i SSH
+
+Po aktywacji konfiguracji zaloguj się na serwer i zainstaluj własny stos
+Compose z Open WebUI oraz vLLM. NixOS nie tworzy kontenerów, nie pobiera modeli
+i nie przechowuje ich danych ani sekretów.
 
 ```bash
-cd ~/Dev/Ollama
-make init-litellm-env
-make vulkan   # albo: make rocm / make cpu
-make status
-make logs
-make pull MODEL=<tag>
-make restart-litellm
-make down
+ssh wojtek@white-monster
+sudo systemctl start docker
+docker compose version
 ```
 
-Usługi: Open WebUI `:3000`, SearXNG `:8080`, Ollama `:11434`, LiteLLM `:4000`,
-router AUTO `:4100` lokalnie w sieci Compose. Sekret `LITELLM_MASTER_KEY` jest
-w `~/.config/ollama-router/hosts.env`.
-
-Ollama: kontekst `65536`, Flash Attention, KV cache `q8_0` i jedno żądanie
-równoległe. White Monster (RX 9070 XT) kieruje Qwen3.8 27B MTP na profil
-`qwen38-mtp2` z `draft_num_predict=2` i `think=low`; po aktywacji utwórz go na tym hoście
-przez `cd ~/Dev/Ollama && make mtp2`. Open WebUI używa LiteLLM i ma web search
-przez SearXNG. Nie wpisuj kluczy do Nixa ani Git.
+W Compose wystaw Open WebUI oraz API vLLM na portach potrzebnych w zaufanej
+sieci LAN. Następnie ustaw ten adres i dokładną nazwę serwowanego modelu w
+`hosts/rog-polamaniec/host.json`, aby Pi na ROG-u korzystał z White Monstera.
 
 ## Pi i MCP
 
@@ -44,17 +37,13 @@ pi
 agent-manager
 ```
 
-Pi używa LiteLLM `model=auto`, czterech narzędzi bazowych i jednego lazy proxy
-MCP. SearXNG i Agent Manager są uruchamiane na żądanie. Konfiguracja:
+Pi używa API vLLM na White Monsterze, czterech narzędzi bazowych i jednego lazy
+proxy MCP. Agent Manager jest uruchamiany na żądanie. Konfiguracja:
 
 - `~/.pi/agent/settings.json` — narzędzia i compaction;
-- `~/.pi/agent/models.json` — provider LiteLLM, model `auto`;
+- `~/.pi/agent/models.json` — provider OpenAI-compatible vLLM i wybrany model;
 - `~/.pi/agent/SYSTEM.md` — krótka instrukcja agenta;
 - `~/.config/mcp/mcp.json` — adapter MCP.
-
-Na hoście lokalnym bez farmy (izakomp) domyślnym modelem jest
-`local-qwen38-off` (Qwen3.8 bez MTP); `local-qwen38-thinking` włącza tryb
-rozumowania.
 
 Pi: `contextWindow=65536`, `maxTokens=16384`, compaction
 `reserveTokens=20480`, `keepRecentTokens=10000`. Pi pokazuje w transkrypcie
@@ -80,25 +69,14 @@ krótkie procesy Pi celowo nie są osobnymi wierszami, aby nie zaśmiecać panel
 Worker nie wykonuje deploya, pushowania, instalacji zależności ani zmian
 systemowych.
 
-## Modele i routing
-
-Prywatne adresy i tagi modeli ustawiaj w `~/.config/ollama-router/hosts.env`.
-Alias `auto` kieruje żądania przez lokalny router do właściwego modelu. Model
-wag Q8 wymaga osobnego artefaktu Ollama; `q8_0` w konfiguracji oznacza cache KV.
-
 ## Diagnostyka
 
 ```bash
-docker compose ps
-docker compose logs --tail=100 litellm
-docker compose logs --tail=100 ollama-vulkan
-curl -sS http://127.0.0.1:4000/v1/models
-curl -sS http://127.0.0.1:4100/health
+ssh wojtek@white-monster docker ps
+ssh wojtek@white-monster docker compose --project-directory /sciezka/do/stosu ps
+curl -sS http://white-monster:8000/v1/models
 systemctl --user --failed
 ```
-
-Po zmianie zmiennych modeli wykonaj `make restart-litellm`. Po zmianie profilu
-Ollama odtwórz wybrany kontener Compose, aby przyjął nowe zmienne środowiskowe.
 
 ## Aktualizacje i porządki
 

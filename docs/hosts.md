@@ -2,8 +2,16 @@
 
 ## `rog-polamaniec`
 
-Główny laptop i host AUTO. Używa GPU AMD, Docker Compose, Ollamy, LiteLLM,
-Open WebUI, SearXNG, Agent Managera i Pi. Profil Home Managera: `base`.
+Główny laptop i klient Pi. Nie uruchamia Dockera, Ollamy, LiteLLM, Open WebUI
+ani routera AUTO. Pi łączy się bezpośrednio z API vLLM na White Monsterze;
+adres i nazwa modelu są w `hosts/rog-polamaniec/host.json`.
+
+## `white-monster`
+
+Bezgłowy serwer AI bez Home Managera i GUI. NixOS udostępnia Docker z Compose,
+SSH oraz sam sterownik AMD wymagany przez vLLM w kontenerze. Open WebUI i vLLM
+instaluj jako własny stos Docker po SSH; modele i dane kontenerów pozostają poza
+Nix store i Git.
 
 ## Pozostałe manifesty
 
