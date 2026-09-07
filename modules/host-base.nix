@@ -7,9 +7,13 @@ let
     ignoreLidSwitch = false;
     lanMousePeerHost = null;
     stateVersion = "26.05";
+    # Serwery bez profilu użytkownika nie potrzebują Fisha; desktop zachowuje
+    # go jako domyślną powłokę przez manifest hosta.
+    userShell = "fish";
     useLatestKernel = false;
   } // systemSettings;
 in
+assert lib.elem settings.userShell [ "bash" "fish" ];
 {
   imports =
     lib.optionals resolvedHostModules.x1e [ inputs.x1e-nixos-config.nixosModules.x1e ]
@@ -80,7 +84,7 @@ in
     isNormalUser = true;
     description = userDescription;
     extraGroups = [ "networkmanager" "wheel" ];
-    shell = pkgs.fish;
+    shell = if settings.userShell == "bash" then pkgs.bashInteractive else pkgs.fish;
   };
 
   nixpkgs.config.allowUnfree = true;
