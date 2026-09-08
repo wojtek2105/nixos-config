@@ -3,6 +3,6 @@ let
 in
 {
   configuration = ./configuration.nix;
-  inherit (host) backlightDevice features homeOverlay homeProfile hostName replayConfig system systemSettings trackball uiScale userDescription username;
+  inherit (host) backlightDevice features homeOverlay homeProfile hostName piApiBaseUrl piModelName replayConfig system systemSettings trackball uiScale userDescription username;
   hostModules = host.modules;
 }

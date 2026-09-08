@@ -13,5 +13,5 @@
   "replayConfig": { "captureSource": "focused_monitor" },
   "systemSettings": { "bootTimeout": 1, "ignoreLidSwitch": false, "lanMousePeerHost": null, "stateVersion": "26.05", "userShell": "bash", "useLatestKernel": true },
   "modules": { "common": true, "bootSplash": false, "desktop": false, "developmentCore": false, "hardwareAmdGpu": true, "hardwareAsusLaptop": false, "lanMouse": false, "ssh": true, "x1e": false },
-  "features": { "amdGpuMetrics": false, "bluetooth": false, "docker": true, "ollama": false, "ollamaFarm": false, "gaming": false, "vr": false, "screenRecording": false, "hardwareDiagnostics": false, "schedulerBenchmark": false, "laptop": false, "voxtype": false, "piRemote": false, "personalApps": { "discord": false, "easyeffects": false, "plexamp": false } }
+  "features": { "amdGpuMetrics": false, "bluetooth": false, "docker": true, "dockerAutoStart": true, "ollama": false, "ollamaFarm": false, "gaming": false, "vr": false, "screenRecording": false, "hardwareDiagnostics": false, "schedulerBenchmark": false, "laptop": false, "voxtype": false, "piRemote": false, "personalApps": { "discord": false, "easyeffects": false, "plexamp": false } }
 }

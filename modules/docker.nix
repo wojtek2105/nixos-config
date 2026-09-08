@@ -1,15 +1,16 @@
-{ lib, pkgs, username, ... }:
+{ lib, pkgs, resolvedFeatures, username, ... }:
 
 {
   virtualisation.docker = {
     enable = true;
-    enableOnBoot = false;
+    enableOnBoot = resolvedFeatures.dockerAutoStart;
   };
 
-  # NixOS enables docker.socket even with enableOnBoot = false, which starts
-  # dockerd as soon as a client touches the socket. Keep Docker fully manual;
-  # starting docker.service will pull in its required socket when needed.
-  systemd.sockets.docker.wantedBy = lib.mkForce [ ];
+  # Without this, Docker socket activation could start dockerd on hosts that
+  # opt out of boot startup. White Monster opts in through dockerAutoStart.
+  systemd = lib.mkIf (!resolvedFeatures.dockerAutoStart) {
+    sockets.docker.wantedBy = lib.mkForce [ ];
+  };
 
   users.users.${username}.extraGroups = [ "docker" ];
 

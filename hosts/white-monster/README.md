@@ -1,9 +1,10 @@
 # White Monster
 
 White Monster jest bezgłowym serwerem bez Home Managera i GUI. Konfiguracja
-systemowa włącza tylko wspólną bazę, Docker z Compose oraz SSH. Open WebUI i
-vLLM instaluj ręcznie jako kontenery Docker; żaden model ani stos AI nie jest
-deklarowany ani uruchamiany przez NixOS. Włączony pozostaje wyłącznie sterownik
+systemowa włącza tylko wspólną bazę, Docker z Compose oraz SSH. Docker startuje
+automatycznie po uruchomieniu hosta. Open WebUI i vLLM instaluj ręcznie jako
+kontenery Docker; żaden model ani stos AI nie jest deklarowany ani uruchamiany
+przez NixOS. Włączony pozostaje wyłącznie sterownik
 AMD potrzebny, aby kontener vLLM miał dostęp do GPU; nie uruchamia on GUI.
 
 Host ma własny `hardware-configuration.nix` i jest dostępny jako

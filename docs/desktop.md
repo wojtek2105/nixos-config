@@ -326,8 +326,8 @@ startu, w którym Hyprland widział tylko `simpledrm` i kończył pracę komunik
   dopiero przy najechaniu,
 - wyspy panelu mają 90% krycia, a workspace 92%; delikatnie odsłania to tapetę,
   podczas gdy hover podnosi krycie do 95% i zachowuje czytelność aktywnej sekcji,
-- Docker nie startuje przy bootowaniu ani przez socket activation; daemon jest
-  uruchamiany wyłącznie ręcznie poleceniem `sudo systemctl start docker`,
+- Na hostach desktopowych Docker nie startuje przy bootowaniu ani przez socket
+  activation; daemon jest uruchamiany ręcznie poleceniem `sudo systemctl start docker`,
 - kliknięcie zegara otwiera prosty, natywny kalendarz Ironbara bez osobnego
   procesu w tle; godzina ma osobny jasny span Pango `large`, ciężką wagę i
   tabularne cyfry CommitMono, natomiast przygaszona ikona `x-large` równoważy

@@ -7,14 +7,29 @@ let
   autoAiRouterEnabled = desktopFeatures.autoAiRouter or false;
   remoteEnabled = desktopFeatures.piRemote or false;
   localOnlyProfile = !farmEnabled && !remoteEnabled;
+  piMaxTokens = if remoteEnabled then 8192 else 16384;
+  piCompactionReserveTokens = if remoteEnabled then 8192 else 20480;
+  piCompactionKeepRecentTokens = if remoteEnabled then 12000 else 10000;
 
   piModel = id: name: reasoning: {
     inherit id name reasoning;
     input = [ "text" ];
     contextWindow = 65536;
-    # Pi's max_tokens becomes Ollama's num_predict. 16k lets Qwen finish a
-    # large write/edit tool-call instead of truncating its JSON mid-argument.
-    maxTokens = 16384;
+    # Leave enough capacity for a substantial response from the remote 64k
+    # Ollama model without delaying automatic context compaction too long.
+    maxTokens = piMaxTokens;
+    thinkingLevelMap = lib.optionalAttrs remoteEnabled {
+      # Ollama's OpenAI endpoint translates xhigh to `max`, but this GGUF
+      # template accepts only low, medium, and native xhigh. Hide levels that
+      # cannot be sent faithfully; `medium` was verified against White Monster.
+      off = null;
+      minimal = "low";
+      low = "low";
+      medium = "medium";
+      high = null;
+      xhigh = null;
+      max = null;
+    };
     cost = { input = 0; output = 0; cacheRead = 0; cacheWrite = 0; };
   };
 
@@ -22,7 +37,7 @@ let
   # default; local-only hosts (izakomp) expose only their single local model.
   piModels = map (entry: piModel entry.id entry.name entry.reasoning)
     (lib.optionals remoteEnabled [
-      { id = piModelName; name = "White Monster vLLM"; reasoning = true; }
+      { id = piModelName; name = "White Monster Ollama"; reasoning = true; }
     ] ++ lib.optionals farmEnabled [
       { id = "auto"; name = "LiteLLM AUTO (Qwen3.8)"; reasoning = false; }
       { id = "router"; name = "LiteLLM Router (Qwen3.5)"; reasoning = false; }
@@ -610,7 +625,7 @@ in
     ".pi/agent/settings.json".text = builtins.toJSON {
       defaultProvider = "litellm";
       defaultModel = if remoteEnabled then piModelName else if localOnlyProfile then "local-qwen38-off" else "auto";
-      defaultThinkingLevel = "off";
+      defaultThinkingLevel = if remoteEnabled then "minimal" else "off";
       defaultTools = [ "read" "write" "edit" "bash" ];
       quietStartup = true;
       enableInstallTelemetry = false;
@@ -619,10 +634,10 @@ in
       showCacheMissNotices = true;
       compaction = {
         enabled = true;
-        # Reserve a full 16k completion: Qwen must be able to finish a large
-        # tool-call JSON. Compact at ~45k and retain the active task tail.
-        reserveTokens = 20480;
-        keepRecentTokens = 10000;
+        # Ollama serves 64k. Compact around 56k and retain the active task
+        # tail while leaving 8k for the next response.
+        reserveTokens = piCompactionReserveTokens;
+        keepRecentTokens = piCompactionKeepRecentTokens;
       };
       packages = [ "npm:pi-mcp-adapter@2.31.0" "npm:@kaiserlich-dev/pi-queue-picker@latest" ];
     };
@@ -635,11 +650,13 @@ in
       providers.litellm = {
         baseUrl = piApiBaseUrl;
         api = "openai-completions";
-        apiKey = if remoteEnabled then "$VLLM_API_KEY" else "$LITELLM_MASTER_KEY";
+        # Ollama's OpenAI-compatible endpoint is local-LAN only and does not
+        # require a token. Pi still sends this harmless placeholder header.
+        apiKey = if remoteEnabled then "ollama" else "$LITELLM_MASTER_KEY";
         authHeader = true;
         compat = {
           supportsDeveloperRole = false;
-          supportsReasoningEffort = false;
+          supportsReasoningEffort = remoteEnabled;
         };
         models = piModels;
       };

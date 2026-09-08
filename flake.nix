@@ -82,6 +82,9 @@
         autoAiRouter = false;
         bluetooth = false;
         docker = false;
+        # Start the Docker daemon at boot; keep it off by default for
+        # workstations where containers are used only occasionally.
+        dockerAutoStart = false;
         gaming = false;
         hardwareDiagnostics = false;
         laptop = false;
@@ -166,6 +169,7 @@
             "autoAiRouter"
             "bluetooth"
             "docker"
+            "dockerAutoStart"
             "gaming"
             "hardwareDiagnostics"
             "laptop"
@@ -235,7 +239,7 @@
           nixpkgs.lib.nixosSystem {
             inherit system;
             specialArgs = {
-              inherit desktopTheme hostName inputs resolvedHostModules systemSettings userDescription username;
+              inherit desktopTheme hostName inputs resolvedFeatures resolvedHostModules systemSettings userDescription username;
             };
             modules =
               [

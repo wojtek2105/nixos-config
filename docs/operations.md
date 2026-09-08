@@ -22,7 +22,6 @@ i nie przechowuje ich danych ani sekretów.
 
 ```bash
 ssh wojtek@white-monster
-sudo systemctl start docker
 docker compose version
 ```
 
