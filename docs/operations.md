@@ -14,6 +14,42 @@ sudo nixos-rebuild switch --flake path:.#rog-polamaniec
 Po zmianach Home Managera aktywacja aktualizuje także pliki `~/.pi/agent/` i
 `~/.config/mcp/`. Repozytorium nie uruchamia tych poleceń automatycznie.
 
+## Kali Linux VM na ROG-u
+
+`features.kaliVm = true` w manifeście ROG-a instaluje KVM/QEMU, libvirt z
+UEFI oraz Virt-Manager. Nie pobiera obrazu Kali ani nie tworzy maszyny
+wirtualnej automatycznie. Po aktywacji pobierz oficjalne ISO instalatora Kali,
+uruchom `virt-manager` i utwórz VM z lokalnego ISO. Wybierz firmware UEFI,
+wirtualny dysk qcow2 i domyślną sieć NAT. Po pierwszej aktywacji wyloguj się i
+zaloguj ponownie, aby członkostwo w grupie `libvirtd` było widoczne w sesji.
+
+`virtui-manager` jest klawiaturowym TUI dla tych samych VM libvirt; uruchom go
+w Foot poleceniem `virtui-manager`. Virt-Manager pozostaje awaryjnym edytorem
+sprzętu i konsolą graficzną. Oba programy zarządzają jedną pulą VM, więc nie
+twórz osobnego QEMU ani Quickemu dla tej samej maszyny.
+
+NAT pozwala VM inicjować połączenia i skany do urządzeń LAN, ale nie daje jej
+własnego adresu w LAN ani ruchu warstwy 2. To bezpieczny domyślny wariant dla
+autoryzowanych rekonesansów i prostych skanów; do testów wymagających własnego
+adresu LAN trzeba osobno skonfigurować most sieciowy, co na Wi-Fi może nie być
+obsługiwane przez punkt dostępowy.
+
+## ROG: Ollama z Qwen2.5-Coder 7B Q6_K
+
+Po aktywacji uruchom Dockera oraz pobierz model. Stos zawiera tylko Ollamę
+ROCm — bez Open WebUI, SearXNG i LiteLLM.
+
+```bash
+sudo systemctl start docker
+cd ~/Dev/Ollama
+make up
+make pull
+curl http://127.0.0.1:11434/api/tags
+```
+
+API jest otwarte na zaufaną sieć LAN pod portem `11434` i nie ma
+uwierzytelniania. Zatrzymanie kontenera: `cd ~/Dev/Ollama && make down`.
+
 ## White Monster: Docker i SSH
 
 Po aktywacji konfiguracji zaloguj się na serwer i zainstaluj własny stos
@@ -43,6 +79,10 @@ proxy MCP. Agent Manager jest uruchamiany na żądanie. Konfiguracja:
 - `~/.pi/agent/models.json` — provider OpenAI-compatible vLLM i wybrany model;
 - `~/.pi/agent/SYSTEM.md` — krótka instrukcja agenta;
 - `~/.config/mcp/mcp.json` — adapter MCP.
+
+ROG uruchamia SearXNG MCP lokalnie na żądanie, a wyszukiwanie przekazuje do
+adresu `searxngUrl` z `hosts/rog-polamaniec/host.json`, wskazującego instancję
+na White Monsterze. Ten serwer musi udostępniać port `8080` w zaufanej sieci LAN.
 
 Pi: `contextWindow=65536`, `maxTokens=16384`, compaction
 `reserveTokens=20480`, `keepRecentTokens=10000`. Pi pokazuje w transkrypcie

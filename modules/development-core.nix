@@ -1,8 +1,6 @@
 { pkgs, ... }:
 
 {
-  programs.fish.enable = true;
-
   environment.etc."codex/config.toml".text = ''
     [tui]
     notifications = true

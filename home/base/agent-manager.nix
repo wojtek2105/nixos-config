@@ -1,4 +1,4 @@
-{ desktopFeatures, lib, piApiBaseUrl ? "http://127.0.0.1:4000/v1", piModelName ? "auto", pkgs, ... }:
+{ desktopFeatures, lib, piApiBaseUrl ? "http://127.0.0.1:4000/v1", piModelName ? "auto", pkgs, searxngUrl ? null, ... }:
 
 let
   version = "0.35.0";
@@ -687,12 +687,12 @@ in
       };
     };
     mcpServers =
-      lib.optionalAttrs (!remoteEnabled) {
+      lib.optionalAttrs (searxngUrl != null) {
         searxng = {
           command = "${searxngMcp}/bin/searxng-mcp";
-          # pi-mcp-adapter passes env values literally; use the local published
-          # SearXNG endpoint instead of an unexpanded shell placeholder.
-          env.SEARXNG_URL = "http://127.0.0.1:8080";
+          # The stdio MCP server is local; this URL selects the SearXNG backend
+          # declared by the host manifest, including a trusted LAN server.
+          env.SEARXNG_URL = searxngUrl;
           lifecycle = "lazy";
           idleTimeout = 5;
         };

@@ -7,8 +7,10 @@
     "docker": true,
     "gaming": true,
     "hardwareDiagnostics": false,
+    "kaliVm": true,
     "laptop": true,
-    "ollama": false,
+    "ollama": true,
+    "ollamaStandalone": true,
     "ollamaFarm": false,
     "personalApps": {
       "discord": true,
@@ -25,6 +27,8 @@
   "homeProfile": "wojtek",
   "piApiBaseUrl": "http://192.168.254.219:11434/v1",
   "piModelName": "qwen38-27b:latest",
+  "searxngUrl": "http://192.168.254.219:8080",
+  "ollamaVulkanRenderNode": "/dev/dri/renderD128",
   "hostName": "rog-polamaniec",
   "modules": {
     "bootSplash": true,
@@ -44,7 +48,8 @@
     "bootTimeout": 1,
     "ignoreLidSwitch": true,
     "lanMousePeerHost": null,
-    "stateVersion": "26.05"
+    "stateVersion": "26.05",
+    "userShell": "bash"
   },
   "trackball": {
     "name": "ploopy-corporation-ploopy-adept-trackball-mouse",

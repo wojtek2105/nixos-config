@@ -1,7 +1,7 @@
 -- Declarative Hyprland Lua configuration, installed by Home Manager.
 
 local mod = "SUPER"
-local terminal = "foot"
+local terminal = "@FOOT_COMMAND@"
 local file_manager = "yazi-file-manager"
 local menu = "fuzzel"
 

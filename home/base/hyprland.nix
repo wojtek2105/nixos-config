@@ -306,6 +306,7 @@ in
     extraLuaFiles."config" = (builtins.replaceStrings
       [
         "@POLKIT_AGENT@"
+        "@FOOT_COMMAND@"
         "@KEYBOARD_OPTIONS@"
         "@UWSM_FINALIZE@"
         "@ACTIVE_BORDER@"
@@ -319,6 +320,7 @@ in
       ]
       [
         "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1"
+        "${pkgs.foot}/bin/foot"
         (if voxtypeEnabled then "caps:none" else "")
         "${pkgs.uwsm}/bin/uwsm finalize"
         c.accent

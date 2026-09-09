@@ -1,6 +1,6 @@
 # Dokumentacja konfiguracji
 
-- [Obsługa systemu](operations.md) — walidacja, aktywacja, White Monster, Pi i MCP.
+- [Obsługa systemu](operations.md) — walidacja, aktywacja, Kali VM, White Monster, Pi i MCP.
 - [Architektura](architecture.md) — układ repozytorium i przepływ AI.
 - [Hosty](hosts.md) — bieżące hosty i zasady przenoszenia.
 - [Nowy host](new-host.md) — minimalna procedura dodania maszyny.

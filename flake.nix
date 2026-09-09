@@ -34,18 +34,6 @@
       inputs.home-manager.follows = "home-manager";
     };
 
-    biscuit-nvim = {
-      url = "github:Biscuit-Theme/nvim";
-      flake = false;
-    };
-
-    # Upstream stays separate from the future personal Neovim repository.
-    # Update this input deliberately when refreshing the Kickstart baseline.
-    kickstart-nvim = {
-      url = "github:nvim-lua/kickstart.nvim";
-      flake = false;
-    };
-
     biscuit-gtk = {
       url = "github:Biscuit-Theme/gtk";
       flake = false;
@@ -87,8 +75,12 @@
         dockerAutoStart = false;
         gaming = false;
         hardwareDiagnostics = false;
+        kaliVm = false;
         laptop = false;
         ollama = false;
+        # Keep the ROG deployment intentionally small: one Ollama container,
+        # without a web frontend, metasearch, or model gateway.
+        ollamaStandalone = false;
         ollamaFarm = false;
         schedulerBenchmark = false;
         vr = false;
@@ -123,6 +115,8 @@
           piApiBaseUrl ? "http://127.0.0.1:4000/v1",
           piModelName ? "auto",
           replayConfig ? { },
+          searxngUrl ? null,
+          ollamaVulkanRenderNode ? null,
           system ? defaultSystem,
           systemSettings ? { },
           trackball ? null,
@@ -172,8 +166,10 @@
             "dockerAutoStart"
             "gaming"
             "hardwareDiagnostics"
+            "kaliVm"
             "laptop"
             "ollama"
+            "ollamaStandalone"
             "ollamaFarm"
             "schedulerBenchmark"
             "screenRecording"
@@ -194,6 +190,7 @@
             docker = resolvedFeatures.docker;
             laptop = resolvedFeatures.laptop;
             ollama = resolvedFeatures.ollama;
+            ollamaStandalone = resolvedFeatures.ollamaStandalone;
             ollamaFarm = resolvedFeatures.ollamaFarm;
             personalApps = resolvedFeatures.personalApps;
             screenRecording = resolvedFeatures.screenRecording;
@@ -225,10 +222,16 @@
           throw "Host '${flakeHostName}' musi ustawić pola modules jako true albo false: ${builtins.concatStringsSep ", " invalidHostModules}"
         else if resolvedFeatures.laptop && backlightDevice == null then
           throw "Host '${flakeHostName}' jest laptopem, ale nie ustawia backlightDevice"
+        else if searxngUrl != null && !builtins.isString searxngUrl then
+          throw "Host '${flakeHostName}' musi ustawić searxngUrl jako adres URL albo null"
         else if resolvedFeatures.ollama && !resolvedFeatures.docker then
           throw "Host '${flakeHostName}' wymaga features.docker = true dla features.ollama"
         else if resolvedFeatures.ollamaFarm && !resolvedFeatures.ollama then
           throw "Host '${flakeHostName}' wymaga features.ollama = true dla features.ollamaFarm"
+        else if resolvedFeatures.ollamaStandalone && !resolvedFeatures.ollama then
+          throw "Host '${flakeHostName}' wymaga features.ollama = true dla features.ollamaStandalone"
+        else if resolvedFeatures.ollamaStandalone && resolvedFeatures.ollamaFarm then
+          throw "Host '${flakeHostName}' nie może łączyć features.ollamaStandalone z features.ollamaFarm"
         else if resolvedFeatures.autoAiRouter && !resolvedFeatures.ollamaFarm then
           throw "Host '${flakeHostName}' wymaga features.ollamaFarm = true dla features.autoAiRouter"
         else if resolvedHostModules.hardwareAsusLaptop && !resolvedHostModules.hardwareAmdGpu then
@@ -254,7 +257,7 @@
                     backupFileExtension = "hm-backup";
                     sharedModules = [ ./home/ollama.nix ];
                     extraSpecialArgs = {
-                      inherit backlightDevice desktopFeatures homeProfile inputs piApiBaseUrl piModelName trackball uiScale username;
+                      inherit backlightDevice desktopFeatures homeProfile inputs ollamaVulkanRenderNode piApiBaseUrl piModelName searxngUrl trackball uiScale username;
                       replayConfig = defaultReplayConfig // replayConfig;
                     };
                     users.${username} = {
@@ -269,6 +272,7 @@
               ++ nixpkgs.lib.optionals resolvedFeatures.schedulerBenchmark [ ./modules/scheduler-benchmark.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.screenRecording [ ./modules/screen-recording.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.hardwareDiagnostics [ ./modules/hardware-diagnostics.nix ]
+              ++ nixpkgs.lib.optionals resolvedFeatures.kaliVm [ ./modules/kali-vm.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.ollama [ ./modules/ollama.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.autoAiRouter [
                 ./modules/auto-ai-router.nix
@@ -297,7 +301,7 @@
         packages = with pkgs; [
           codex
           git
-          neovim
+          vim
         ];
       };
     };

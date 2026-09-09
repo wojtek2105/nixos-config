@@ -1,7 +1,8 @@
-{ desktopFeatures, lib, pkgs, ... }:
+{ desktopFeatures, lib, ollamaVulkanRenderNode, pkgs, ... }:
 
 let
   ollamaEnabled = desktopFeatures.ollama or false;
+  ollamaStandaloneEnabled = desktopFeatures.ollamaStandalone or false;
   ollamaFarmEnabled = desktopFeatures.ollamaFarm or false;
   autoAiRouterEnabled = desktopFeatures.autoAiRouter or false;
   openWebUiSystemPrompt = ''Zawsze odpowiadaj w języku ostatniej wiadomości użytkownika, chyba że użytkownik wyraźnie poprosi o inny język. Na polskie wiadomości odpowiadaj po polsku. Kod, polecenia, logi, nazwy API i identyfikatory pozostawiaj w oryginalnej formie.'';
@@ -55,7 +56,74 @@ in
 {
   # Home Manager owns the stack definition and helper scripts. Runtime data and
   # generated secrets stay mutable below Dev/Ollama/data and outside the store.
-  home.file = lib.mkIf ollamaEnabled {
+  home.file = lib.mkIf ollamaEnabled (
+    if ollamaStandaloneEnabled then {
+      "Dev/Ollama/compose.yaml".text = ''
+        services:
+          ollama:
+            image: ollama/ollama:latest
+            container_name: ollama
+            restart: unless-stopped
+            ports:
+              - "0.0.0.0:11434:11434"
+            devices:
+              # ROG RX 6800S is renderD128 (`ls -l /dev/dri/by-path`); expose
+              # only that node so Vulkan cannot select the integrated Radeon 680M.
+              - ${if ollamaVulkanRenderNode == null then "/dev/dri" else "${ollamaVulkanRenderNode}:/dev/dri/renderD128"}
+            environment:
+              OLLAMA_VULKAN: "1"
+              GGML_VK_VISIBLE_DEVICES: "0"
+              # 16k balances Qwen2.5-Coder 7B Q6_K quality and VRAM use;
+              # larger windows reserve proportionally more KV-cache memory.
+              OLLAMA_CONTEXT_LENGTH: "16384"
+              OLLAMA_FLASH_ATTENTION: "1"
+              OLLAMA_KV_CACHE_TYPE: q8_0
+              OLLAMA_NUM_PARALLEL: "1"
+            volumes:
+              - ./data/ollama:/root/.ollama
+      '';
+
+      "Dev/Ollama/README.md".text = ''
+        # Ollama: Qwen2.5-Coder 7B Q6_K
+
+        Ten katalog uruchamia wyłącznie kontener Ollama Vulkan na RX 6800S. Nie zawiera
+        Open WebUI, SearXNG ani LiteLLM.
+
+        ```bash
+        sudo systemctl start docker
+        cd ~/Dev/Ollama
+        make up
+        make pull
+        ```
+
+        API Ollamy działa pod `http://ADRES-LAN:11434`; aktualny adres pokaże
+        `hostname -I`. Endpoint nie ma uwierzytelniania, więc korzystaj z niego
+        tylko w zaufanej sieci lokalnej.
+      '';
+
+      "Dev/Ollama/Makefile".text = ''
+        .DEFAULT_GOAL := help
+        .RECIPEPREFIX := >
+
+        MODEL ?= qwen2.5-coder:7b-instruct-q6_K
+        COMPOSE := docker-compose
+
+        help: ## 📖 Pokaż dostępne polecenia
+        >@awk 'BEGIN { FS = ":.*## " } /^[a-zA-Z0-9][a-zA-Z0-9_.-]*:.*## / && $$1 != "help" { printf "\033[36m%-20s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
+
+        up: ## 🚀 Uruchom kontener Ollama Vulkan na RX 6800S
+        >$(COMPOSE) up -d
+
+        down: ## 🛑 Zatrzymaj kontener Ollama
+        >$(COMPOSE) down
+
+        pull: ## 🤖 Pobierz domyślny model Qwen2.5-Coder 7B Q6_K
+        >$(COMPOSE) exec ollama ollama pull $(MODEL)
+
+        logs: ## 📜 Śledź logi Ollamy
+        >$(COMPOSE) logs --follow ollama
+      '';
+    } else {
     "Dev/Ollama/compose.yaml".text = ''
       services:
         open-webui:
@@ -801,5 +869,6 @@ in
       logs: init-litellm-env ## 📜 Śledź logi wszystkich kontenerów
       >$(COMPOSE) logs --follow
     '';
-  };
+    }
+  );
 }

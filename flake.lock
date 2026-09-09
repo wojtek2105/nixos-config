@@ -32,22 +32,6 @@
         "type": "github"
       }
     },
-    "biscuit-nvim": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1718787789,
-        "narHash": "sha256-rHtMScH9z/x8+oRQa4kMObblx0XumV5UwkyaHFnbNbc=",
-        "owner": "Biscuit-Theme",
-        "repo": "nvim",
-        "rev": "1307d875ac42c5bf620b311781de7211521a0e42",
-        "type": "github"
-      },
-      "original": {
-        "owner": "Biscuit-Theme",
-        "repo": "nvim",
-        "type": "github"
-      }
-    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
@@ -86,22 +70,6 @@
         "type": "github"
       }
     },
-    "kickstart-nvim": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1786117481,
-        "narHash": "sha256-g9CoQAzAUqcaDPhIWkiRgZykgJDQozC26ZLHyDAffXM=",
-        "owner": "nvim-lua",
-        "repo": "kickstart.nvim",
-        "rev": "626c660f54054953e630bef85fdf65e159c7516a",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nvim-lua",
-        "repo": "kickstart.nvim",
-        "type": "github"
-      }
-    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1787498568,
@@ -122,9 +90,7 @@
       "inputs": {
         "biscuit-desktop": "biscuit-desktop",
         "biscuit-gtk": "biscuit-gtk",
-        "biscuit-nvim": "biscuit-nvim",
         "home-manager": "home-manager",
-        "kickstart-nvim": "kickstart-nvim",
         "nixpkgs": "nixpkgs",
         "voxtype": "voxtype",
         "wlctl": "wlctl",

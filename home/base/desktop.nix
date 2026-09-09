@@ -7,13 +7,14 @@ let
   easyeffectsEnabled = personalApps.easyeffects or false;
   plexampEnabled = personalApps.plexamp or false;
   voxtypeEnabled = desktopFeatures.voxtype or false;
+  footCommand = "${pkgs.foot}/bin/foot";
 
   yazi-file-manager = pkgs.writeShellApplication {
     name = "yazi-file-manager";
     runtimeInputs = [
       pkgs.coreutils
       pkgs.foot
-      config.programs.neovim.finalPackage
+      pkgs.vim
       config.programs.yazi.finalPackage
     ];
     text = ''
@@ -24,10 +25,10 @@ let
 
       # Do not depend on whether the graphical session imported shell startup
       # variables before launching Foot/Yazi.
-      export EDITOR=nvim
-      export VISUAL=nvim
+      export EDITOR=vim
+      export VISUAL=vim
 
-      exec foot \
+      exec ${footCommand} \
         --app-id=org.polamaniec.yazi \
         --title=Yazi \
         --override=main.pad=6x6 \
@@ -127,7 +128,8 @@ in
     package = pkgs.yazi.override {
       _7zz = pkgs._7zz-rar;
     };
-    enableFishIntegration = true;
+    # `y` must update the directory of the calling interactive Bash, not a child.
+    enableBashIntegration = true;
     shellWrapperName = "y";
     extraPackages = with pkgs; [
       udisks2
@@ -139,10 +141,10 @@ in
       opener = {
         edit = [
           {
-            run = "${config.programs.neovim.finalPackage}/bin/nvim %s";
+            run = "${pkgs.vim}/bin/vim %s";
             block = true;
             for = "unix";
-            desc = "Edytuj w Neovim";
+            desc = "Edytuj w Vimie";
           }
         ];
         image = [
@@ -653,6 +655,9 @@ in
     settings = {
       main = {
         term = "foot";
+        # UWSM may not inherit the Home Manager profile PATH after a shell
+        # change, so Foot must not rely on the login-shell lookup here.
+        shell = "${pkgs.bashInteractive}/bin/bash";
         font = "${theme.fonts.monospace}:size=12";
         pad = "12x12";
         dpi-aware = "yes";
@@ -694,7 +699,7 @@ in
     settings = {
       main = {
         font = "${theme.fonts.sans} Medium,${theme.fonts.interface}:size=12";
-        terminal = "foot";
+        terminal = footCommand;
         layer = "overlay";
         dpi-aware = "no";
         use-bold = true;
@@ -735,7 +740,7 @@ in
       name = "Voxtype Configure";
       genericName = "Konfiguracja dyktowania głosowego";
       comment = "Skonfiguruj lokalne polskie dyktowanie Voxtype";
-      exec = "foot --app-id=org.polamaniec.voxtype-configure -e voxtype configure";
+      exec = "${footCommand} --app-id=org.polamaniec.voxtype-configure -e voxtype configure";
       icon = "audio-input-microphone";
       terminal = false;
       startupNotify = false;
@@ -764,13 +769,13 @@ in
     };
     foot-server = {
       name = "Foot Server";
-      exec = "foot --server";
+      exec = "${footCommand} --server";
       icon = "foot";
       noDisplay = true;
     };
     footclient = {
       name = "Foot Client";
-      exec = "footclient";
+      exec = "${pkgs.foot}/bin/footclient";
       icon = "foot";
       noDisplay = true;
     };

@@ -2,9 +2,11 @@
 
 ## `rog-polamaniec`
 
-Główny laptop i klient Pi. Nie uruchamia Dockera, Ollamy, LiteLLM, Open WebUI
-ani routera AUTO. Pi łączy się bezpośrednio z API vLLM na White Monsterze;
-adres i nazwa modelu są w `hosts/rog-polamaniec/host.json`.
+Główny laptop i klient Pi. Uruchamia w Dockerze wyłącznie Ollamę ROCm z
+Qwen2.5-Coder 7B Q6_K i kontekstem 16k, bez LiteLLM, Open WebUI ani lokalnego
+kontenera SearXNG. MCP SearXNG korzysta z instancji na White Monsterze. API
+Ollamy jest dostępne w zaufanej sieci LAN na porcie `11434`; obsługa kontenera jest w
+`~/Dev/Ollama` po aktywacji konfiguracji.
 
 ## `white-monster`
 

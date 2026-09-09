@@ -2,7 +2,7 @@
 
 Głównym modyfikatorem pulpitu jest `Super`. `Super+F1` otwiera deklaratywne
 centrum pomocy z osobnymi sekcjami dla pulpitu, nagrywania, multimediów, Yazi,
-tmux, Neovim i menu zasilania. Sekcje zależne od hosta są widoczne tylko wtedy,
+tmux, Vim i menu zasilania. Sekcje zależne od hosta są widoczne tylko wtedy,
 gdy odpowiadająca funkcja jest włączona w manifeście `features` hosta.
 
 Menu można też otworzyć z terminala bezpośrednio na wybranej sekcji:
@@ -10,13 +10,13 @@ Menu można też otworzyć z terminala bezpośrednio na wybranej sekcji:
 ```bash
 shortcut-menu yazi
 shortcut-menu tmux
-shortcut-menu nvim
+shortcut-menu vim
 shortcut-menu capture
 shortcut-menu all
 ```
 
 Menu obejmuje wszystkie skróty zadeklarowane przez tę konfigurację. Dla Yazi,
-tmux i Neovim pokazuje dodatkowo najważniejsze skróty wbudowane; pełne mapy tych
+tmux i Vim pokazuje dodatkowo najważniejsze skróty wbudowane; pełne mapy tych
 aplikacji pozostają dostępne w ich kontekstowej pomocy.
 
 Gdy host ma `features.voxtype = true`, profil `wojtek` wyłącza Caps Lock dla
@@ -116,7 +116,7 @@ nazwa zawiera `touchpad`; nie koduje na stałe identyfikatora konkretnego modelu
 | `p` | Wklej do wskazanego katalogu albo katalogu bieżącego |
 | `d` / `D` | Przenieś do kosza / usuń bezpowrotnie |
 | `a` | Utwórz plik; zakończ nazwę `/`, aby utworzyć katalog |
-| `r` | Zmień nazwę; przy wielu plikach otwórz listę w Neovim |
+| `r` | Zmień nazwę; przy wielu plikach otwórz listę w Vimie |
 | `.` | Pokaż lub ukryj pliki ukryte |
 | `f` | Skocz do pliku zaczynającego się od wybranego znaku |
 | `F` | Filtruj ciągle i automatycznie wejdź w jednoznaczny wynik |
@@ -177,17 +177,11 @@ po puszczeniu prefiksu.
 Obsługa myszy jest włączona: można wybierać okna i panele, przewijać historię
 oraz przeciągać krawędzie podziału.
 
-## Neovim
+## Vim i prywatny Neovim
 
-Profil nie nadpisuje obecnie domyślnej mapy Neovim; poniżej znajduje się
-praktyczny zestaw wbudowanych poleceń zgodny z aktywną konfiguracją.
-
-Polecenie `nvim-kickstart` uruchamia oficjalny Kickstart w osobnym profilu.
-Nie zmienia konfiguracji ani danych zwykłego `nvim`. Mapowania dodane przez
-Kickstart można odkrywać przez `Space`, `:Telescope keymaps` i `:checkhealth`.
-Przy pierwszym uruchomieniu wrapper kopiuje przypięty przez Nix szablon do
-zapisywalnego `~/.config/nvim-kickstart`; ten katalog można później bezpośrednio
-zamienić w osobne repozytorium Git.
+NixOS instaluje wyłącznie surowy Vim. Prywatny Neovim wraz z jego zależnościami
+instaluj z flake'a w `~/.config/nvim`; NixOS nie zarządza tym katalogiem.
+Poniżej znajduje się zestaw wbudowanych poleceń Vima.
 
 | Skrót | Działanie |
 | --- | --- |
@@ -208,7 +202,7 @@ zamienić w osobne repozytorium Git.
 | `:w` / `:q` / `:wq` | Zapisz / zamknij / zapisz i zamknij |
 | `:e plik` | Otwórz plik w bieżącym buforze |
 | `:sp` / `:vsp` | Podziel okno poziomo / pionowo |
-| `Ctrl+W, h/j/k/l` | Przenieś fokus między oknami Neovim |
+| `Ctrl+W, h/j/k/l` | Przenieś fokus między oknami Vima |
 | `Ctrl+W, q` / `o` | Zamknij okno / pozostaw tylko bieżące |
 | `:tabnew`, `gt`, `gT` | Utwórz kartę / przejdź dalej / wróć |
 | `:terminal` | Otwórz terminal w buforze |

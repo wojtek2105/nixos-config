@@ -91,23 +91,25 @@ wrócić do Tuigreet.
 ## Terminal i powłoka
 
 - Foot renderuje terminal, CommitMono Nerd Font, kolorowe emoji i interfejsy TUI,
-- Fish jest domyślną powłoką użytkownika,
-- Tide wyświetla katalog, stan Git, czas polecenia, błędy i aktywne środowisko Nix,
-- tmux obsługuje trwałe sesje, okna i panele oraz uruchamia Fish,
+- Bash jest domyślną powłoką użytkownika,
+- Starship wyświetla katalog, stan Git, czas polecenia i aktywne środowisko Nix,
+- tmux obsługuje trwałe sesje, okna i panele oraz uruchamia Bash,
 - tmux i Foot używają pełnego koloru RGB oraz passthrough dla aplikacji TUI.
 
-Konfiguracja nie korzysta z Fishera ani instalatorów uruchamianych poza Nixem.
-Tide pochodzi z `pkgs.fishPlugins.tide`, a jego powerline'owy motyw Biscuit de
-Mar Dark jest generowany przez Home Manager. Ustawienia promptu mają zasięg
-bieżącej powłoki, więc start nowego Fisha nie zapisuje ponownie uniwersalnych
-zmiennych w `fish_variables`.
+Konfiguracja nie korzysta z Zsh, Fish, menedżerów pluginów ani instalatorów
+uruchamianych poza Nixem. Starship jest generowany przez Home Manager w motywie
+Biscuit de Mar Dark: dwuwierszowy prompt pokazuje użytkownika i host, katalog,
+Git oraz po prawej środowisko Nix, czas długiego polecenia i zegar.
+Opcjonalny plik `~/.config/bash/nvim-editor.sh` jest ładowany tylko wtedy,
+gdy istnieje; prywatna flake Neovima tworzy go podczas instalacji, aby ustawić
+`EDITOR` i `VISUAL` na `nvim`.
 
 `Super+F1` otwiera przeszukiwalne centrum pomocy Fuzzel. Najpierw wybiera się
 sekcję pulpitu albo aplikację, a następnie otrzymuje opisaną mapę klawiszy.
 Menu obejmuje wszystkie deklarowane skróty Hyprlanda, w tym opcjonalny GPU
-Screen Recorder i klawisze laptopa, oraz najważniejsze mapy Yazi, tmux, Neovim
+Screen Recorder i klawisze laptopa, oraz najważniejsze mapy Yazi, tmux, Vim
 i Wleave. Te same widoki można wywołać z terminala, np. przez
-`shortcut-menu yazi`, `shortcut-menu tmux` albo `shortcut-menu nvim`. Krótkie
+`shortcut-menu yazi`, `shortcut-menu tmux` albo `shortcut-menu vim`. Krótkie
 sekcje dopasowują wysokość do zawartości, a dłuższe pokazują maksymalnie 16
 wierszy i pozostają przewijalne, dzięki czemu menu mieści się na ekranie
 laptopa przy skali logicznej `2`.
@@ -182,7 +184,7 @@ Dark mode jest deklaratywny:
 - ikony `papirus-biscuit-dark`,
 - kursor `Bibata-Modern-Amber` w GTK i Hyprcursor.
 
-Foot, Fish/Tide, tmux, nvim, odizolowany `nvim-kickstart`, btop, Lazygit, Yazi,
+Foot, Bash/Starship, tmux, vim, btop, Lazygit, Yazi,
 Fuzzel, Ironbar, MPV/uosc,
 SwayNC, Zen, Hyprland, Hyprlock, Wleave i wygaszacz korzystają z tej samej palety
 generowanej przez Home Managera.

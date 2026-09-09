@@ -4,6 +4,7 @@ let
   theme = import ./theme.nix { inherit inputs; };
   c = theme.colors;
   scripts = import ./scripts.nix { inherit pkgs; };
+  footCommand = "${pkgs.foot}/bin/foot";
   amdGpuEnabled = desktopFeatures.amdGpu or false;
   dockerEnabled = desktopFeatures.docker or false;
   bluetoothEnabled = desktopFeatures.bluetooth or false;
@@ -105,7 +106,7 @@ let
     (shortcut "p" "Wklej do wskazanego lub bieżącego katalogu")
     (shortcut "d / D" "Przenieś do kosza / usuń bezpowrotnie")
     (shortcut "a" "Utwórz plik; zakończ nazwę /, aby utworzyć katalog")
-    (shortcut "r" "Zmień nazwę; przy wielu plikach użyj Neovim")
+    (shortcut "r" "Zmień nazwę; przy wielu plikach użyj Vima")
     (shortcut "." "Pokaż lub ukryj pliki ukryte")
     (shortcut "f" "Skocz do pliku zaczynającego się od wybranego znaku")
     (shortcut "F" "Filtruj ciągle i automatycznie wejdź w jednoznaczny wynik")
@@ -168,7 +169,7 @@ let
     (shortcut ":w / :q / :wq" "Zapisz / zamknij / zapisz i zamknij")
     (shortcut ":e plik" "Otwórz plik w bieżącym buforze")
     (shortcut ":sp / :vsp" "Podziel okno poziomo / pionowo")
-    (shortcut "Ctrl+W, h/j/k/l" "Przenieś fokus między oknami Neovim")
+    (shortcut "Ctrl+W, h/j/k/l" "Przenieś fokus między oknami Vima")
     (shortcut "Ctrl+W, q / o" "Zamknij okno / pozostaw tylko bieżące")
     (shortcut ":tabnew / gt / gT" "Utwórz kartę / przejdź dalej / wróć")
     (shortcut ":terminal" "Otwórz terminal w buforze")
@@ -184,15 +185,6 @@ let
     (shortcut "s" "Wyłącz komputer")
     (shortcut "Esc" "Zamknij menu zasilania bez wykonywania akcji")
   ];
-
-  tideDefaults = pkgs.runCommand "tide-declarative-defaults.fish" { } ''
-    # Global variables live only in the current shell. Universal variables
-    # would rewrite fish_variables every time an interactive shell starts.
-    sed -E 's/^(tide_[^ ]+)(.*)$/set -g \1\2/' \
-      ${pkgs.fishPlugins.tide}/share/fish/vendor_functions.d/tide/configure/icons.fish \
-      ${pkgs.fishPlugins.tide}/share/fish/vendor_functions.d/tide/configure/configs/rainbow.fish \
-      > "$out"
-  '';
 
   power-menu = pkgs.writeShellApplication {
     name = "power-menu";
@@ -664,7 +656,7 @@ let
             [[ "$navigation" == left ]] && continue
             case "$action" in
               *"Launcher aplikacji") exec fuzzel ;;
-              *"Terminal Foot") exec foot ;;
+              *"Terminal Foot") exec ${footCommand} ;;
               *"Przeglądarka Zen") exec zen-run-or-raise ;;
               *"Pliki w Yazi") exec yazi-file-manager ;;
               *"Pliki w Thunarze") exec thunar ;;
@@ -706,8 +698,8 @@ let
             case "$action" in
               ${lib.optionalString voxtypeEnabled ''
                 *"Dyktowanie Voxtype") exec voxtype record toggle ;;
-                *"Stan Voxtype") exec foot -e voxtype info ;;
-                *"Konfiguruj Voxtype") exec foot --app-id=org.polamaniec.voxtype-configure -e voxtype configure ;;
+                *"Stan Voxtype") exec ${footCommand} -e voxtype info ;;
+                *"Konfiguruj Voxtype") exec ${footCommand} --app-id=org.polamaniec.voxtype-configure -e voxtype configure ;;
               ''}
               *"Historia schowka") exec clipboard-history ;;
               *"Wróć") continue ;;
@@ -742,7 +734,7 @@ let
                 '󰋋  Multimedia i laptop' \
                 '󰇥  Yazi' \
                 '  tmux' \
-                '  Neovim' \
+                '  Vim' \
                 '󰐥  Menu zasilania' \
                 '󰈙  Wszystkie skróty' \
                 '  Wróć'
@@ -757,7 +749,7 @@ let
               *"Multimedia i laptop") shortcut-menu media || true ;;
               *"Yazi") shortcut-menu yazi || true ;;
               *"tmux") shortcut-menu tmux || true ;;
-              *"Neovim") shortcut-menu nvim || true ;;
+              *"Vim") shortcut-menu vim || true ;;
               *"Menu zasilania") shortcut-menu power || true ;;
               *"Wszystkie skróty") shortcut-menu all || true ;;
               *"Wróć") continue ;;
@@ -829,7 +821,7 @@ let
         show_yazi
         heading "TMUX"
         show_tmux
-        heading "NEOVIM"
+        heading "VIM"
         show_neovim
         heading "MENU ZASILANIA"
         show_power
@@ -860,11 +852,11 @@ let
           media) show_list "Multimedia i laptop" show_media ;;
           yazi) show_list "Yazi" show_yazi ;;
           tmux) show_list "tmux" show_tmux ;;
-          nvim|neovim) show_list "Neovim" show_neovim ;;
+          vim|nvim|neovim) show_list "Vim" show_neovim ;;
           power) show_list "Menu zasilania" show_power ;;
           all) show_list "Wszystkie skróty" show_all ;;
           *)
-            printf 'Użycie: shortcut-menu [system|windows|capture|media|yazi|tmux|nvim|power|all]\n' >&2
+            printf 'Użycie: shortcut-menu [system|windows|capture|media|yazi|tmux|vim|power|all]\n' >&2
             return 2
             ;;
         esac
@@ -884,7 +876,7 @@ let
             '󰋋  Multimedia i laptop' \
             '󰇥  Yazi' \
             '  tmux' \
-            '  Neovim' \
+            '  Vim' \
             '󰐥  Menu zasilania' \
             '󰈙  Wszystkie skróty'
         } | fuzzel \
@@ -902,7 +894,7 @@ let
           *"Multimedia i laptop") section=media ;;
           *"Yazi") section=yazi ;;
           *"tmux") section=tmux ;;
-          *"Neovim") section=nvim ;;
+          *"Vim") section=vim ;;
           *"Menu zasilania") section=power ;;
           *"Wszystkie skróty") section=all ;;
           *) continue ;;
@@ -1035,26 +1027,26 @@ let
 
       case "$panel" in
         metrics)
-          exec foot --app-id=desktop-metrics --title=Zasoby \
+          exec ${footCommand} --app-id=desktop-metrics --title=Zasoby \
             --window-size-chars=96x28 btop
           ;;
         audio)
-          exec foot --app-id=desktop-audio --title=Dźwięk \
+          exec ${footCommand} --app-id=desktop-audio --title=Dźwięk \
             --window-size-chars=100x30 wiremix
           ;;
         wifi)
-          exec foot --app-id=desktop-wifi --title=Wi-Fi \
+          exec ${footCommand} --app-id=desktop-wifi --title=Wi-Fi \
             --window-size-chars=92x28 wlctl
           ;;
         ${lib.optionalString bluetoothEnabled ''
           bluetooth)
-            exec foot --app-id=desktop-bluetooth --title=Bluetooth \
+            exec ${footCommand} --app-id=desktop-bluetooth --title=Bluetooth \
               --window-size-chars=86x26 bluetui
             ;;
         ''}
         ${lib.optionalString dockerEnabled ''
           docker)
-            exec foot --app-id=desktop-docker --title=Docker \
+            exec ${footCommand} --app-id=desktop-docker --title=Docker \
               --window-size-chars=110x32 lazydocker
             ;;
         ''}
@@ -1246,7 +1238,7 @@ let
       # the current wallpaper remains a quiet part of the saver. TTE changes
       # the terminal background through an escape sequence, so `all` must also
       # apply opacity to that runtime-set surface.
-      exec foot \
+      exec ${footCommand} \
         --app-id=org.polamaniec.screensaver \
         --override=main.font='${theme.fonts.monospace}:size=16' \
         --override=main.pad=0x0 \
@@ -1279,7 +1271,6 @@ in
     ./desktop.nix
     ./hyprland.nix
     ./ironbar.nix
-    ./neovim.nix
     ./notifications.nix
     ./osd.nix
     ./zen.nix
@@ -1298,6 +1289,7 @@ in
         screensaver
         shortcut-menu
         global-menu
+        vim
         desktop-panel
         wl-clipboard
       ])
@@ -1308,9 +1300,9 @@ in
 
     sessionVariables = {
       BROWSER = "zen-twilight";
-      EDITOR = "nvim";
+      EDITOR = "vim";
       TERMINAL = "foot";
-      VISUAL = "nvim";
+      VISUAL = "vim";
       NIXOS_OZONE_WL = "1";
     };
   };
@@ -1336,84 +1328,111 @@ in
   xdg.configFile."btop/themes/biscuit.theme".source =
     "${inputs.biscuit-desktop}/btop.theme";
 
-  programs.fish = {
+  programs.bash = {
     enable = true;
-    plugins = [
-      {
-        name = "tide";
-        src = pkgs.fishPlugins.tide.src;
-      }
+    enableCompletion = true;
+    historyControl = [
+      "ignoredups"
+      "erasedups"
     ];
-    functions._tide_item_cmd_duration_safe = ''
-      # Tide renders prompt items in a child Fish, where CMD_DURATION can be empty.
-      string match --quiet --regex '^[0-9]+$' -- "$CMD_DURATION"; or return
-      set -l threshold 1000
-      string match --quiet --regex '^[0-9]+$' -- "$tide_cmd_duration_threshold" \
-        && set threshold "$tide_cmd_duration_threshold"
-      set -l decimals 0
-      string match --quiet --regex '^[0-9]+$' -- "$tide_cmd_duration_decimals" \
-        && set decimals "$tide_cmd_duration_decimals"
+    initExtra = ''
+      bind 'set completion-ignore-case on'
+      bind 'set show-all-if-ambiguous on'
+      bind 'set menu-complete-display-prefix on'
 
-      test "$CMD_DURATION" -gt "$threshold" && t=(
-          math -s0 "$CMD_DURATION/3600000"
-          math -s0 "$CMD_DURATION/60000"%60
-          math -s$decimals "$CMD_DURATION/1000"%60) if test "$t[1]" != 0
-        _tide_print_item cmd_duration $tide_cmd_duration_icon' ' "$t[1]h $t[2]m $t[3]s"
-      else if test "$t[2]" != 0
-        _tide_print_item cmd_duration $tide_cmd_duration_icon' ' "$t[2]m $t[3]s"
-      else
-        _tide_print_item cmd_duration $tide_cmd_duration_icon' ' "$t[3]s"
-      end
+      # Private Neovim flake creates this opt-in file. Its absence keeps Vim
+      # as the declarative default editor without modifying Home Manager files.
+      if [ -r "$HOME/.config/bash/nvim-editor.sh" ]; then
+        . "$HOME/.config/bash/nvim-editor.sh"
+      fi
     '';
-    interactiveShellInit = ''
-      set -g fish_greeting
+  };
 
-      set -g _tide_color_dark_blue ${c.violet}
-      set -g _tide_color_dark_green ${c.green}
-      set -g _tide_color_gold ${c.yellow}
-      set -g _tide_color_green ${c.green}
-      set -g _tide_color_light_blue ${c.blue}
-      source ${tideDefaults}
-
-      set -g tide_left_prompt_items pwd git newline character
-      set -g tide_right_prompt_items status cmd_duration_safe jobs nix_shell time
-      set -g tide_cmd_duration_threshold 1000
-      set -g tide_cmd_duration_icon '󱎫'
-      set -g tide_git_icon ''
-      set -g tide_prompt_add_newline_before true
-      set -g tide_time_format '%H:%M'
-
-      # Biscuit de Mar Dark powerline palette.
-      set -g tide_pwd_bg_color ${c.accent}
-      set -g tide_pwd_color_anchors ${c.bright}
-      set -g tide_pwd_color_dirs ${c.bright}
-      set -g tide_pwd_color_truncated_dirs ${c.subtle}
-      set -g tide_git_bg_color ${c.green}
-      set -g tide_git_bg_color_unstable ${c.yellow}
-      set -g tide_git_bg_color_urgent ${c.orange}
-      set -g tide_git_color_branch ${c.background}
-      set -g tide_git_color_conflicted ${c.background}
-      set -g tide_git_color_dirty ${c.background}
-      set -g tide_git_color_operation ${c.background}
-      set -g tide_git_color_staged ${c.background}
-      set -g tide_git_color_stash ${c.background}
-      set -g tide_git_color_untracked ${c.background}
-      set -g tide_git_color_upstream ${c.background}
-      set -g tide_status_bg_color ${c.surface}
-      set -g tide_status_bg_color_failure ${c.red}
-      set -g tide_status_color ${c.green}
-      set -g tide_status_color_failure ${c.bright}
-      set -g tide_cmd_duration_bg_color ${c.yellow}
-      set -g tide_cmd_duration_color ${c.background}
-      set -g tide_jobs_bg_color ${c.selection}
-      set -g tide_jobs_color ${c.foreground}
-      set -g tide_nix_shell_bg_color ${c.violet}
-      set -g tide_nix_shell_color ${c.bright}
-      set -g tide_time_bg_color ${c.selection}
-      set -g tide_time_color ${c.foreground}
-      set -g tide_prompt_color_frame_and_connection ${c.muted}
-      set -g tide_prompt_color_separator_same_color ${c.subtle}
-    '';
+  programs.starship = {
+    enable = true;
+    enableBashIntegration = true;
+    settings = {
+      add_newline = false;
+      format = lib.concatStrings [
+        "[╭─](bold #${c.muted})"
+        "$username$hostname$directory$git_branch$git_status$jobs"
+        "$fill$nix_shell$status$cmd_duration$time"
+        "\n[╰─](bold #${c.muted})$character "
+      ];
+      username = {
+        show_always = true;
+        style_user = "bold #${c.bright}";
+        style_root = "bold #${c.red}";
+        format = "[$user]($style)";
+      };
+      hostname = {
+        ssh_only = false;
+        style = "bold #${c.subtle}";
+        format = "[@$hostname]($style) ";
+      };
+      directory = {
+        style = "bold #${c.accent}";
+        truncation_length = 4;
+        truncation_symbol = "…/";
+        read_only = " 󰌾";
+        format = " [$path]($style)[$read_only]($read_only_style) ";
+      };
+      git_branch = {
+        symbol = " ";
+        style = "bold #${c.green}";
+        truncation_length = 28;
+        truncation_symbol = "…";
+        format = "[$symbol$branch]($style) ";
+      };
+      git_status = {
+        style = "#${c.yellow}";
+        format = "([$all_status$ahead_behind]($style) )";
+        # One compact symbol per state, followed by the number of affected files.
+        conflicted = "=\${count}";
+        ahead = "⇡\${count}";
+        behind = "⇣\${count}";
+        diverged = "⇕⇡\${ahead_count}⇣\${behind_count}";
+        deleted = "✘\${count}";
+        modified = "!\${count}";
+        untracked = "?\${count}";
+        staged = "+\${count}";
+        renamed = "»\${count}";
+        typechanged = "~\${count}";
+      };
+      jobs = {
+        symbol = "󰜎 ";
+        style = "#${c.violet}";
+        number_threshold = 1;
+        format = "[$symbol$number]($style) ";
+      };
+      nix_shell = {
+        symbol = " ";
+        style = "bold #${c.violet}";
+        format = "[$symbol$state( \\($name\\))]($style) ";
+      };
+      status = {
+        disabled = false;
+        symbol = "✖ ";
+        style = "bold #${c.red}";
+        format = "[$symbol$status]($style) ";
+      };
+      cmd_duration = {
+        min_time = 1000;
+        style = "#${c.yellow}";
+        format = "[󱎫 $duration]($style) ";
+      };
+      time = {
+        disabled = false;
+        time_format = "%R";
+        style = "#${c.subtle}";
+        format = "[󰥔 $time]($style)";
+      };
+      character = {
+        success_symbol = "[❯](bold #${c.accent})";
+        error_symbol = "[❯](bold #${c.red})";
+        vimcmd_symbol = "[❮](bold #${c.green})";
+      };
+    };
   };
 
   programs.tmux = {
@@ -1426,7 +1445,7 @@ in
     mouse = true;
     terminal = "tmux-256color";
     extraConfig = ''
-      set -g default-shell ${pkgs.fish}/bin/fish
+      set -g default-shell ${pkgs.bashInteractive}/bin/bash
       set -g focus-events on
       set -g renumber-windows on
       set -g status-position top
