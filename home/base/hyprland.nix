@@ -1,4 +1,4 @@
-{ backlightDevice, desktopFeatures, inputs, lib, pkgs, trackball ? null, uiScale, username, ... }:
+{ backlightDevice, desktopFeatures, inputs, keyboardOptions ? "", lib, pkgs, trackball ? null, uiScale, username, ... }:
 
 let
   theme = import ./theme.nix { inherit inputs; };
@@ -321,7 +321,10 @@ in
       [
         "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1"
         "${pkgs.foot}/bin/foot"
-        (if voxtypeEnabled then "caps:none" else "")
+        (lib.concatStringsSep "," (lib.filter (option: option != "") [
+          (if voxtypeEnabled then "caps:none" else "")
+          keyboardOptions
+        ]))
         "${pkgs.uwsm}/bin/uwsm finalize"
         c.accent
         c.yellow

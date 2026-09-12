@@ -3,6 +3,7 @@ let
 in
 {
   configuration = ./configuration.nix;
+  keyboardOptions = host.keyboardOptions or "";
   inherit (host) backlightDevice features homeOverlay homeProfile hostName ollamaVulkanRenderNode piApiBaseUrl piModelName replayConfig searxngUrl system systemSettings trackball uiScale userDescription username;
   hostModules = host.modules;
 }

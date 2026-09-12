@@ -6,6 +6,7 @@
   "homeProfile": "izakomp",
   "homeOverlay": "izakomp",
   "uiScale": 1,
+  "keyboardOptions": "lv3:menu_switch",
   "backlightDevice": null,
   "trackball": null,
   "replayConfig": { "captureSource": "focused_monitor" },
