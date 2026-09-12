@@ -9,9 +9,9 @@ let
   remoteEnabled = desktopFeatures.piRemote or false;
   localOnlyProfile = !farmEnabled && !remoteEnabled;
   piMaxTokens = if remoteEnabled then 8192 else 16384;
-  # Compact a 64k conversation around 45k. The 20k reserve leaves room for
-  # the summary, tool output and the next response without hitting the limit.
-  piCompactionReserveTokens = 20480;
+  # Compact a 64k conversation around 41k (5 percentage points earlier). The
+  # 24k reserve leaves room for the summary, tool output and next response.
+  piCompactionReserveTokens = 24576;
   piCompactionKeepRecentTokens = 10000;
 
   piModel = id: name: reasoning: {
@@ -640,8 +640,8 @@ in
       showCacheMissNotices = true;
       compaction = {
         enabled = true;
-        # Ollama serves 64k. Compact around 45k, retain the active task tail
-        # and leave about 20k for the summary, tools and the next response.
+        # Ollama serves 64k. Compact around 41k, retain the active task tail
+        # and leave 24k for the summary, tools and the next response.
         reserveTokens = piCompactionReserveTokens;
         keepRecentTokens = piCompactionKeepRecentTokens;
       };
