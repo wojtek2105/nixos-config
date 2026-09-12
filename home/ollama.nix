@@ -135,12 +135,14 @@ in
           environment:
             OLLAMA_BASE_URL: http://ollama:11434
             ENABLE_OLLAMA_API: "${if autoAiRouterEnabled then "False" else "True"}"
-            ENABLE_OPENAI_API: "True"
+            ENABLE_OPENAI_API: "${if ollamaFarmEnabled then "True" else "False"}"
+            ${lib.optionalString ollamaFarmEnabled ''
             OPENAI_API_BASE_URL: http://litellm:4000/v1
             LITELLM_MASTER_KEY: "''${LITELLM_MASTER_KEY:?Run ./init-litellm-env first}"
             OPENAI_API_KEY: "''${LITELLM_MASTER_KEY:?Run ./init-litellm-env first}"
             OPENAI_API_BASE_URLS: http://litellm:4000/v1
             OPENAI_API_KEYS: "''${LITELLM_MASTER_KEY:?Run ./init-litellm-env first}"
+            ''}
             # Built-in search_web is available to Native function-calling
             # models; these limits keep fetched pages bounded within the 64k
             # shared context window.
@@ -175,9 +177,12 @@ in
             # The reconciler changes only declared global ConfigVars in SQLite;
             # user accounts, chats, models and provider connections stay mutable.
             - ./apply-webui-defaults.py:/opt/ollama-stack/apply-webui-defaults.py:ro
+          ${lib.optionalString ollamaFarmEnabled ''
           depends_on:
             - litellm
+          ''}
 
+        ${lib.optionalString ollamaFarmEnabled ''
         litellm:
           image: docker.litellm.ai/berriai/litellm:main-stable
           container_name: litellm
@@ -199,6 +204,7 @@ in
             - ./litellm-config.yaml:/app/config.yaml:ro
           extra_hosts:
             - "host.docker.internal:host-gateway"
+        ''}
 
         searxng:
           image: searxng/searxng:latest
@@ -292,7 +298,9 @@ in
             com.docker.network.bridge.name: ai-gateway0
     '';
 
-    "Dev/Ollama/litellm-config.yaml".text = litellmModels;
+    "Dev/Ollama/litellm-config.yaml" = lib.mkIf ollamaFarmEnabled {
+      text = litellmModels;
+    };
 
     # The model has the MTP head; this alias selects the best measured draft
     # depth for it. It is mutable Ollama state and must be created after the
@@ -372,17 +380,9 @@ in
       ${if !ollamaFarmEnabled then ''
       ## Lokalny Pi w Agent Managerze
 
-      Pi używa wyłącznie lokalnej Ollamy przez LiteLLM. Domyślnym modelem jest
-      `local-qwen38-off`; alias `local-qwen38-thinking` włącza tryb
-      rozumowania. Nadpisanie tagu modelu przechowuj poza Git w pliku
-      `~/.config/ollama-router/hosts.env`:
-
-      ```bash
-      OLLAMA_LOCAL_MODEL=qwen3.8
-      ```
-
-      Po zmianie modelu wykonaj `make restart-litellm`, aby odtworzyć gateway
-      z nową wartością zmiennej.
+      Pi łączy się bezpośrednio z lokalną Ollamą pod `127.0.0.1:11434`.
+      Nie uruchamia LiteLLM ani nie wymaga `hosts.env`; domyślny model pochodzi
+      z manifestu hosta.
 
       Pi może przez lazy MCP utworzyć lokalnego workera albo, tylko dla naprawdę
       trudnego zadania, workera `codex`. Profile ROG, White Monster i
@@ -588,7 +588,7 @@ in
       '';
     };
 
-    "Dev/Ollama/init-litellm-env" = {
+    "Dev/Ollama/init-litellm-env" = lib.mkIf ollamaFarmEnabled {
       executable = true;
       text = ''
         #!${pkgs.runtimeShell}
@@ -713,10 +713,12 @@ in
           # large number would consume the same 64k window used by chat context.
           "models.default_params": {"function_calling": "native", "stream": True},
           "ollama.enable": ${if autoAiRouterEnabled then "False" else "True"},
-          "openai.enable": True,
+          "openai.enable": ${if ollamaFarmEnabled then "True" else "False"},
+          ${lib.optionalString ollamaFarmEnabled ''
           "openai.api_base_urls": ["http://litellm:4000/v1"],
           "openai.api_keys": [os.environ["LITELLM_MASTER_KEY"]],
           "openai.api_configs": {"0": {"enable": True}},
+          ''}
           "task.model.params": {"temperature": 0.2, "max_tokens": 1200},
           "ui.default_interface_settings": {
               "webSearch": "always",
@@ -787,13 +789,17 @@ in
       OLLAMA_GID := $(shell id -g)
       export OLLAMA_UID OLLAMA_GID
 
+      ${if ollamaFarmEnabled then ''
       STACK_CONFIG_HOME := $(if $(XDG_CONFIG_HOME),$(XDG_CONFIG_HOME),$(HOME)/.config)
       HOSTS_ENV := $(STACK_CONFIG_HOME)/ollama-router/hosts.env
       COMPOSE := docker-compose --env-file $(HOSTS_ENV)
+      '' else ''
+      COMPOSE := docker-compose
+      ''}
 
       MODEL ?=
 
-      .PHONY: help fix-searxng-permissions init-searxng-config init-litellm-env init-stack-config vulkan rocm cpu vulkan-cpu rocm-cpu down apply-webui-defaults pull pull-vulkan pull-rocm pull-cpu pull-searxng pull-litellm restart-litellm restart-searxng mtp2 logs
+      .PHONY: help fix-searxng-permissions init-searxng-config init-stack-config vulkan rocm cpu vulkan-cpu rocm-cpu down apply-webui-defaults pull pull-vulkan pull-rocm pull-cpu pull-searxng restart-searxng mtp2 logs${lib.optionalString ollamaFarmEnabled " init-litellm-env pull-litellm restart-litellm"}
 
       help: ## 📖 Pokaż dostępne polecenia
       >@awk 'BEGIN { FS = ":.*## " } /^[a-zA-Z0-9][a-zA-Z0-9_.-]*:.*## / && $$1 != "help" { printf "\033[36m%-20s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -804,10 +810,12 @@ in
       init-searxng-config: ## 🔐 Utwórz lokalną konfigurację i sekret SearXNG, jeśli ich brakuje
       >./init-searxng-config
 
+      ${lib.optionalString ollamaFarmEnabled ''
       init-litellm-env: ## 🧭 Utwórz lub uzupełnij prywatny inventory LiteLLM
       >./init-litellm-env
+      ''}
 
-      init-stack-config: init-searxng-config init-litellm-env ## ⚙️ Przygotuj lokalne pliki stosu
+      init-stack-config: init-searxng-config${lib.optionalString ollamaFarmEnabled " init-litellm-env"} ## ⚙️ Przygotuj lokalne pliki stosu
 
       vulkan: init-stack-config ## ⚡ Uruchom Ollama z backendem Vulkan
       >$(COMPOSE) --profile vulkan up -d
@@ -824,35 +832,37 @@ in
       rocm-cpu: init-stack-config ## 🔴🖥️ Uruchom backend ROCm oraz dodatkowy serwer CPU
       >$(COMPOSE) --profile rocm --profile cpu up -d
 
-      down: init-litellm-env ## 🛑 Zatrzymaj stos wraz ze wszystkimi profilami Ollamy
+      down: init-stack-config ## 🛑 Zatrzymaj stos wraz ze wszystkimi profilami Ollamy
       >$(COMPOSE) --profile vulkan --profile rocm --profile cpu down
 
-      apply-webui-defaults: init-litellm-env ## ⚙️ Zsynchronizuj globalne ustawienia Open WebUI bez kasowania danych
+      apply-webui-defaults: init-stack-config ## ⚙️ Zsynchronizuj globalne ustawienia Open WebUI bez kasowania danych
       >$(COMPOSE) exec -T open-webui python /opt/ollama-stack/apply-webui-defaults.py
       >$(COMPOSE) restart open-webui
 
-      pull-vulkan: init-litellm-env ## ⬇️ Pobierz obrazy wariantu Vulkan
+      pull-vulkan: init-stack-config ## ⬇️ Pobierz obrazy wariantu Vulkan
       >$(COMPOSE) --profile vulkan pull
 
-      pull-rocm: init-litellm-env ## ⬇️ Pobierz obrazy wariantu ROCm
+      pull-rocm: init-stack-config ## ⬇️ Pobierz obrazy wariantu ROCm
       >$(COMPOSE) --profile rocm pull
 
-      pull-cpu: init-litellm-env ## ⬇️ Pobierz obrazy wariantu CPU
+      pull-cpu: init-stack-config ## ⬇️ Pobierz obrazy wariantu CPU
       >$(COMPOSE) --profile cpu pull
 
-      pull-searxng: init-litellm-env ## ⬇️ Pobierz obraz SearXNG
+      pull-searxng: init-searxng-config ## ⬇️ Pobierz obraz SearXNG
       >$(COMPOSE) pull searxng
 
+      ${lib.optionalString ollamaFarmEnabled ''
       pull-litellm: init-litellm-env ## ⬇️ Pobierz stabilny obraz LiteLLM
       >$(COMPOSE) pull litellm
 
       restart-litellm: init-litellm-env ## 🔄 Odtwórz LiteLLM po zmianie inventory
       >$(COMPOSE) up -d --force-recreate litellm
+      ''}
 
       mtp2: ## ⚡ Utwórz profil Qwen3.8 MTP z dwiema propozycjami na krok (tylko White Monster/ROCm)
       >$(COMPOSE) --profile rocm exec -T ollama-rocm ollama create qwen38-mtp2 -f /dev/stdin < Modelfile.qwen38-mtp2
 
-      pull: init-litellm-env ## 🤖 Pobierz model do uruchomionej Ollamy: make pull MODEL=qwen3.8
+      pull: init-stack-config ## 🤖 Pobierz model do uruchomionej Ollamy: make pull MODEL=qwen3.8
       >@test -n "$(MODEL)" || { echo "Podaj MODEL=nazwa:model" >&2; exit 2; }
       >@for service in ollama-vulkan ollama-rocm ollama-cpu; do \
       >  if $(COMPOSE) ps -q "$$service" | grep -q .; then \
@@ -866,7 +876,7 @@ in
       restart-searxng: init-stack-config ## 🔄 Zrestartuj SearXNG
       >$(COMPOSE) restart searxng
 
-      logs: init-litellm-env ## 📜 Śledź logi wszystkich kontenerów
+      logs: init-stack-config ## 📜 Śledź logi wszystkich kontenerów
       >$(COMPOSE) logs --follow
     '';
     }
