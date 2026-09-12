@@ -80,6 +80,10 @@ assert lib.elem settings.userShell [ "bash" "fish" ];
 
   console.keyMap = "pl2";
 
+  # NixOS refuses a Fish login shell unless its integration is enabled; keep
+  # Bash-only servers lean while making the manifest's Fish choice safe.
+  programs.fish.enable = settings.userShell == "fish";
+
   users.users.${username} = {
     isNormalUser = true;
     description = userDescription;

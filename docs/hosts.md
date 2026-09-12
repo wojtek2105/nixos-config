@@ -14,7 +14,8 @@ bridge MCP, który pozostaje wyłączony do jawnego włączenia w projekcie prze
 Desktop Izy ma ten sam profil Pi, adapter MCP, queue picker, Agent Manager i
 opcjonalny bridge Godot co ROG. Pi łączy się bezpośrednio wyłącznie z lokalną
 Ollamą pod `http://127.0.0.1:11434/v1`, używając `qwen38-27b:latest`; lazy MCP
-SearXNG korzysta z lokalnej instancji pod `http://127.0.0.1:8080`.
+SearXNG korzysta z lokalnej instancji pod `http://127.0.0.1:8080`. Powłoką
+logowania jest Bash z ble.sh i Starshipem.
 
 ## `white-monster`
 

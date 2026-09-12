@@ -5,6 +5,8 @@ centrum pomocy z osobnymi sekcjami dla pulpitu, nagrywania, multimediów, Yazi,
 tmux, Vim i menu zasilania. Sekcje zależne od hosta są widoczne tylko wtedy,
 gdy odpowiadająca funkcja jest włączona w manifeście `features` hosta.
 
+Na hoście `izakomp` fizyczny klawisz `Menu` działa systemowo jako prawy `Alt`.
+
 Menu można też otworzyć z terminala bezpośrednio na wybranej sekcji:
 
 ```bash
