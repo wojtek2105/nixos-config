@@ -312,23 +312,25 @@ let
   codexAgent = mkCodexLauncher "codex-agent" "gpt-5.6-terra" "medium" codexInstructions;
 
   # On farm hosts Pi stays on LiteLLM's logical `auto` model and lets AUTO
-  # select the final Qwen worker; local-only hosts use their single local
-  # Qwen3.8 model directly. The wrapper keeps the secret out of Pi JSON.
+  # select the final Qwen worker; remote hosts call Ollama directly. Only the
+  # LiteLLM profiles load their secret inventory through the wrapper.
   piLauncher = pkgs.writeShellApplication {
     name = "pi";
     runtimeInputs = [ agentManager pkgs.tmux ];
     text = ''
-      inventory="''${XDG_CONFIG_HOME:-$HOME/.config}/ollama-router/hosts.env"
-      if [[ ! -r "$inventory" ]]; then
-        printf 'Missing LiteLLM inventory: %s\nRun ~/Dev/Ollama/init-litellm-env first.\n' "$inventory" >&2
-        exit 1
-      fi
-      # shellcheck disable=SC1090
-      source "$inventory"
-      if [[ -z "''${LITELLM_MASTER_KEY:-}" ]]; then
-        printf 'LITELLM_MASTER_KEY is missing in %s\n' "$inventory" >&2
-        exit 1
-      fi
+      ${lib.optionalString (!remoteEnabled) ''
+        inventory="''${XDG_CONFIG_HOME:-$HOME/.config}/ollama-router/hosts.env"
+        if [[ ! -r "$inventory" ]]; then
+          printf 'Missing LiteLLM inventory: %s\nRun ~/Dev/Ollama/init-litellm-env first.\n' "$inventory" >&2
+          exit 1
+        fi
+        # shellcheck disable=SC1090
+        source "$inventory"
+        if [[ -z "''${LITELLM_MASTER_KEY:-}" ]]; then
+          printf 'LITELLM_MASTER_KEY is missing in %s\n' "$inventory" >&2
+          exit 1
+        fi
+      ''}
 
       session_id="''${AGENT_MANAGER_SESSION_ID:-}"
       if [[ -z "$session_id" && -n "''${TMUX_PANE:-}" ]]; then
