@@ -74,6 +74,9 @@
         # workstations where containers are used only occasionally.
         dockerAutoStart = false;
         gaming = false;
+        # Install Godot and its local MCP bridge. The bridge remains disabled
+        # in Pi until the user enables it explicitly for a project.
+        godot = false;
         hardwareDiagnostics = false;
         kaliVm = false;
         laptop = false;
@@ -165,6 +168,7 @@
             "docker"
             "dockerAutoStart"
             "gaming"
+            "godot"
             "hardwareDiagnostics"
             "kaliVm"
             "laptop"
@@ -188,6 +192,7 @@
             autoAiRouter = resolvedFeatures.autoAiRouter;
             bluetooth = resolvedFeatures.bluetooth;
             docker = resolvedFeatures.docker;
+            godot = resolvedFeatures.godot;
             laptop = resolvedFeatures.laptop;
             ollama = resolvedFeatures.ollama;
             ollamaStandalone = resolvedFeatures.ollamaStandalone;
@@ -269,6 +274,7 @@
               ]
               ++ nixpkgs.lib.optionals resolvedFeatures.docker [ ./modules/docker.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.gaming [ ./modules/gaming.nix ]
+              ++ nixpkgs.lib.optionals resolvedFeatures.godot [ ./modules/godot.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.schedulerBenchmark [ ./modules/scheduler-benchmark.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.screenRecording [ ./modules/screen-recording.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.hardwareDiagnostics [ ./modules/hardware-diagnostics.nix ]

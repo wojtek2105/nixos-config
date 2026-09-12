@@ -1,15 +1,57 @@
 {
-  "hostName": "armaniec",
-  "system": "aarch64-linux",
-  "username": "wojtek",
-  "userDescription": "Wojtek",
-  "homeProfile": "wojtek",
-  "homeOverlay": null,
-  "uiScale": 1,
   "backlightDevice": null,
+  "features": {
+    "amdGpuMetrics": false,
+    "autoAiRouter": false,
+    "bluetooth": false,
+    "docker": false,
+    "dockerAutoStart": false,
+    "gaming": false,
+    "godot": false,
+    "hardwareDiagnostics": false,
+    "kaliVm": false,
+    "laptop": false,
+    "ollama": false,
+    "ollamaStandalone": false,
+    "ollamaFarm": false,
+    "personalApps": {
+      "discord": false,
+      "easyeffects": false,
+      "plexamp": false
+    },
+    "schedulerBenchmark": false,
+    "screenRecording": false,
+    "piRemote": false,
+    "voxtype": false,
+    "vr": false
+  },
+  "homeOverlay": null,
+  "homeProfile": "wojtek",
+  "hostName": "armaniec",
+  "modules": {
+    "bootSplash": true,
+    "common": true,
+    "desktop": true,
+    "developmentCore": true,
+    "hardwareAmdGpu": false,
+    "hardwareAsusLaptop": false,
+    "lanMouse": false,
+    "x1e": true
+  },
+  "replayConfig": {
+    "captureSource": "focused_monitor"
+  },
+  "system": "aarch64-linux",
   "trackball": null,
-  "replayConfig": { "captureSource": "focused_monitor" },
-  "systemSettings": { "bootTimeout": 1, "ignoreLidSwitch": false, "lanMousePeerHost": null, "stateVersion": "26.05", "enableVivobookS15": true },
-  "modules": { "common": true, "bootSplash": true, "desktop": true, "developmentCore": true, "hardwareAmdGpu": false, "hardwareAsusLaptop": false, "lanMouse": false, "x1e": true },
-  "features": { "amdGpuMetrics": false, "bluetooth": false, "docker": true, "ollama": true, "ollamaFarm": true, "gaming": false, "vr": false, "screenRecording": false, "hardwareDiagnostics": false, "schedulerBenchmark": false, "laptop": false, "voxtype": false, "personalApps": { "discord": false, "easyeffects": false, "plexamp": false } }
+  "systemSettings": {
+    "bootTimeout": 1,
+    "enableVivobookS15": true,
+    "ignoreLidSwitch": false,
+    "lanMousePeerHost": null,
+    "stateVersion": "26.05",
+    "userShell": "bash"
+  },
+  "uiScale": 2,
+  "userDescription": "Wojtek",
+  "username": "wojtek"
 }

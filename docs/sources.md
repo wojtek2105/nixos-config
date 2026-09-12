@@ -4,6 +4,7 @@
 - [Home Manager](https://github.com/nix-community/home-manager)
 - [Pi coding agent](https://github.com/earendil-works/pi)
 - [pi-mcp-adapter (npm)](https://www.npmjs.com/package/pi-mcp-adapter)
+- [Godot MCP](https://github.com/Coding-Solo/godot-mcp)
 - [Ollama](https://ollama.com/)
 - [LiteLLM](https://docs.litellm.ai/)
 - [SearXNG](https://docs.searxng.org/)

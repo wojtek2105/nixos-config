@@ -107,6 +107,7 @@ nazwa zawiera `touchpad`; nie koduje na stałe identyfikatora konkretnego modelu
 | Klawisz | Działanie |
 | --- | --- |
 | `Enter` | Otwórz plik albo wejdź do katalogu |
+| `Shift+Enter` | Wybierz sposób otwarcia; dla HTML, XHTML, XML, JSON i SVG dostępna jest domyślna przeglądarka |
 | `h` / `l` lub strzałki | Przejdź do katalogu nadrzędnego / podrzędnego |
 | `j` / `k` | Wybierz następny / poprzedni plik |
 | `H` / `L` | Wróć / przejdź dalej w historii katalogów |

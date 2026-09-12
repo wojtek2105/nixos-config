@@ -34,5 +34,7 @@ sudo nixos-rebuild switch --flake path:.#rog-polamaniec
 Pełna dokumentacja i plan rozwoju znajdują się w [docs/](docs/README.md).
 Instrukcja skopiowania konfiguracji na nowy komputer i konto znajduje się w
 [docs/new-host.md](docs/new-host.md).
+Instalacja ASUS-a Vivobook S 15 ze Snapdragonem X Elite ma osobną instrukcję w
+[hosts/armaniec/README.md](hosts/armaniec/README.md).
 
 Interaktywny wybór hosta, modułów i funkcji uruchamia `make host-manager`.

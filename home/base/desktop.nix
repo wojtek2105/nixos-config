@@ -139,6 +139,14 @@ in
 
     settings = {
       opener = {
+        browser = [
+          {
+            run = "${pkgs.xdg-utils}/bin/xdg-open %s1";
+            orphan = true;
+            for = "unix";
+            desc = "Otwórz w przeglądarce";
+          }
+        ];
         edit = [
           {
             run = "${pkgs.vim}/bin/vim %s";
@@ -157,6 +165,22 @@ in
         ];
       };
       open.prepend_rules = [
+        {
+          mime = "text/html";
+          use = [ "edit" "browser" ];
+        }
+        {
+          mime = "application/xhtml+xml";
+          use = [ "edit" "browser" ];
+        }
+        {
+          mime = "{text,application}/{xml,json}";
+          use = [ "edit" "browser" ];
+        }
+        {
+          mime = "image/svg+xml";
+          use = [ "image" "browser" ];
+        }
         {
           mime = "image/*";
           use = "image";
@@ -225,6 +249,11 @@ in
         on = [ "<Enter>" ];
         run = "plugin smart-enter";
         desc = "Otwórz plik albo wejdź do katalogu";
+      }
+      {
+        on = [ "<S-Enter>" ];
+        run = "open --interactive";
+        desc = "Wybierz sposób otwarcia pliku";
       }
       {
         on = [ "f" ];

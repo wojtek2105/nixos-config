@@ -5,11 +5,14 @@ let
   agentManagerHash = "sha256-72+j6XTkdHJaIt0qoV3I/04vwKslY3WC4fBhhuDWVUU=";
   farmEnabled = desktopFeatures.ollamaFarm or false;
   autoAiRouterEnabled = desktopFeatures.autoAiRouter or false;
+  godotEnabled = desktopFeatures.godot or false;
   remoteEnabled = desktopFeatures.piRemote or false;
   localOnlyProfile = !farmEnabled && !remoteEnabled;
   piMaxTokens = if remoteEnabled then 8192 else 16384;
-  piCompactionReserveTokens = if remoteEnabled then 8192 else 20480;
-  piCompactionKeepRecentTokens = if remoteEnabled then 12000 else 10000;
+  # Compact a 64k conversation around 45k. The 20k reserve leaves room for
+  # the summary, tool output and the next response without hitting the limit.
+  piCompactionReserveTokens = 20480;
+  piCompactionKeepRecentTokens = 10000;
 
   piModel = id: name: reasoning: {
     inherit id name reasoning;
@@ -19,15 +22,18 @@ let
     # Ollama model without delaying automatic context compaction too long.
     maxTokens = piMaxTokens;
     thinkingLevelMap = lib.optionalAttrs remoteEnabled {
-      # Ollama's OpenAI endpoint translates xhigh to `max`, but this GGUF
-      # template accepts only low, medium, and native xhigh. Hide levels that
-      # cannot be sent faithfully; `medium` was verified against White Monster.
+      # This GGUF template accepts only low, medium and a native xhigh which is
+      # the model's default. Pi's "minimal" has no counterpart, so map it to
+      # low. Ollama's OpenAI shim mistranslates Pi's "xhigh" into "max" (500);
+      # sending an empty effort value instead leaves the model on its native
+      # xhigh default. Pi's "high" and "max" have no faithful mapping here, so
+      # hide them. `medium`/`low` were verified against White Monster.
       off = null;
       minimal = "low";
       low = "low";
       medium = "medium";
       high = null;
-      xhigh = null;
+      xhigh = "";
       max = null;
     };
     cost = { input = 0; output = 0; cacheRead = 0; cacheWrite = 0; };
@@ -625,7 +631,7 @@ in
     ".pi/agent/settings.json".text = builtins.toJSON {
       defaultProvider = "litellm";
       defaultModel = if remoteEnabled then piModelName else if localOnlyProfile then "local-qwen38-off" else "auto";
-      defaultThinkingLevel = if remoteEnabled then "minimal" else "off";
+      defaultThinkingLevel = if remoteEnabled then "low" else "off";
       defaultTools = [ "read" "write" "edit" "bash" ];
       quietStartup = true;
       enableInstallTelemetry = false;
@@ -634,8 +640,8 @@ in
       showCacheMissNotices = true;
       compaction = {
         enabled = true;
-        # Ollama serves 64k. Compact around 56k and retain the active task
-        # tail while leaving 8k for the next response.
+        # Ollama serves 64k. Compact around 45k, retain the active task tail
+        # and leave about 20k for the summary, tools and the next response.
         reserveTokens = piCompactionReserveTokens;
         keepRecentTokens = piCompactionKeepRecentTokens;
       };
@@ -708,6 +714,16 @@ in
           };
           lifecycle = "lazy";
           idleTimeout = 5;
+        };
+      }
+      // lib.optionalAttrs godotEnabled {
+        godot = {
+          command = lib.getExe pkgs.godot-mcp;
+          env.GODOT_PATH = lib.getExe pkgs.godot_4;
+          lifecycle = "lazy";
+          # Godot MCP can edit and execute a project. Require a deliberate,
+          # project-local `/mcp enable godot`, followed by `/reload` in Pi.
+          disabled = true;
         };
       };
   };

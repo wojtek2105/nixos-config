@@ -11,5 +11,8 @@
   "replayConfig": { "captureSource": "focused_monitor" },
   "systemSettings": { "bootTimeout": 1, "ignoreLidSwitch": true, "lanMousePeerHost": null, "stateVersion": "26.05" },
   "modules": { "common": true, "bootSplash": true, "desktop": true, "developmentCore": true, "hardwareAmdGpu": true, "hardwareAsusLaptop": false, "lanMouse": false, "x1e": false },
-  "features": { "amdGpuMetrics": true, "bluetooth": true, "docker": true, "ollama": true, "ollamaFarm": false, "gaming": true, "vr": false, "screenRecording": true, "hardwareDiagnostics": false, "schedulerBenchmark": false, "laptop": false, "voxtype": true, "personalApps": { "discord": true, "easyeffects": false, "plexamp": false } }
+  "features": { "amdGpuMetrics": true, "bluetooth": true, "docker": true, "godot": true, "ollama": true, "ollamaFarm": false, "gaming": true, "vr": false, "screenRecording": true, "hardwareDiagnostics": false, "schedulerBenchmark": false, "laptop": false, "voxtype": true, "piRemote": true, "personalApps": { "discord": true, "easyeffects": false, "plexamp": false } },
+  "piApiBaseUrl": "http://127.0.0.1:11434/v1",
+  "piModelName": "qwen38-27b:latest",
+  "searxngUrl": "http://127.0.0.1:8080"
 }

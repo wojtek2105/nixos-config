@@ -11,6 +11,10 @@ let
   laptopEnabled = desktopFeatures.laptop or false;
   screenRecordingEnabled = desktopFeatures.screenRecording or false;
   voxtypeEnabled = desktopFeatures.voxtype or false;
+  # Agent Manager and Pi are currently pinned as upstream x86_64 binaries.
+  # Keep the portable desktop and native Nixpkgs Codex available on ARM64
+  # without adding emulation to the first installation.
+  agentManagerSupported = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
   personalApps = desktopFeatures.personalApps or { };
   discordEnabled = personalApps.discord or false;
   easyeffectsEnabled = personalApps.easyeffects or false;
@@ -97,6 +101,7 @@ let
 
   yaziShortcuts = [
     (shortcut "Enter" "Otwórz plik albo wejdź do katalogu")
+    (shortcut "Shift+Enter" "Wybierz sposób otwarcia pliku, np. przeglądarkę")
     (shortcut "h / l lub ← / →" "Przejdź do katalogu nadrzędnego / podrzędnego")
     (shortcut "j / k lub ↓ / ↑" "Wybierz następny / poprzedni plik")
     (shortcut "H / L" "Wróć / przejdź dalej w historii katalogów")
@@ -1266,7 +1271,6 @@ in
 
   imports = [
     inputs.zen-browser.homeModules.twilight
-    ./agent-manager.nix
     ./clipboard.nix
     ./desktop.nix
     ./hyprland.nix
@@ -1274,7 +1278,7 @@ in
     ./notifications.nix
     ./osd.nix
     ./zen.nix
-  ];
+  ] ++ lib.optionals agentManagerSupported [ ./agent-manager.nix ];
 
   home = {
     inherit username;
@@ -1289,6 +1293,7 @@ in
         screensaver
         shortcut-menu
         global-menu
+        blesh
         vim
         desktop-panel
         wl-clipboard
@@ -1344,6 +1349,12 @@ in
       # as the declarative default editor without modifying Home Manager files.
       if [ -r "$HOME/.config/bash/nvim-editor.sh" ]; then
         . "$HOME/.config/bash/nvim-editor.sh"
+      fi
+
+      # ble.sh reads Bash history to show Fish-style inline suggestions in
+      # interactive terminals; the package path keeps it declarative.
+      if [[ $- == *i* ]]; then
+        source "${pkgs.blesh}/share/blesh/ble.sh"
       fi
     '';
   };

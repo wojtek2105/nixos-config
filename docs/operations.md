@@ -84,6 +84,19 @@ ROG uruchamia SearXNG MCP lokalnie na żądanie, a wyszukiwanie przekazuje do
 adresu `searxngUrl` z `hosts/rog-polamaniec/host.json`, wskazującego instancję
 na White Monsterze. Ten serwer musi udostępniać port `8080` w zaufanej sieci LAN.
 
+Funkcja hosta `godot` instaluje Godot 4 i lokalny serwer `godot-mcp`. Serwer jest
+zadeklarowany w Pi, ale domyślnie zablokowany, ponieważ może modyfikować i
+uruchamiać projekt. Włączaj go jawnie tylko w katalogu właściwego projektu:
+
+```text
+/mcp enable godot
+/reload
+```
+
+Wyłączenie dla projektu działa analogicznie przez `/mcp disable godot` i
+`/reload`. Stan przełącznika trafia do projektowego `.pi/mcp.json`; konfiguracja
+globalna pozostaje wyłączona.
+
 Pi: `contextWindow=65536`, `maxTokens=16384`, compaction
 `reserveTokens=20480`, `keepRecentTokens=10000`. Pi pokazuje w transkrypcie
 diagnostykę kompaktowania; przy długim zadaniu po zakończeniu etapu użyj

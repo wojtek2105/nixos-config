@@ -6,6 +6,7 @@
     "bluetooth": true,
     "docker": true,
     "gaming": true,
+    "godot": true,
     "hardwareDiagnostics": false,
     "kaliVm": true,
     "laptop": true,

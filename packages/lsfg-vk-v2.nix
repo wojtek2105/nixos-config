@@ -15,11 +15,11 @@ stdenv.mkDerivation (finalAttrs: {
 
   src = fetchurl {
     url = "https://builds.lsfg-vk.dev/lsfg-vk-2.0.0.tar.xz";
-    # Upstream serves an uncompressed tar archive under the .tar.xz name.
-    sha256 = "d8378b45d378150ea9aba803a0ba855d8ce91ad9b3366ee0eb2036b06b08380c";
+    # Upstream corrected the v2 archive's XZ compression after its release.
+    sha256 = "sha256-CL2983OhEQIt+H2seqh+O1ZLuEH5YVUuPKhf6hK1qnQ=";
   };
 
-  # The release archive is a tar despite its filename.
+  # tar auto-detects the archive compression instead of trusting its filename.
   unpackPhase = ''
     tar -xf "$src"
   '';
