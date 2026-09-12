@@ -7,5 +7,5 @@
   ];
 
   # Menu działa jako AltGr (trzeci poziom) dla polskich znaków w układzie `pl`.
-  xserver.xkb.options = "lv3:menu_switch";
+  services.xserver.xkb.options = "lv3:menu_switch";
 }
