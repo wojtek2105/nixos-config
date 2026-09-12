@@ -117,6 +117,8 @@
           homeProfile ? null,
           keyboardOptions ? "",
           piApiBaseUrl ? "http://127.0.0.1:4000/v1",
+          piCompactionReserveTokens ? 24576,
+          piContextWindow ? 65536,
           piModelName ? "auto",
           replayConfig ? { },
           searxngUrl ? null,
@@ -263,7 +265,7 @@
                     backupFileExtension = "hm-backup";
                     sharedModules = [ ./home/ollama.nix ];
                     extraSpecialArgs = {
-                      inherit backlightDevice desktopFeatures homeProfile inputs keyboardOptions ollamaVulkanRenderNode piApiBaseUrl piModelName searxngUrl trackball uiScale username;
+                      inherit backlightDevice desktopFeatures homeProfile inputs keyboardOptions ollamaVulkanRenderNode piApiBaseUrl piCompactionReserveTokens piContextWindow piModelName searxngUrl trackball uiScale username;
                       # Imports must not inspect Home Manager's `pkgs`: it is
                       # resolved by the module graph. The host architecture is
                       # already a static flake argument and is safe here.

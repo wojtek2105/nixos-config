@@ -1,4 +1,4 @@
-{ desktopFeatures, lib, piApiBaseUrl ? "http://127.0.0.1:4000/v1", piModelName ? "auto", pkgs, searxngUrl ? null, ... }:
+{ desktopFeatures, lib, piApiBaseUrl ? "http://127.0.0.1:4000/v1", piCompactionReserveTokens ? 24576, piContextWindow ? 65536, piModelName ? "auto", pkgs, searxngUrl ? null, ... }:
 
 let
   version = "0.35.0";
@@ -9,17 +9,13 @@ let
   remoteEnabled = desktopFeatures.piRemote or false;
   localOnlyProfile = !farmEnabled && !remoteEnabled;
   piMaxTokens = if remoteEnabled then 8192 else 16384;
-  # Compact a 64k conversation around 41k (5 percentage points earlier). The
-  # 24k reserve leaves room for the summary, tool output and next response.
-  piCompactionReserveTokens = 24576;
   piCompactionKeepRecentTokens = 10000;
 
   piModel = id: name: reasoning: {
     inherit id name reasoning;
     input = [ "text" ];
-    contextWindow = 65536;
-    # Leave enough capacity for a substantial response from the remote 64k
-    # Ollama model without delaying automatic context compaction too long.
+    contextWindow = piContextWindow;
+    # Keep the reply budget separate from the host-declared context window.
     maxTokens = piMaxTokens;
     thinkingLevelMap = lib.optionalAttrs remoteEnabled {
       # This GGUF template accepts only low, medium and a native xhigh which is
@@ -642,8 +638,8 @@ in
       showCacheMissNotices = true;
       compaction = {
         enabled = true;
-        # Ollama serves 64k. Compact around 41k, retain the active task tail
-        # and leave 24k for the summary, tools and the next response.
+        # The host sets the usable window and reserve. Pi compacts when the
+        # reserve remains, retaining the active task tail below.
         reserveTokens = piCompactionReserveTokens;
         keepRecentTokens = piCompactionKeepRecentTokens;
       };
