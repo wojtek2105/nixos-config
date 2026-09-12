@@ -1,4 +1,4 @@
-{ config, desktopFeatures, inputs, lib, pkgs, replayConfig, username, ... }:
+{ config, desktopFeatures, hostSystem, inputs, lib, pkgs, replayConfig, username, ... }:
 
 let
   theme = import ./theme.nix { inherit inputs; };
@@ -14,7 +14,7 @@ let
   # Agent Manager and Pi are currently pinned as upstream x86_64 binaries.
   # Keep the portable desktop and native Nixpkgs Codex available on ARM64
   # without adding emulation to the first installation.
-  agentManagerSupported = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
+  agentManagerSupported = hostSystem == "x86_64-linux";
   personalApps = desktopFeatures.personalApps or { };
   discordEnabled = personalApps.discord or false;
   easyeffectsEnabled = personalApps.easyeffects or false;

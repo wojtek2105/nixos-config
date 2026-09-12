@@ -263,6 +263,10 @@
                     sharedModules = [ ./home/ollama.nix ];
                     extraSpecialArgs = {
                       inherit backlightDevice desktopFeatures homeProfile inputs ollamaVulkanRenderNode piApiBaseUrl piModelName searxngUrl trackball uiScale username;
+                      # Imports must not inspect Home Manager's `pkgs`: it is
+                      # resolved by the module graph. The host architecture is
+                      # already a static flake argument and is safe here.
+                      hostSystem = system;
                       replayConfig = defaultReplayConfig // replayConfig;
                     };
                     users.${username} = {
