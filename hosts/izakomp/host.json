@@ -14,6 +14,6 @@
   "modules": { "common": true, "bootSplash": true, "desktop": true, "developmentCore": true, "hardwareAmdGpu": true, "hardwareAsusLaptop": false, "lanMouse": false, "x1e": false },
   "features": { "amdGpuMetrics": true, "bluetooth": true, "docker": true, "godot": true, "ollama": true, "ollamaFarm": false, "gaming": true, "vr": false, "screenRecording": true, "hardwareDiagnostics": false, "schedulerBenchmark": false, "laptop": false, "voxtype": true, "piRemote": true, "personalApps": { "discord": true, "easyeffects": false, "plexamp": false } },
   "piApiBaseUrl": "http://127.0.0.1:11434/v1",
-  "piModelName": "qwen38-27b:latest",
+  "piModelName": "qwen3.8-gsq-chat:latest",
   "searxngUrl": "http://127.0.0.1:8080"
 }
