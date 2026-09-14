@@ -7,7 +7,7 @@ SYSTEM_PROFILE ?= /nix/var/nix/profiles/system
 
 .DEFAULT_GOAL := help
 
-.PHONY: help check build test rollback boot switch generations gc host-manager new-host
+.PHONY: help check build test rollback boot switch upgrade generations gc host-manager new-host
 
 help: ## 📖 Pokaż dostępne polecenia
 	@awk 'BEGIN { FS = ":.*## " } /^[a-zA-Z0-9][a-zA-Z0-9_.-]*:.*## / && $$1 != "help" { printf "\033[36m%-20s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
@@ -37,6 +37,9 @@ boot: ## 💾 Ustaw konfigurację na następny start
 
 switch: ## ✨ Aktywuj i ustaw konfigurację jako domyślną
 	sudo nixos-rebuild switch --flake $(FLAKE)\#$(HOST)
+
+upgrade: ## ⬆️ Zaktualizuj zablokowane wejścia flake'a
+	nix flake update $(FLAKE)
 
 generations: ## 🗂️ Pokaż zachowane generacje systemu
 	sudo nix-env --profile $(SYSTEM_PROFILE) --list-generations
