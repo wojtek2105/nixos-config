@@ -70,6 +70,7 @@
         autoAiRouter = false;
         bluetooth = false;
         docker = false;
+        endgameTrackball = false;
         # Start the Docker daemon at boot; keep it off by default for
         # workstations where containers are used only occasionally.
         dockerAutoStart = false;
@@ -86,7 +87,6 @@
         ollamaStandalone = false;
         ollamaFarm = false;
         schedulerBenchmark = false;
-        vr = false;
         personalApps = {
           discord = false;
           easyeffects = false;
@@ -142,7 +142,6 @@
             developmentCore = false;
             hardwareAmdGpu = false;
             hardwareAsusLaptop = false;
-            lanMouse = false;
             ssh = false;
             x1e = false;
           };
@@ -170,6 +169,7 @@
             "bluetooth"
             "docker"
             "dockerAutoStart"
+            "endgameTrackball"
             "gaming"
             "godot"
             "hardwareDiagnostics"
@@ -181,7 +181,6 @@
             "schedulerBenchmark"
             "screenRecording"
             "voxtype"
-            "vr"
             "piRemote"
           ];
           invalidBooleanFeatures = builtins.filter
@@ -195,6 +194,7 @@
             autoAiRouter = resolvedFeatures.autoAiRouter;
             bluetooth = resolvedFeatures.bluetooth;
             docker = resolvedFeatures.docker;
+            endgameTrackball = resolvedFeatures.endgameTrackball;
             godot = resolvedFeatures.godot;
             laptop = resolvedFeatures.laptop;
             ollama = resolvedFeatures.ollama;
@@ -280,6 +280,7 @@
                 }
               ]
               ++ nixpkgs.lib.optionals resolvedFeatures.docker [ ./modules/docker.nix ]
+              ++ nixpkgs.lib.optionals resolvedFeatures.endgameTrackball [ ./modules/endgame-trackball.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.gaming [ ./modules/gaming.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.godot [ ./modules/godot.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.schedulerBenchmark [ ./modules/scheduler-benchmark.nix ]
@@ -291,7 +292,6 @@
                 ./modules/auto-ai-router.nix
                 { services.autoAiRouter.enable = true; }
               ]
-              ++ nixpkgs.lib.optionals resolvedFeatures.vr [ ./modules/vr.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.bluetooth [ ./modules/bluetooth.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.voxtype [ ./modules/voxtype.nix ]
               ++ nixpkgs.lib.optionals resolvedHostModules.ssh [ ./modules/ssh.nix ];

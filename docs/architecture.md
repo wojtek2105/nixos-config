@@ -11,17 +11,13 @@ hostów z GUI.
 - `hosts/rog-polamaniec/` — laptop z GUI i klientem Pi.
 - `hosts/armaniec/` — etapowy laptop ARM64 z GUI i natywnym Codexem, bez
   lokalnego AI i pakietów binarnych dostępnych tylko na x86_64.
-- `hosts/white-monster/` — bezgłowy serwer Docker + SSH bez profilu Home Managera.
 - `modules/` — współdzielone moduły NixOS.
 - `home/base/` — pakiety i konfiguracja użytkownika.
 
 ## Agenty AI
 
-Pi jest głównym agentem CLI na ROG-u. Korzysta z OpenAI-compatible API vLLM
-na White Monsterze, bez lokalnego serwera modeli. Przed uruchomieniem ustaw
-rzeczywistą nazwę z `vllm serve --served-model-name` w polu `piModelName` oraz
-osiągalny adres w `piApiBaseUrl` w manifeście ROG-a. Jeśli vLLM wymaga klucza,
-eksportuj `VLLM_API_KEY` w sesji Pi; sekret nie trafia do Git.
+Pi jest głównym agentem CLI na ROG-u. Korzysta z lokalnej lub wskazanej w
+manifeście Ollamy, zależnie od konfiguracji hosta.
 
 Opcjonalna funkcja hosta `godot` dostarcza silnik i lokalny bridge MCP. Bridge
 jest globalnie wyłączony; użytkownik może dopuścić go osobno w konkretnym

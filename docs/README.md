@@ -8,7 +8,6 @@
 - [Pulpit](desktop.md) — bieżące komponenty desktopu.
 - [Skróty](keybindings.md) — skróty klawiaturowe.
 - [Gry](gaming.md) — konfiguracja gier.
-- [VR](vr.md) — konfiguracja VR.
 - [Replay](replay.md) — nagrywanie i odtwarzanie.
 - [Źródła](sources.md) — używane projekty upstream.
 

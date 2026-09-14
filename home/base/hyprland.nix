@@ -18,10 +18,29 @@ let
     rsvg-convert --width 660 ${../../assets/branding/wojtech-tux-totem-transparent.svg} > "$out"
   '';
 
-  wallpaperPathsFor = wallpapers:
+  # Keep image files in the derivation closure. Embedding source paths as plain
+  # shell text lets Nix garbage-collect the source snapshot after activation.
+  wallpaperCollection = name: wallpapers:
+    pkgs.linkFarm "biscuit-wallpapers-${name}"
+      (lib.imap0
+        (index: wallpaper: {
+          name = "${toString index}-${builtins.baseNameOf (toString wallpaper)}";
+          path = wallpaper;
+        })
+        wallpapers);
+
+  wallpaperPathsFor = root: wallpapers:
     lib.concatMapStringsSep "\n        "
-      (wallpaper: lib.escapeShellArg (toString wallpaper))
-      wallpapers;
+      (entry:
+        lib.escapeShellArg
+          "${root}/${toString entry.index}-${builtins.baseNameOf (toString entry.wallpaper)}")
+      (lib.imap0 (index: wallpaper: { inherit index wallpaper; }) wallpapers);
+
+  wallpaperRoots = {
+    aspect16x9 = wallpaperCollection "16x9" theme.wallpapers.aspect16x9;
+    aspect21x9 = wallpaperCollection "21x9" theme.wallpapers.aspect21x9;
+    aspect32x9 = wallpaperCollection "32x9" theme.wallpapers.aspect32x9;
+  };
 
   rotate-wallpaper = pkgs.writeShellApplication {
     name = "rotate-wallpaper";
@@ -33,13 +52,13 @@ let
     ];
     text = ''
       wallpapers_16x9=(
-        ${wallpaperPathsFor theme.wallpapers.aspect16x9}
+        ${wallpaperPathsFor wallpaperRoots.aspect16x9 theme.wallpapers.aspect16x9}
       )
       wallpapers_21x9=(
-        ${wallpaperPathsFor theme.wallpapers.aspect21x9}
+        ${wallpaperPathsFor wallpaperRoots.aspect21x9 theme.wallpapers.aspect21x9}
       )
       wallpapers_32x9=(
-        ${wallpaperPathsFor theme.wallpapers.aspect32x9}
+        ${wallpaperPathsFor wallpaperRoots.aspect32x9 theme.wallpapers.aspect32x9}
       )
       transitions=(wave grow wipe outer wave grow outer wipe)
       positions=(right bottom-right top-left center left top-right bottom-left center)

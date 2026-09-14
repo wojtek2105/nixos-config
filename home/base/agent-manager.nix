@@ -643,8 +643,91 @@ in
         reserveTokens = piCompactionReserveTokens;
         keepRecentTokens = piCompactionKeepRecentTokens;
       };
-      packages = [ "npm:pi-mcp-adapter@2.31.0" "npm:@kaiserlich-dev/pi-queue-picker@latest" ];
+      packages = [
+        "npm:pi-mcp-adapter@2.31.0"
+        "npm:@kaiserlich-dev/pi-queue-picker@latest"
+        "npm:@smoose/pi-footer"
+      ];
+      footer = {
+        preset = "compact";
+        segments = [
+          "model"
+          "thinking"
+          "custom:mcp"
+          "custom:skills"
+          "context_pct"
+          "cost"
+          "path"
+          "git"
+        ];
+        customItems = [
+          {
+            id = "mcp";
+            statusKey = "mcp";
+            color = "accent";
+            hideWhenMissing = true;
+            excludeFromExtensionStatuses = true;
+          }
+          {
+            id = "skills";
+            statusKey = "skill-usage";
+            color = "accent";
+            prefix = "skills: ";
+            hideWhenMissing = false;
+            excludeFromExtensionStatuses = true;
+          }
+        ];
+      };
     };
+
+    ".pi/agent/extensions/skill-usage-status.ts".text = ''
+      import { basename, dirname, extname, normalize } from "node:path";
+      import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+
+      const STATUS_KEY = "skill-usage";
+      const EMPTY_STATUS = "none";
+
+      function isSkillDefinition(path: string): boolean {
+        const normalized = normalize(path).replace(/\\/g, "/");
+        if (basename(normalized) === "SKILL.md") return true;
+
+        return (
+          extname(normalized) === ".md" &&
+          /\/(?:\.pi\/skills|\.agents\/skills|\.pi\/agent\/skills)\/[^/]+\.md$/.test(normalized)
+        );
+      }
+
+      function nameFromSkillPath(path: string): string {
+        const file = basename(path);
+        return file === "SKILL.md" ? basename(dirname(path)) : file.slice(0, -".md".length);
+      }
+
+      export default function (pi: ExtensionAPI) {
+        const usedSkills: string[] = [];
+
+        const renderStatus = (ctx: { ui: { setStatus(key: string, text: string): void } }) => {
+          ctx.ui.setStatus(STATUS_KEY, usedSkills.length ? usedSkills.join(", ") : EMPTY_STATUS);
+        };
+
+        pi.on("session_start", async (_event, ctx) => {
+          usedSkills.length = 0;
+          renderStatus(ctx);
+        });
+
+        pi.on("tool_call", async (event, ctx) => {
+          if (event.toolName !== "read" || typeof event.input.path !== "string") return;
+
+          const path = event.input.path;
+          if (!isSkillDefinition(path)) return;
+
+          const skillName = nameFromSkillPath(path);
+          if (usedSkills.includes(skillName)) return;
+
+          usedSkills.push(skillName);
+          renderStatus(ctx);
+        });
+      }
+    '';
 
     ".pi/agent/keybindings.json".text = builtins.toJSON {
       "tui.input.newLine" = "shift+enter";
@@ -684,6 +767,9 @@ in
     settings = {
       idleTimeout = 10;
       directTools = false;
+      # Footer shows MCP <connected>/<enabled>; lazy servers start at 0 until
+      # Pi first needs one, then the connected count updates automatically.
+      mcpFooterStatus = "compact";
       outputGuard = {
         maxBytes = 12000;
         maxLines = 300;
@@ -728,8 +814,9 @@ in
 
   # Pi packages are mutable runtime state below ~/.pi/agent/npm; the version
   # is pinned here and installed during the user-owned Home Manager activation.
-  home.activation.installPiMcpAdapter = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+  home.activation.installPiPackages = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     $DRY_RUN_CMD env PATH="${pkgs.nodejs}/bin:$PATH" ${piCore}/bin/pi install npm:pi-mcp-adapter@2.31.0
+    $DRY_RUN_CMD env PATH="${pkgs.nodejs}/bin:$PATH" ${piCore}/bin/pi install npm:@smoose/pi-footer
   '';
 
   # Cline was installed only through this Home Manager profile. Remove all of

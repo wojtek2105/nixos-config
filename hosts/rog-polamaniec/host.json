@@ -5,6 +5,7 @@
     "autoAiRouter": false,
     "bluetooth": true,
     "docker": true,
+    "endgameTrackball": true,
     "gaming": true,
     "godot": true,
     "hardwareDiagnostics": false,
@@ -21,8 +22,7 @@
     "schedulerBenchmark": false,
     "screenRecording": true,
     "piRemote": true,
-    "voxtype": true,
-    "vr": true
+    "voxtype": true
   },
   "homeOverlay": "wojtek",
   "homeProfile": "wojtek",
@@ -38,7 +38,6 @@
     "developmentCore": true,
     "hardwareAmdGpu": true,
     "hardwareAsusLaptop": true,
-    "lanMouse": false,
     "x1e": false
   },
   "replayConfig": {
@@ -48,7 +47,6 @@
   "systemSettings": {
     "bootTimeout": 1,
     "ignoreLidSwitch": true,
-    "lanMousePeerHost": null,
     "stateVersion": "26.05",
     "userShell": "bash"
   },

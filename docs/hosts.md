@@ -4,7 +4,7 @@
 
 Główny laptop i klient Pi. Uruchamia w Dockerze wyłącznie Ollamę ROCm z
 Qwen2.5-Coder 7B Q6_K i kontekstem 16k, bez LiteLLM, Open WebUI ani lokalnego
-kontenera SearXNG. MCP SearXNG korzysta z instancji na White Monsterze. API
+kontenera SearXNG. MCP SearXNG korzysta ze skonfigurowanej instancji. API
 Ollamy jest dostępne w zaufanej sieci LAN na porcie `11434`; obsługa kontenera jest w
 `~/Dev/Ollama` po aktywacji konfiguracji. Funkcja `godot` instaluje Godot 4 oraz
 bridge MCP, który pozostaje wyłączony do jawnego włączenia w projekcie przez Pi.
@@ -16,13 +16,6 @@ opcjonalny bridge Godot co ROG. Pi łączy się bezpośrednio wyłącznie z loka
 Ollamą pod `http://127.0.0.1:11434/v1`, używając `qwen38-27b:latest`; lazy MCP
 SearXNG korzysta z lokalnej instancji pod `http://127.0.0.1:8080`. Powłoką
 logowania jest Bash z ble.sh i Starshipem.
-
-## `white-monster`
-
-Bezgłowy serwer AI bez Home Managera i GUI. NixOS udostępnia Docker z Compose,
-SSH oraz sam sterownik AMD wymagany przez vLLM w kontenerze. Open WebUI i vLLM
-instaluj jako własny stos Docker po SSH; modele i dane kontenerów pozostają poza
-Nix store i Git.
 
 ## `armaniec`
 

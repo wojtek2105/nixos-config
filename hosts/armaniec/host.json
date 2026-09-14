@@ -22,8 +22,7 @@
     "schedulerBenchmark": false,
     "screenRecording": false,
     "piRemote": false,
-    "voxtype": false,
-    "vr": false
+    "voxtype": false
   },
   "homeOverlay": null,
   "homeProfile": "wojtek",
@@ -35,7 +34,6 @@
     "developmentCore": true,
     "hardwareAmdGpu": false,
     "hardwareAsusLaptop": false,
-    "lanMouse": false,
     "x1e": true
   },
   "replayConfig": {
@@ -47,7 +45,6 @@
     "bootTimeout": 1,
     "enableVivobookS15": true,
     "ignoreLidSwitch": false,
-    "lanMousePeerHost": null,
     "stateVersion": "26.05",
     "userShell": "bash"
   },

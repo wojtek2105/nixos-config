@@ -1,8 +1,7 @@
 # NixOS configuration
 
 Deklaratywna konfiguracja NixOS dla wielu hostów, oparta na flakes. Hosty z GUI
-używają Home Managera i Hyprlanda, a White Monster jest minimalnym serwerem
-Docker + SSH dla ręcznie utrzymywanego stosu Open WebUI i vLLM.
+używają Home Managera i Hyprlanda.
 
 Repozytorium źródłowe: `https://github.com/wojtek2105/nixos-config.git`.
 

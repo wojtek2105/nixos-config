@@ -7,6 +7,7 @@ let
   easyeffectsEnabled = personalApps.easyeffects or false;
   plexampEnabled = personalApps.plexamp or false;
   voxtypeEnabled = desktopFeatures.voxtype or false;
+  endgameTrackballEnabled = desktopFeatures.endgameTrackball or false;
   footCommand = "${pkgs.foot}/bin/foot";
 
   yazi-file-manager = pkgs.writeShellApplication {
@@ -778,6 +779,21 @@ in
         "Utility"
       ];
       settings.Keywords = "voxtype;voice;dictation;speech;microphone;whisper;dyktowanie;głos;mikrofon;";
+    };
+  } // lib.optionalAttrs endgameTrackballEnabled {
+    "org.polamaniec.MarshmellowUI" = {
+      name = "Marshmellow UI";
+      genericName = "Konfigurator trackballa Endgame";
+      comment = "Konfiguruj Endgame Trackball przez USB";
+      exec = "marshmellow-ui";
+      icon = "input-mouse";
+      terminal = false;
+      startupNotify = true;
+      categories = [
+        "Settings"
+        "Utility"
+      ];
+      settings.Keywords = "endgame;trackball;marshmellow;zmk;konfiguracja;usb;";
     };
   } // {
     "org.polamaniec.Yazi" = {

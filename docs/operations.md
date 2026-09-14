@@ -130,6 +130,25 @@ curl -sS http://white-monster:8000/v1/models
 systemctl --user --failed
 ```
 
+## Endgame Trackball i Marshmellow UI
+
+Na hoście `rog-polamaniec` funkcja `features.endgameTrackball` dodaje reguły
+udev dla USB Endgame Trackball, Google Chrome z obsługą Web Serial oraz wpis
+`Marshmellow UI` w launcherze aplikacji. Zen Browser nie jest używany do tego
+narzędzia, ponieważ jest oparty na Firefoxie, a Marshmellow UI wymaga
+przeglądarki Chromium.
+
+Po aktywacji konfiguracji podłącz trackball przewodowo, uruchom `Marshmellow UI`
+z launchera i wybierz urządzenie USB. Jeśli urządzenie było już podłączone
+podczas aktywacji, przeładuj reguły bez restartu systemu:
+
+```bash
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+```
+
+Bluetooth nie jest obsługiwany przez Marshmellow UI; do konfiguracji użyj USB.
+
 ## Aktualizacje i porządki
 
 ```bash

@@ -7,7 +7,7 @@
   };
 
   # Without this, Docker socket activation could start dockerd on hosts that
-  # opt out of boot startup. White Monster opts in through dockerAutoStart.
+  # opt out of boot startup. Hosts opt in through dockerAutoStart.
   systemd = lib.mkIf (!resolvedFeatures.dockerAutoStart) {
     sockets.docker.wantedBy = lib.mkForce [ ];
   };

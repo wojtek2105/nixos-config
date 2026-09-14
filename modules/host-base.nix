@@ -5,7 +5,6 @@ let
     bootTimeout = 1;
     enableVivobookS15 = false;
     ignoreLidSwitch = false;
-    lanMousePeerHost = null;
     stateVersion = "26.05";
     # Serwery bez profilu użytkownika nie potrzebują Fisha; desktop zachowuje
     # go jako domyślną powłokę przez manifest hosta.
@@ -22,8 +21,7 @@ assert lib.elem settings.userShell [ "bash" "fish" ];
     ++ lib.optionals resolvedHostModules.desktop [ ./desktop.nix ]
     ++ lib.optionals resolvedHostModules.developmentCore [ ./development-core.nix ]
     ++ lib.optionals resolvedHostModules.hardwareAmdGpu [ ./hardware-amd-gpu.nix ]
-    ++ lib.optionals resolvedHostModules.hardwareAsusLaptop [ ./hardware-asus-laptop.nix ]
-    ++ lib.optionals resolvedHostModules.lanMouse [ ./lan-mouse.nix ];
+    ++ lib.optionals resolvedHostModules.hardwareAsusLaptop [ ./hardware-asus-laptop.nix ];
 
   boot = {
     loader.systemd-boot.enable = true;
@@ -44,21 +42,13 @@ assert lib.elem settings.userShell [ "bash" "fish" ];
   networking.hostName = hostName;
   networking.networkmanager.enable = true;
 
-  services =
-    lib.optionalAttrs resolvedHostModules.lanMouse {
-      lanMouse = {
-        enable = true;
-      } // lib.optionalAttrs (settings.lanMousePeerHost != null) {
-        peerHost = settings.lanMousePeerHost;
-      };
-    }
-    // lib.optionalAttrs settings.ignoreLidSwitch {
-      logind.settings.Login = {
-        HandleLidSwitch = "ignore";
-        HandleLidSwitchExternalPower = "ignore";
-        HandleLidSwitchDocked = "ignore";
-      };
-    }
+  services = lib.optionalAttrs settings.ignoreLidSwitch {
+    logind.settings.Login = {
+      HandleLidSwitch = "ignore";
+      HandleLidSwitchExternalPower = "ignore";
+      HandleLidSwitchDocked = "ignore";
+    };
+  }
     // {
       xserver.xkb = {
         layout = "pl";

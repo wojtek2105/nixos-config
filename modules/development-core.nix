@@ -11,5 +11,6 @@
   environment.systemPackages = with pkgs; [
     codex
     gnumake
+    python3
   ];
 }
