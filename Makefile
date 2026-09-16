@@ -39,7 +39,7 @@ switch: ## ✨ Aktywuj i ustaw konfigurację jako domyślną
 	sudo nixos-rebuild switch --flake $(FLAKE)\#$(HOST)
 
 upgrade: ## ⬆️ Zaktualizuj zablokowane wejścia flake'a
-	nix flake update $(FLAKE)
+	nix flake update --flake $(FLAKE)
 
 generations: ## 🗂️ Pokaż zachowane generacje systemu
 	sudo nix-env --profile $(SYSTEM_PROFILE) --list-generations

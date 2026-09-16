@@ -14,6 +14,22 @@ sudo nixos-rebuild switch --flake path:.#rog-polamaniec
 Po zmianach Home Managera aktywacja aktualizuje także pliki `~/.pi/agent/` i
 `~/.config/mcp/`. Repozytorium nie uruchamia tych poleceń automatycznie.
 
+## Firmware wyświetlacza Radeon 680M
+
+Host `rog-polamaniec` używa najnowszego kernela z `nixos-unstable`, wymaganego
+przez moduł ASUS. W jego konfiguracji overlay przywraca tylko
+`amdgpu/yellow_carp_dmcub.bin` z linux-firmware `20260810`, jako obejście błędu
+`Wait for DMUB auto-load failed: 3` z firmware `20260910`.
+Skuteczność obejścia wymaga potwierdzenia po restarcie; samo `switch` nie
+przeładowuje firmware GPU. Po zbudowaniu użyj `make boot` i uruchom komputer
+ponownie, zachowując poprzednią generację w menu startowym.
+
+Sprawdź obraz na ekranie laptopa i monitorach zewnętrznych oraz log:
+
+```bash
+journalctl -b -k --no-pager | rg 'DMUB|DMCUB|dpia_query_hpd_status'
+```
+
 ## Kali Linux VM na ROG-u
 
 `features.kaliVm = true` w manifeście ROG-a instaluje KVM/QEMU, libvirt z

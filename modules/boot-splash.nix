@@ -125,9 +125,6 @@ in
       enable = true;
       theme = "biscuit";
       themePackages = [ biscuitPlymouthTheme ];
-      # Render immediately; a fast machine should still show a clean hand-off
-      # instead of a flash of console text before the greeter.
-      showDelay = 0;
     };
 
     # Keep ordinary boot quiet while retaining warning-and-higher-priority
