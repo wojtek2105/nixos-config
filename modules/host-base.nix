@@ -25,6 +25,9 @@ assert lib.elem settings.userShell [ "bash" "fish" ];
 
   boot = {
     loader.systemd-boot.enable = true;
+    # The EFI system partition is 1 GiB. Keep enough rollback entries for
+    # recovery without allowing old kernels and initrds to fill it indefinitely.
+    loader.systemd-boot.configurationLimit = 10;
     loader.efi.canTouchEfiVariables = true;
     loader.timeout = settings.bootTimeout;
   } // lib.optionalAttrs settings.useLatestKernel {

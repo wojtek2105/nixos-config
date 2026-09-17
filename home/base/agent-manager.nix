@@ -8,12 +8,13 @@ let
   godotEnabled = desktopFeatures.godot or false;
   remoteEnabled = desktopFeatures.piRemote or false;
   localOnlyProfile = !farmEnabled && !remoteEnabled;
+  piProvider = if remoteEnabled then "vllm" else "litellm";
   piMaxTokens = if remoteEnabled then 8192 else 16384;
   piCompactionKeepRecentTokens = 10000;
 
   piModel = id: name: reasoning: {
     inherit id name reasoning;
-    input = [ "text" ];
+    input = [ "text" ] ++ lib.optionals remoteEnabled [ "image" ];
     contextWindow = piContextWindow;
     # Keep the reply budget separate from the host-declared context window.
     maxTokens = piMaxTokens;
@@ -39,7 +40,7 @@ let
   # default; local-only hosts (izakomp) expose only their single local model.
   piModels = map (entry: piModel entry.id entry.name entry.reasoning)
     (lib.optionals remoteEnabled [
-      { id = piModelName; name = "White Monster Ollama"; reasoning = true; }
+      { id = piModelName; name = "White Monster vLLM Qwen3.8"; reasoning = true; }
     ] ++ lib.optionals farmEnabled [
       { id = "auto"; name = "LiteLLM AUTO (Qwen3.8)"; reasoning = false; }
       { id = "router"; name = "LiteLLM Router (Qwen3.5)"; reasoning = false; }
@@ -627,7 +628,7 @@ in
 
   home.file = {
     ".pi/agent/settings.json".text = builtins.toJSON {
-      defaultProvider = "litellm";
+      defaultProvider = piProvider;
       defaultModel = if remoteEnabled then piModelName else if localOnlyProfile then "local-qwen38-off" else "auto";
       defaultThinkingLevel = if remoteEnabled then "low" else "off";
       defaultTools = [ "read" "write" "edit" "bash" ];
@@ -734,12 +735,12 @@ in
     };
 
     ".pi/agent/models.json".text = builtins.toJSON {
-      providers.litellm = {
+      providers.${piProvider} = {
         baseUrl = piApiBaseUrl;
         api = "openai-completions";
-        # Ollama's OpenAI-compatible endpoint is local-LAN only and does not
-        # require a token. Pi still sends this harmless placeholder header.
-        apiKey = if remoteEnabled then "ollama" else "$LITELLM_MASTER_KEY";
+        # The LAN vLLM endpoint does not require a token. Pi still sends this
+        # harmless placeholder header; farm profiles use the LiteLLM key.
+        apiKey = if remoteEnabled then "vllm" else "$LITELLM_MASTER_KEY";
         authHeader = true;
         compat = {
           supportsDeveloperRole = false;
@@ -757,10 +758,28 @@ in
       changes. Use MCP only when it is needed for short, bounded delegation.
       Give each worker only its task,
       required files, and necessary decisions; do not forward chat history.
+      The root coordinator is also a worker: it should continue its own useful
+      implementation or review while delegated work runs. On the shared local
+      vLLM backend, allow at most three actively generating Pi sessions at
+      once: normally the root plus at most two Pi children. More sessions may
+      exist, but their work must remain queued until an active slot is free.
+      Sleeping, idle, or waiting Agent Manager sessions do not consume a KV
+      cache slot. Keep the shared system prefix short and stable, but do not
+      assume divergent child histories share KV cache. A child gets a compact
+      brief, exact file scope, relevant decisions, and the requested response
+      language; never copy the parent's transcript into its prompt.
+      Prefer compacting before broad exploration once roughly 57k tokens are
+      in use, leaving the configured 8k reserve for completion and handoff.
       Treat SPEC.md, PLAN.md, STATUS.md, and ARCHITECTURE.md as durable project
       memory. For large work, update PLAN.md and STATUS.md instead of relying on
       chat history.
+      For work that benefits from multiple visible sessions, load the
+      agent-fleet skill before the first Agent Manager call and follow its
+      coordination, isolation, review, and cleanup protocol.
     '';
+
+    # Install the declarative fleet protocol in Pi's global skill directory.
+    ".pi/agent/skills/agent-fleet/SKILL.md".source = ./skills/agent-fleet/SKILL.md;
   };
 
   xdg.configFile."mcp/mcp.json".text = builtins.toJSON {
@@ -791,13 +810,28 @@ in
         "agent-manager" = {
           command = "${agentManager}/bin/agent-manager";
           args = [ "mcp" ];
-          env = {
-            AGENT_MANAGER_SESSION_ID = "$AGENT_MANAGER_SESSION_ID";
-            TMUX_TMPDIR = "$TMUX_TMPDIR";
-            XDG_RUNTIME_DIR = "$XDG_RUNTIME_DIR";
-          };
+          # No env block: pi-mcp-adapter seeds the server with Pi's full
+          # process.env (already carrying AGENT_MANAGER_SESSION_ID,
+          # TMUX_TMPDIR and XDG_RUNTIME_DIR) and only interpolates ${VAR},
+          # never bare $VAR; literal "$VAR" values would overwrite the
+          # inherited ones and break every session-scoped MCP tool.
           lifecycle = "lazy";
           idleTimeout = 5;
+          # Keep the single token-efficient proxy tool, but make the local
+          # model's fleet vocabulary resolve reliably to Agent Manager tools.
+          searchKeywords = {
+            create_session = [ "agent" "child" "delegate" "spawn" "worker" ];
+            list_sessions = [ "agents" "fleet" "sessions" "workers" ];
+            send_session = [ "message" "steer" "worker" ];
+            wait_for_session = [ "join" "wait" "worker" ];
+            task = [ "claim" "dependencies" "plan" "queue" "task" ];
+            reserve_files = [ "block" "exclusive" "files" "lease" "lock" "reserve" ];
+            release_files = [ "files" "lease" "release" "unlock" ];
+            list_reservations = [ "conflicts" "files" "leases" "locks" ];
+            create_group = [ "fleet" "group" "organize" "team" ];
+            list_groups = [ "fleets" "groups" "teams" ];
+            delete_group = [ "cleanup" "delete" "group" ];
+          };
         };
       }
       // lib.optionalAttrs godotEnabled {

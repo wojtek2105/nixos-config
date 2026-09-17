@@ -94,7 +94,23 @@ proxy MCP. Agent Manager jest uruchamiany na żądanie. Konfiguracja:
 - `~/.pi/agent/settings.json` — narzędzia i compaction;
 - `~/.pi/agent/models.json` — provider OpenAI-compatible vLLM i wybrany model;
 - `~/.pi/agent/SYSTEM.md` — krótka instrukcja agenta;
+- `~/.pi/agent/skills/agent-fleet/SKILL.md` — procedura orkiestracji sesji;
 - `~/.config/mcp/mcp.json` — adapter MCP.
+
+Gdy zadanie nadaje się do podziału, Pi ładuje `agent-fleet` i przez proxy MCP
+Agent Managera może tworzyć kolejne sesje Pi lub Codexa, układać je w grupy,
+prowadzić wspólną listę zadań, wysyłać komunikaty oraz czekać bez odpytywania w
+pętli. Niezależni writerzy powinni pracować w osobnych worktree. Przy wspólnym
+checkoutcie sesje rezerwują dokładne ścieżki przed edycją; rezerwacja wykrywa
+konflikt i wskazuje właściciela, ale jest koordynacyjną dzierżawą, a nie blokadą
+systemu plików.
+
+Manager pozostaje aktywnym wykonawcą i recenzentem. Ze względu na pojemność KV
+cache jednocześnie aktywnie generują najwyżej trzy sesje Pi: zwykle manager i
+dwóch workerów. Więcej sesji może istnieć w panelu, ale ich praca czeka na wolny
+slot. Sesje uśpione, bezczynne lub oczekujące nie zajmują aktywnego slotu. Codex
+jest świadomą eskalacją dla ograniczonego, trudnego problemu, a nie domyślnym
+workerem.
 
 ROG uruchamia SearXNG MCP lokalnie na żądanie, a wyszukiwanie przekazuje do
 adresu `searxngUrl` z `hosts/rog-polamaniec/host.json`, wskazującego instancję
@@ -113,8 +129,8 @@ Wyłączenie dla projektu działa analogicznie przez `/mcp disable godot` i
 `/reload`. Stan przełącznika trafia do projektowego `.pi/mcp.json`; konfiguracja
 globalna pozostaje wyłączona.
 
-Pi: `contextWindow=65536`, `maxTokens=16384`, compaction
-`reserveTokens=20480`, `keepRecentTokens=10000`. Pi pokazuje w transkrypcie
+Pi: `contextWindow=65536`, `maxTokens=8192`, compaction
+`reserveTokens=8192`, `keepRecentTokens=10000`. Pi pokazuje w transkrypcie
 diagnostykę kompaktowania; przy długim zadaniu po zakończeniu etapu użyj
 `/compact`, zanim wkleisz duży log lub rozpoczniesz odrębny temat. Duże zadania
 zapisuj w `PLAN.md` i `STATUS.md`.

@@ -1,6 +1,17 @@
 { pkgs, ... }:
 
 let
+  enableUltimateGpuMode = pkgs.writeShellApplication {
+    name = "asus-ultimate-gpu-mode";
+    text = ''
+      platform=/sys/devices/platform/asus-nb-wmi
+      [[ -w "$platform/dgpu_disable" ]] && printf '0\n' > "$platform/dgpu_disable"
+      # ASUS calls MUX value 0 the discrete/Ultimate mode; value 1 is
+      # Optimus/Hybrid. Firmware applies a changed MUX value after reboot.
+      [[ -w "$platform/gpu_mux_mode" ]] && printf '0\n' > "$platform/gpu_mux_mode"
+    '';
+  };
+
   setGameModePerformance = pkgs.writeShellApplication {
     name = "asus-gamemode-performance";
     runtimeInputs = [ pkgs.asusctl ];
@@ -31,6 +42,9 @@ in
   # firmware attributes used by current asusctl releases on this GA402RK.
   boot.kernelPackages = pkgs.linuxPackages_latest;
   boot.kernelModules = [ "asus-armoury" ];
+  # Ultimate mode uses the RX 6800S for the internal panel. Keep runtime power
+  # management disabled so the GPU never enters the failing D3 resume path.
+  boot.kernelParams = [ "amdgpu.runpm=0" ];
 
   services.asusd = {
     enable = true;
@@ -131,6 +145,15 @@ in
   };
 
   services.upower.enable = true;
+
+  systemd.services.asus-ultimate-gpu-mode = {
+    description = "Keep the ASUS MUX in Ultimate dGPU mode";
+    wantedBy = [ "multi-user.target" ];
+    before = [ "display-manager.service" ];
+    serviceConfig.Type = "oneshot";
+    script = "${enableUltimateGpuMode}/bin/asus-ultimate-gpu-mode";
+  };
+
   # asusd owns the AC/battery profile policy. A second profile daemon could
   # race it and select a profile whose matching fan curve was not intended.
   services.power-profiles-daemon.enable = false;
