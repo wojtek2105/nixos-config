@@ -28,10 +28,11 @@ sprzętowe są opisane w [README hosta](../hosts/armaniec/README.md).
 
 ## `white-monster`
 
-Przenośny system AMD64 na pendrive UEFI: Plasma 6, Firefox, Steam, PipeWire i
-AMDGPU/Mesa. Korzysta wyłącznie z przewodowej sieci i nie zawiera pełnego
-profilu Home Managera ani dodatków gamingowych poza Steamem. Lista aplikacji,
-modułów i układ nośnika są opisane w [README hosta](../hosts/white-monster/README.md).
+Docelowy system AMD64 instalowany z osobnego pendrive'a: Plasma 6, Firefox,
+Steam, PipeWire i AMDGPU/Mesa. Korzysta wyłącznie z przewodowej sieci i nie
+zawiera pełnego profilu Home Managera ani dodatków gamingowych poza Steamem.
+Host pojawi się w outputach flake po wygenerowaniu na nim własnego pliku
+sprzętowego. Procedura jest w [README hosta](../hosts/white-monster/README.md).
 
 ## Nowy host
 

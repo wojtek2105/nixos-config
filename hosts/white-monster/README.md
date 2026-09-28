@@ -1,7 +1,8 @@
 # White Monster
 
-Minimalny, przenośny NixOS dla komputerów AMD64 uruchamiany z pendrive'a UEFI.
-System używa przewodowego Ethernetu; NetworkManager ignoruje interfejsy Wi-Fi.
+Minimalny NixOS dla docelowego komputera White Monster z architekturą AMD64.
+Instalator uruchamia się z osobnego pendrive'a, a system trafia na dysk
+komputera. NetworkManager ignoruje interfejsy Wi-Fi.
 
 ## Aplikacje
 
@@ -20,14 +21,23 @@ System używa przewodowego Ethernetu; NetworkManager ignoruje interfejsy Wi-Fi.
 - NetworkManager tylko do sieci przewodowej
 - ZRAM i podstawowe narzędzia z `modules/common.nix`
 - moduł developerski z powiadomieniami terminalowymi Codexa
-- GRUB instalowany w przenośnej ścieżce UEFI
+- systemd-boot na partycji EFI docelowego komputera
 
 Nie są włączone VR, Bluetooth, Docker, Ollama, nagrywanie ekranu, zdalne
 sterowanie myszą, Gamescope, GameMode ani Lutris.
 
-## Układ nośnika
+## Instalacja
 
-Konfiguracja oczekuje partycji EFI FAT32 z etykietą `NIXBOOT` oraz partycji
-głównej ext4 z etykietą `WHITE_MONSTER`. Instalacja usuwa całą obecną zawartość
-wybranego urządzenia, dlatego przed partycjonowaniem trzeba ponownie sprawdzić
-jego model, numer seryjny i ścieżkę przez `lsblk`.
+Pendrive zawiera zwykły instalator NixOS x86_64. Po uruchomieniu go na White
+Monster należy zamontować docelowy system pod `/mnt`, sklonować repozytorium i
+wygenerować fakty sprzętowe tej maszyny:
+
+```bash
+sudo nixos-generate-config --root /mnt
+cp /mnt/etc/nixos/hardware-configuration.nix \
+  hosts/white-monster/hardware-configuration.nix
+sudo nixos-install --flake path:.#white-monster
+```
+
+Host celowo nie jest widoczny w outputach flake, dopóki nie powstanie jego
+własny `hardware-configuration.nix`.
