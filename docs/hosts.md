@@ -26,6 +26,13 @@ Host pojawi się w outputach flake dopiero po dodaniu lokalnie wygenerowanego
 `hosts/armaniec/hardware-configuration.nix`. Procedura instalacji i ograniczenia
 sprzętowe są opisane w [README hosta](../hosts/armaniec/README.md).
 
+## `white-monster`
+
+Przenośny system AMD64 na pendrive UEFI: Plasma 6, Firefox, Steam, PipeWire i
+AMDGPU/Mesa. Korzysta wyłącznie z przewodowej sieci i nie zawiera pełnego
+profilu Home Managera ani dodatków gamingowych poza Steamem. Lista aplikacji,
+modułów i układ nośnika są opisane w [README hosta](../hosts/white-monster/README.md).
+
 ## Nowy host
 
 Skopiuj manifest, wygeneruj własny `hardware-configuration.nix`, wybierz moduły

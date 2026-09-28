@@ -1,0 +1,26 @@
+{
+  "features": {
+    "steam": true
+  },
+  "homeOverlay": null,
+  "homeProfile": null,
+  "hostName": "white-monster",
+  "modules": {
+    "bootSplash": false,
+    "common": true,
+    "desktop": false,
+    "developmentCore": true,
+    "hardwareAmdGpu": true,
+    "hardwareAsusLaptop": false,
+    "x1e": false
+  },
+  "system": "x86_64-linux",
+  "systemSettings": {
+    "bootTimeout": 3,
+    "stateVersion": "26.05",
+    "userShell": "bash"
+  },
+  "uiScale": 1,
+  "userDescription": "Wojtek",
+  "username": "wojtek"
+}

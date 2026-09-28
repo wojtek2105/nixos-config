@@ -75,6 +75,9 @@
         # workstations where containers are used only occasionally.
         dockerAutoStart = false;
         gaming = false;
+        # Install only Steam and its runtime. The broader gaming feature adds
+        # launchers, Gamescope, GameMode and the gaming scheduler separately.
+        steam = false;
         # Install Godot and its local MCP bridge. The bridge remains disabled
         # in Pi until the user enables it explicitly for a project.
         godot = false;
@@ -171,6 +174,7 @@
             "dockerAutoStart"
             "endgameTrackball"
             "gaming"
+            "steam"
             "godot"
             "hardwareDiagnostics"
             "kaliVm"
@@ -250,7 +254,7 @@
           nixpkgs.lib.nixosSystem {
             inherit system;
             specialArgs = {
-              inherit desktopTheme hostName inputs keyboardOptions resolvedFeatures resolvedHostModules systemSettings userDescription username;
+              inherit desktopTheme hostName inputs keyboardOptions resolvedFeatures resolvedHostModules systemSettings uiScale userDescription username;
             };
             modules =
               [
@@ -281,6 +285,7 @@
               ]
               ++ nixpkgs.lib.optionals resolvedFeatures.docker [ ./modules/docker.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.endgameTrackball [ ./modules/endgame-trackball.nix ]
+              ++ nixpkgs.lib.optionals (resolvedFeatures.steam || resolvedFeatures.gaming) [ ./modules/steam.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.gaming [ ./modules/gaming.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.godot [ ./modules/godot.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.schedulerBenchmark [ ./modules/scheduler-benchmark.nix ]

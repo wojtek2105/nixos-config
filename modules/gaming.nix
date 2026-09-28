@@ -5,10 +5,6 @@ let
 in
 
 {
-  # Steam and many games still require 32-bit graphics and ALSA libraries.
-  # Keep them behind the gaming capability instead of every AMD/desktop host.
-  hardware.graphics.enable32Bit = true;
-  services.pipewire.alsa.support32Bit = true;
   environment.systemPackages = [
     # Official v2 release: layer, 32-bit layer, Qt UI and CLI stay in sync.
     lsfg-vk-v2
@@ -27,14 +23,7 @@ in
   };
 
   programs = {
-    steam = {
-      enable = true;
-      package = pkgs.steam.override {
-        extraEnv.STEAM_FORCE_DESKTOPUI_SCALING = "2";
-      };
-      gamescopeSession.enable = true;
-      extraCompatPackages = [ pkgs.proton-ge-bin ];
-    };
+    steam.gamescopeSession.enable = true;
 
     gamemode = {
       enable = true;
