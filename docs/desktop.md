@@ -423,9 +423,9 @@ osobnym archiwum [benchmarków pulpitu](benchmarks.md).
 - wygaszacz działa z pełną częstotliwością monitora na zasilaczu i najwyżej
   60 FPS na baterii; wspólne wykrywanie źródła zasilania nie zakłada nazw
   urządzeń takich jak `BAT0` ani `AC0`,
-- tło Foot ma 62% krycia także wtedy, gdy TTE ustawi własny kolor terminala,
-  więc animacja TDD pozostaje czytelna, a aktualna tapeta jest spokojnie
-  widoczna pod nią,
+- tło Foot jest w pełni nieprzezroczyste i ma kolor `#000000`, także gdy TTE
+  ustawi własne tło terminala, dzięki czemu nieużywane piksele OLED pozostają
+  fizycznie wyłączone,
 - okno wygaszacza przejmuje fokus i włącza raportowanie ruchu myszy w Foot;
   dowolny klawisz, ruch albo kliknięcie zamyka nakładkę, natomiast syntetyczne
   zdarzenie wznowienia generowane przy mapowaniu okna jest ignorowane,

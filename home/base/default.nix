@@ -1082,7 +1082,9 @@ let
       # The foreground read below can then dismiss the saver on either keyboard
       # or pointer activity without relying on Hypridle's synthetic resume event
       # emitted while this fullscreen window is being mapped.
-      printf '\033]11;#${c.background}\007\033[2J\033[H\033[?25l\033[?1003h\033[?1006h'
+      # True black keeps unused OLED pixels physically off. Set it again via
+      # OSC 11 because TTE may replace Foot's configured background at runtime.
+      printf '\033]11;#000000\007\033[2J\033[H\033[?25l\033[?1003h\033[?1006h'
 
       wait_for_terminal_resize() {
         local deadline=$((SECONDS + 2))
@@ -1239,17 +1241,14 @@ let
     text = ''
       pgrep -f '[o]rg.polamaniec.screensaver' >/dev/null && exit 0
 
-      # Match Ironbar's 62% surface opacity: animated glyphs stay crisp while
-      # the current wallpaper remains a quiet part of the saver. TTE changes
-      # the terminal background through an escape sequence, so `all` must also
-      # apply opacity to that runtime-set surface.
+      # Use opaque true black so unused OLED pixels remain physically off.
+      # screensaver-run repeats the same color through OSC 11 after TTE starts.
       exec ${footCommand} \
         --app-id=org.polamaniec.screensaver \
         --override=main.font='${theme.fonts.monospace}:size=16' \
         --override=main.pad=0x0 \
-        --override=colors.background=${c.background} \
-        --override=colors.alpha=0.62 \
-        --override=colors.alpha-mode=all \
+        --override=colors.background=000000 \
+        --override=colors.alpha=1.0 \
         -e screensaver-run org.polamaniec.screensaver
     '';
   };
