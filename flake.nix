@@ -76,8 +76,11 @@
         dockerAutoStart = false;
         gaming = false;
         # Install only Steam and its runtime. The broader gaming feature adds
-        # launchers, Gamescope, GameMode and the gaming scheduler separately.
+        # launchers, Gamescope and GameMode separately.
         steam = false;
+        # Keep the interactive Bpfland scheduler independent from the broader
+        # gaming stack so lean hosts do not need extra launchers or daemons.
+        responsiveScheduler = false;
         # Install Godot and its local MCP bridge. The bridge remains disabled
         # in Pi until the user enables it explicitly for a project.
         godot = false;
@@ -175,6 +178,7 @@
             "endgameTrackball"
             "gaming"
             "steam"
+            "responsiveScheduler"
             "godot"
             "hardwareDiagnostics"
             "kaliVm"
@@ -286,6 +290,7 @@
               ++ nixpkgs.lib.optionals resolvedFeatures.docker [ ./modules/docker.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.endgameTrackball [ ./modules/endgame-trackball.nix ]
               ++ nixpkgs.lib.optionals (resolvedFeatures.steam || resolvedFeatures.gaming) [ ./modules/steam.nix ]
+              ++ nixpkgs.lib.optionals (resolvedFeatures.responsiveScheduler || resolvedFeatures.gaming) [ ./modules/responsive-scheduler.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.gaming [ ./modules/gaming.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.godot [ ./modules/godot.nix ]
               ++ nixpkgs.lib.optionals resolvedFeatures.schedulerBenchmark [ ./modules/scheduler-benchmark.nix ]

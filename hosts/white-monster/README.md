@@ -6,20 +6,23 @@ komputera. NetworkManager ignoruje interfejsy Wi-Fi.
 
 ## Aplikacje
 
-- Firefox
+- Zen Twilight
 - Steam z Proton GE
 - Codex, GNU Make i Python 3 z `modules/development-core.nix`
 - Git, curl, fd, jq i ripgrep z `modules/common.nix`
-- podstawowe aplikacje Plasma: Dolphin, Konsole i Ustawienia systemowe
+- Foot, Yazi, Thunar, MPV i Swayimg z profilu `home/wojtek`
 
 ## Moduły i usługi
 
-- Plasma 6 na Waylandzie z SDDM
+- Hyprland uruchamiany przez UWSM
+- Greetd z Tuigreet, Ironbar, Fuzzel, SwayNC i SwayOSD
+- profil Home Managera `wojtek` z motywem Biscuit
 - PipeWire z obsługą ALSA i PulseAudio
 - Mesa/AMDGPU z bibliotekami 32-bitowymi dla Steam
 - firmware i mikrokod AMD
 - NetworkManager tylko do sieci przewodowej
 - ZRAM i podstawowe narzędzia z `modules/common.nix`
+- responsywny scheduler CPU `scx_bpfland` bez pełnego stosu gamingowego
 - moduł developerski z powiadomieniami terminalowymi Codexa
 - systemd-boot na partycji EFI docelowego komputera
 

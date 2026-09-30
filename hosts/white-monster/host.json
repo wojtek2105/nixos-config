@@ -1,14 +1,15 @@
 {
   "features": {
+    "responsiveScheduler": true,
     "steam": true
   },
-  "homeOverlay": null,
-  "homeProfile": null,
+  "homeOverlay": "wojtek",
+  "homeProfile": "wojtek",
   "hostName": "white-monster",
   "modules": {
     "bootSplash": false,
     "common": true,
-    "desktop": false,
+    "desktop": true,
     "developmentCore": true,
     "hardwareAmdGpu": true,
     "hardwareAsusLaptop": false,

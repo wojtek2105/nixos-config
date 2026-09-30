@@ -28,9 +28,9 @@ sprzętowe są opisane w [README hosta](../hosts/armaniec/README.md).
 
 ## `white-monster`
 
-Docelowy system AMD64 instalowany z osobnego pendrive'a: Plasma 6, Firefox,
-Steam, PipeWire i AMDGPU/Mesa. Korzysta wyłącznie z przewodowej sieci i nie
-zawiera pełnego profilu Home Managera ani dodatków gamingowych poza Steamem.
+Docelowy system AMD64 instalowany z osobnego pendrive'a: wspólny profil
+Hyprlanda i Home Managera `wojtek`, Zen Browser, Steam, PipeWire i AMDGPU/Mesa.
+Korzysta wyłącznie z przewodowej sieci i nie zawiera dodatków gamingowych poza Steamem.
 Host pojawi się w outputach flake po wygenerowaniu na nim własnego pliku
 sprzętowego. Procedura jest w [README hosta](../hosts/white-monster/README.md).
 
