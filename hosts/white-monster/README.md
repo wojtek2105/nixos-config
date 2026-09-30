@@ -19,6 +19,8 @@ komputera. NetworkManager ignoruje interfejsy Wi-Fi.
 - Hyprland uruchamiany przez UWSM
 - Greetd z Tuigreet, Ironbar, Fuzzel, SwayNC i SwayOSD
 - profil Home Managera `wojtek` z motywem Biscuit
+- Plymouth z motywem Biscuit i cichym startem systemu
+- animowany wygaszacz `WOJTECH` sterowany przez Hypridle
 - PipeWire z obsługą ALSA i PulseAudio
 - Mesa/AMDGPU z bibliotekami 32-bitowymi dla Steam
 - firmware i mikrokod AMD

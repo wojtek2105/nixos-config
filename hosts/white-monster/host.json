@@ -11,7 +11,7 @@
   "homeProfile": "wojtek",
   "hostName": "white-monster",
   "modules": {
-    "bootSplash": false,
+    "bootSplash": true,
     "common": true,
     "desktop": true,
     "developmentCore": true,
