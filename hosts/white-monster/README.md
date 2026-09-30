@@ -9,6 +9,7 @@ komputera. NetworkManager ignoruje interfejsy Wi-Fi.
 - Zen Twilight
 - Discord
 - Steam z Proton GE
+- GPU Screen Recorder z nakładką i buforem replay
 - Codex, GNU Make i Python 3 z `modules/development-core.nix`
 - Git, curl, fd, jq i ripgrep z `modules/common.nix`
 - Foot, Yazi, Thunar, MPV i Swayimg z profilu `home/wojtek`
@@ -24,6 +25,7 @@ komputera. NetworkManager ignoruje interfejsy Wi-Fi.
 - NetworkManager tylko do sieci przewodowej
 - ZRAM i podstawowe narzędzia z `modules/common.nix`
 - responsywny scheduler CPU `scx_bpfland` bez pełnego stosu gamingowego
+- nakładka GPU Screen Recorder uruchamiana na żądanie
 - moduł developerski z powiadomieniami terminalowymi Codexa
 - systemd-boot na partycji EFI docelowego komputera
 
