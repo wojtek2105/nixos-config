@@ -1,5 +1,8 @@
 {
   "features": {
+    "personalApps": {
+      "discord": true
+    },
     "responsiveScheduler": true,
     "steam": true
   },

@@ -7,6 +7,7 @@ komputera. NetworkManager ignoruje interfejsy Wi-Fi.
 ## Aplikacje
 
 - Zen Twilight
+- Discord
 - Steam z Proton GE
 - Codex, GNU Make i Python 3 z `modules/development-core.nix`
 - Git, curl, fd, jq i ripgrep z `modules/common.nix`
